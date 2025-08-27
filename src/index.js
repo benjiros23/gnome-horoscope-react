@@ -12,7 +12,6 @@ document.head.appendChild(telegramScript);
 // Инициализация Telegram WebApp
 telegramScript.onload = () => {
   if (window.Telegram?.WebApp) {
-    // Настройки Telegram WebApp
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
@@ -21,7 +20,6 @@ telegramScript.onload = () => {
     if (tg.themeParams) {
       const root = document.documentElement;
       
-      // Применяем цвета из Telegram темы
       if (tg.themeParams.bg_color) {
         root.style.setProperty('--bg-main', tg.themeParams.bg_color);
       }
@@ -41,9 +39,6 @@ telegramScript.onload = () => {
 telegramScript.onerror = () => {
   console.log('📱 Telegram WebApp скрипт не загрузился (это нормально для браузера)');
 };
-
-// Создаем корневой элемент React
-const root = ReactDOM.createRoot(document.getElementById('root'));
 
 // Компонент обертка для обработки ошибок
 class ErrorBoundary extends React.Component {
@@ -117,7 +112,7 @@ class ErrorBoundary extends React.Component {
               🔄 Обновить страницу
             </button>
             
-            {process.env.NODE_ENV === 'development' && (
+            {process.env.NODE_ENV === 'development' && this.state.error && (
               <details style={{ marginTop: '20px', textAlign: 'left' }}>
                 <summary style={{ cursor: 'pointer', color: '#8BC34A' }}>
                   Детали ошибки (только в разработке)
@@ -143,6 +138,9 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// Создаем корневой элемент React
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
 // Рендерим приложение с обработчиком ошибок
 root.render(
   <React.StrictMode>
@@ -152,29 +150,10 @@ root.render(
   </React.StrictMode>
 );
 
-// Отправляем метрики производительности (опционально)
-if (typeof window !== 'undefined' && 'performance' in window) {
-  import('./reportWebVitals').then(({ default: reportWebVitals }) => {
-    reportWebVitals((metric) => {
-      // Логируем метрики только в development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📊 Web Vitals:', metric);
-      }
-      
-      // В продакшене можно отправлять метрики в аналитику
-      if (process.env.NODE_ENV === 'production') {
-        // Например: analytics.track('web-vitals', metric);
-      }
-    });
-  }).catch(() => {
-    // reportWebVitals не найден, ничего не делаем
-  });
-}
-
-// Регистрируем Service Worker для офлайн работы (опционально)
+// Service Worker - исправленная версия
 if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    serviceWorkerRegistration.unregister();
+    navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
         console.log('✅ Service Worker зарегистрирован:', registration);
       })
@@ -184,19 +163,39 @@ if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
   });
 }
 
+// Отправляем метрики производительности (опционально)
+const reportWebVitals = (onPerfEntry) => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+// Используем reportWebVitals
+reportWebVitals((metric) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Web Vitals:', metric);
+  }
+});
+
 // Логируем информацию о приложении
 console.log('🧙‍♂️ Гномий Гороскоп запущен!');
 console.log('📱 Режим:', process.env.NODE_ENV);
 console.log('🌐 Telegram WebApp:', !!window.Telegram?.WebApp);
 
-// Предотвращаем контекстное меню (для мобильных устройств)
+// Предотвращаем контекстное меню для Telegram WebApp
 document.addEventListener('contextmenu', (e) => {
   if (window.Telegram?.WebApp) {
     e.preventDefault();
   }
 });
 
-// Предотвращаем выделение текста (для мобильных устройств)
+// Предотвращаем выделение текста для мобильных устройств в Telegram
 document.addEventListener('selectstart', (e) => {
   if (window.Telegram?.WebApp && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
     e.preventDefault();
