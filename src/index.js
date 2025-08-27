@@ -174,7 +174,7 @@ if (typeof window !== 'undefined' && 'performance' in window) {
 // Регистрируем Service Worker для офлайн работы (опционально)
 if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    serviceWorkerRegistration.unregister();
       .then((registration) => {
         console.log('✅ Service Worker зарегистрирован:', registration);
       })
