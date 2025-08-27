@@ -20,27 +20,30 @@ export function useAPI() {
     setLoading(true);
     setError(null);
     
-    const timeoutId = setTimeout(() => {
-      throw new Error('Превышено время ожидания запроса (30 сек)');
-    }, 30000);
-    
-    try {
-      const fullUrl = `${API_BASE}${endpoint}`;
-      console.log(`🌐 API запрос: ${fullUrl}`, options);
-      
-      const response = await fetch(fullUrl, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          ...options.headers,
-        },
-        mode: 'cors',
-        credentials: 'omit', // Убрали include для CORS
-        ...options,
-      });
-      
-      clearTimeout(timeoutId);
+    // ДОЛЖНО БЫТЬ (исправленное):
+const controller = new AbortController();
+const timeoutId = setTimeout(() => {
+  controller.abort();
+}, 60000); // Увеличили до 60 секунд
+
+try {
+  const fullUrl = `${API_BASE}${endpoint}`;
+  console.log(`🌐 API запрос: ${fullUrl}`, options);
+  
+  const response = await fetch(fullUrl, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache',
+      ...options.headers,
+    },
+    mode: 'cors',
+    credentials: 'omit',
+    signal: controller.signal, // Добавили AbortController
+    ...options,
+  });
+  
+  clearTimeout(timeoutId);
       
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
