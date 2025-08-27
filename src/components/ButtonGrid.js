@@ -9,56 +9,64 @@ const ButtonGrid = ({ onButtonClick }) => {
       icon: '🔮', 
       title: 'Гороскоп', 
       subtitle: 'Звездные предсказания',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      gradient: 'linear-gradient(135deg, #8B7355 0%, #6B5B47 100%)', // Теплый коричневый
+      shadow: 'rgba(139, 115, 85, 0.3)'
     },
     { 
       id: 'cards', 
       icon: '🃏', 
       title: 'Карта дня', 
       subtitle: 'Мудрость карт',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+      gradient: 'linear-gradient(135deg, #7C8471 0%, #5C6B47 100%)', // Оливковый
+      shadow: 'rgba(124, 132, 113, 0.3)'
     },
     { 
       id: 'numerology', 
       icon: '🔢', 
       title: 'Нумерология', 
       subtitle: 'Тайны чисел',
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+      gradient: 'linear-gradient(135deg, #6B8E8E 0%, #4A6B6B 100%)', // Стальной голубой
+      shadow: 'rgba(107, 142, 142, 0.3)'
     },
     { 
       id: 'compatibility', 
       icon: '💕', 
       title: 'Совместимость', 
       subtitle: 'Любовная магия',
-      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
+      gradient: 'linear-gradient(135deg, #8B6B7C 0%, #6B4A5C 100%)', // Винный
+      shadow: 'rgba(139, 107, 124, 0.3)'
     },
     { 
       id: 'moon', 
       icon: '🌙', 
       title: 'Лунный календарь', 
       subtitle: 'Фазы Луны',
-      gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+      gradient: 'linear-gradient(135deg, #7C7C7C 0%, #5C5C5C 100%)', // Графитовый
+      shadow: 'rgba(124, 124, 124, 0.3)'
     },
     { 
       id: 'events', 
       icon: '🌌', 
       title: 'Астрособытия', 
       subtitle: 'Небесные явления',
-      gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+      gradient: 'linear-gradient(135deg, #8B8B55 0%, #6B6B3D 100%)', // Хаки
+      shadow: 'rgba(139, 139, 85, 0.3)'
     },
     { 
       id: 'mercury', 
       icon: '🪐', 
       title: 'Меркурий', 
       subtitle: 'Ретроградность',
-      gradient: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)'
+      gradient: 'linear-gradient(135deg, #B8860B 0%, #8B6914 100%)', // Темное золото
+      shadow: 'rgba(184, 134, 11, 0.3)'
     },
     { 
       id: 'favorites', 
       icon: '❤️', 
       title: 'Избранное', 
       subtitle: 'Сохраненное',
-      gradient: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)'
+      gradient: 'linear-gradient(135deg, #8B4513 0%, #654321 100%)', // Седловой коричневый
+      shadow: 'rgba(139, 69, 19, 0.3)'
     }
   ];
 
@@ -69,61 +77,108 @@ const ButtonGrid = ({ onButtonClick }) => {
     }
   };
 
+  const containerStyle = {
+    padding: '20px',
+    maxWidth: '500px',
+    margin: '0 auto'
+  };
+
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '16px',
+    marginBottom: '20px'
+  };
+
+  const getButtonStyle = (button, isActive) => ({
+    background: button.gradient,
+    border: 'none',
+    borderRadius: '16px',
+    padding: '20px 16px',
+    color: 'white',
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: isActive 
+      ? `0 8px 32px ${button.shadow}, 0 2px 8px rgba(0,0,0,0.1)` 
+      : `0 4px 16px ${button.shadow}`,
+    transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
+    textAlign: 'center',
+    minHeight: '110px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden'
+  });
+
+  const overlayStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%)',
+    pointerEvents: 'none'
+  };
+
+  const iconStyle = {
+    fontSize: '28px',
+    marginBottom: '8px',
+    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+  };
+
+  const titleStyle = {
+    fontSize: '16px',
+    fontWeight: '700',
+    marginBottom: '4px',
+    textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+  };
+
+  const subtitleStyle = {
+    fontSize: '12px',
+    opacity: 0.9,
+    fontWeight: '400',
+    textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+  };
+
   return (
-    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '16px',
-        marginBottom: '20px'
-      }}>
-        {buttons.map((button) => (
-          <button
-            key={button.id}
-            onClick={() => handleButtonClick(button)}
-            style={{
-              background: button.gradient,
-              border: 'none',
-              borderRadius: '16px',
-              padding: '20px 16px',
-              color: 'white',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: activeButton === button.id 
-                ? '0 8px 25px rgba(0,0,0,0.2)' 
-                : '0 4px 15px rgba(0,0,0,0.1)',
-              transform: activeButton === button.id ? 'translateY(-4px)' : 'translateY(0)',
-              textAlign: 'center',
-              minHeight: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}
-            onMouseEnter={(e) => {
-              if (activeButton !== button.id) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeButton !== button.id) {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-              }
-            }}
-          >
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>
-              {button.icon}
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
-              {button.title}
-            </div>
-            <div style={{ fontSize: '12px', opacity: 0.9 }}>
-              {button.subtitle}
-            </div>
-          </button>
-        ))}
+    <div style={containerStyle}>
+      <div style={gridStyle}>
+        {buttons.map((button) => {
+          const isActive = activeButton === button.id;
+          
+          return (
+            <button
+              key={button.id}
+              onClick={() => handleButtonClick(button)}
+              style={getButtonStyle(button, isActive)}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = `0 6px 24px ${button.shadow}, 0 2px 8px rgba(0,0,0,0.1)`;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = `0 4px 16px ${button.shadow}`;
+                }
+              }}
+            >
+              <div style={overlayStyle}></div>
+              <div style={iconStyle}>
+                {button.icon}
+              </div>
+              <div style={titleStyle}>
+                {button.title}
+              </div>
+              <div style={subtitleStyle}>
+                {button.subtitle}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
