@@ -27,8 +27,15 @@ function MoonView({ onBack, onAddToFavorites, telegramApp }) {
 
   // Загружаем данные о луне при монтировании
  // В useEffect замените на:
+// В компоненте MoonView.js добавьте принудительное обновление:
 useEffect(() => {
-  if (hasLoadedRef.current) return;
+  // Обновляем лунные данные каждые 6 часов
+  const interval = setInterval(() => {
+    getMoonData();
+  }, 6 * 60 * 60 * 1000);
+  
+  return () => clearInterval(interval);
+}, []);
 
   const cacheKey = 'moon_data';
   
