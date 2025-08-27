@@ -213,53 +213,96 @@ function App() {
 
   // СТИЛИ
   const styles = {
-    app: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #F1F8E9 0%, #E8F5E8 100%)',
-      padding: '0',
-      fontFamily: 'system-ui, sans-serif'
-    },
-    backButton: {
-      position: 'fixed',
-      top: '20px',
-      left: '20px',
-      background: 'linear-gradient(135deg, #8BC34A, #FFC107)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '12px',
-      padding: '12px 16px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      zIndex: 1000
-    },
-    header: {
-      textAlign: 'center',
-      padding: '20px',
-      background: 'rgba(139, 195, 74, 0.1)',
-      marginBottom: '20px'
-    },
-    title: {
-      color: '#8BC34A',
-      fontSize: '28px',
-      fontWeight: 'bold',
-      marginBottom: '8px'
-    },
-    subtitle: {
-      color: '#666',
-      fontStyle: 'italic'
-    },
-    offlineBadge: {
-      background: '#ff9800',
-      color: 'white',
-      padding: '4px 12px',
-      borderRadius: '16px',
-      fontSize: '12px',
-      marginTop: '10px',
-      display: 'inline-block'
-    }
-  };
+  app: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #F5F5F0 0%, #E8E8E3 100%)', // Более нейтральный фон
+    padding: '0',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
+  backButton: {
+    position: 'fixed',
+    top: '20px',
+    left: '20px',
+    background: 'linear-gradient(135deg, #8B7355 0%, #6B5B47 100%)', // Стальной коричневый
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    boxShadow: '0 4px 16px rgba(139, 115, 85, 0.3), 0 2px 8px rgba(0,0,0,0.1)',
+    zIndex: 1000,
+    transition: 'all 0.2s ease',
+    backdropFilter: 'blur(10px)'
+  },
+  header: {
+    textAlign: 'center',
+    padding: '30px 20px',
+    background: 'rgba(139, 115, 85, 0.05)', // Очень тонкий оттенок
+    marginBottom: '20px',
+    borderBottom: '1px solid rgba(139, 115, 85, 0.1)'
+  },
+  title: {
+    color: '#6B5B47', // Темно-коричневый вместо яркого зеленого
+    fontSize: '28px',
+    fontWeight: '700',
+    marginBottom: '8px',
+    textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  },
+  subtitle: {
+    color: '#7C7C7C', // Графитовый
+    fontStyle: 'italic',
+    fontSize: '16px'
+  },
+  offlineBadge: {
+    background: '#B8860B', // Темное золото
+    color: 'white',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    marginTop: '12px',
+    display: 'inline-block',
+    fontWeight: '600',
+    boxShadow: '0 2px 8px rgba(184, 134, 11, 0.3)'
+  },
+  profileCard: {
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,248,248,0.8) 100%)',
+    margin: '20px',
+    padding: '24px',
+    borderRadius: '20px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+    textAlign: 'center',
+    border: '1px solid rgba(139, 115, 85, 0.1)',
+    backdropFilter: 'blur(10px)'
+  },
+  profileTitle: {
+    color: '#6B5B47',
+    marginBottom: '8px',
+    fontSize: '22px',
+    fontWeight: '700'
+  },
+  profileSubtitle: {
+    color: '#8B7355',
+    fontSize: '14px',
+    marginBottom: '8px',
+    fontWeight: '500'
+  },
+  profileDesc: {
+    color: '#5C5C5C',
+    marginBottom: '16px',
+    lineHeight: '1.5'
+  },
+  selectedSignBadge: {
+    background: 'linear-gradient(135deg, #8B7355 0%, #6B5B47 100%)',
+    color: 'white',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '600',
+    boxShadow: '0 2px 8px rgba(139, 115, 85, 0.3)'
+  }
+};
 
   // РЕНДЕР ТЕКУЩЕГО ЭКРАНА
   const renderCurrentView = () => {
