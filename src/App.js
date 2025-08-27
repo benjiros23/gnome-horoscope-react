@@ -9,6 +9,7 @@ import AstroEventsView from './components/AstroEventsView';
 import DayCardView from './components/DayCardView';
 import MercuryView from './components/MercuryView';
 import ButtonGrid from './components/ButtonGrid';
+import { pixelTheme, pixelStyles } from './styles/pixelTheme';
 import './App.css';
 
 const ZODIAC_SIGNS = [
@@ -212,119 +213,68 @@ function App() {
   };
 
   // СТИЛИ
-  // Обновите styles объект в App.js
 const styles = {
   app: {
     minHeight: '100vh',
-    backgroundColor: '#f4f4f0', // Чистый цвет без градиента
+    backgroundColor: pixelTheme.colors.background,
     padding: '0',
-    fontFamily: '"Courier New", monospace',
-    imageRendering: 'pixelated' // Пиксельный рендеринг
+    fontFamily: pixelTheme.fonts.pixel,
+    imageRendering: 'pixelated'
   },
+  
   backButton: {
     position: 'fixed',
-    top: '16px',
-    left: '16px',
-    backgroundColor: '#8a6c4c', // Коричневый из палитры
-    color: '#ffffff',
-    border: '2px solid #000000',
-    borderRadius: '6px',
-    padding: '10px 14px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    boxShadow: '2px 2px 0px #000000',
+    top: pixelTheme.spacing.lg,
+    left: pixelTheme.spacing.lg,
+    ...pixelStyles.button,
+    backgroundColor: pixelTheme.colors.brown,
+    color: pixelTheme.colors.white,
+    padding: `${pixelTheme.spacing.sm} ${pixelTheme.spacing.md}`,
+    fontSize: pixelTheme.fonts.size.small,
     zIndex: 1000,
-    transition: 'all 0.1s ease',
-    fontFamily: '"Courier New", monospace',
-    textTransform: 'uppercase',
     letterSpacing: '1px'
   },
+  
   header: {
     textAlign: 'center',
-    padding: '24px 20px',
-    backgroundColor: '#62862a', // Зеленый из палитры
-    marginBottom: '20px',
-    border: '3px solid #000000',
-    margin: '16px',
-    borderRadius: '8px',
-    boxShadow: '3px 3px 0px #000000'
+    padding: pixelTheme.spacing.xl,
+    backgroundColor: pixelTheme.colors.forest,
+    margin: pixelTheme.spacing.lg,
+    ...pixelStyles.card
   },
+  
   title: {
-    color: '#ffffff',
-    fontSize: '24px',
+    color: pixelTheme.colors.white,
+    fontSize: pixelTheme.fonts.size.huge,
     fontWeight: 'bold',
-    marginBottom: '8px',
+    marginBottom: pixelTheme.spacing.sm,
     textShadow: '2px 2px 0px #000000',
-    fontFamily: '"Courier New", monospace',
     textTransform: 'uppercase',
     letterSpacing: '2px'
   },
+  
   subtitle: {
-    color: '#f4f4f0',
-    fontStyle: 'normal',
-    fontSize: '12px',
+    color: pixelTheme.colors.background,
+    fontSize: pixelTheme.fonts.size.small,
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '1px'
   },
+  
   offlineBadge: {
-    backgroundColor: '#a96a14', // Янтарный
-    color: '#ffffff',
-    padding: '6px 12px',
+    backgroundColor: pixelTheme.colors.amber,
+    color: pixelTheme.colors.white,
+    padding: `${pixelTheme.spacing.xs} ${pixelTheme.spacing.md}`,
     borderRadius: '4px',
-    fontSize: '10px',
-    marginTop: '12px',
+    fontSize: pixelTheme.fonts.size.tiny,
+    marginTop: pixelTheme.spacing.md,
     display: 'inline-block',
     fontWeight: 'bold',
-    border: '2px solid #000000',
-    boxShadow: '2px 2px 0px #000000',
+    border: pixelTheme.effects.pixelBorder,
+    boxShadow: pixelTheme.effects.pixelShadow,
     textTransform: 'uppercase'
-  },
-  profileCard: {
-    backgroundColor: '#b6bb9b', // Шалфей из палитры
-    margin: '16px',
-    padding: '20px',
-    borderRadius: '8px',
-    border: '3px solid #000000',
-    boxShadow: '4px 4px 0px #000000',
-    textAlign: 'center'
-  },
-  profileTitle: {
-    color: '#000000',
-    marginBottom: '8px',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: '1px'
-  },
-  profileSubtitle: {
-    color: '#000000',
-    fontSize: '12px',
-    marginBottom: '8px',
-    fontWeight: 'bold',
-    textTransform: 'uppercase'
-  },
-  profileDesc: {
-    color: '#000000',
-    marginBottom: '16px',
-    lineHeight: '1.4',
-    fontSize: '11px'
-  },
-  selectedSignBadge: {
-    backgroundColor: '#8e8e15', // Оливковый
-    color: '#ffffff',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    fontSize: '10px',
-    fontWeight: 'bold',
-    border: '2px solid #000000',
-    boxShadow: '2px 2px 0px #000000',
-    textTransform: 'uppercase',
-    letterSpacing: '1px'
   }
 };
-
 
   // РЕНДЕР ТЕКУЩЕГО ЭКРАНА
   const renderCurrentView = () => {
