@@ -3,77 +3,68 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-// Telegram WebApp интеграция
-const initTelegramWebApp = () => {
-  // Загружаем Telegram скрипт
-  const telegramScript = document.createElement('script');
-  telegramScript.src = 'https://telegram.org/js/telegram-web-app.js';
-  telegramScript.async = true;
-  
-  // Обработчик успешной загрузки
-  telegramScript.onload = () => {
-    try {
-      if (window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp;
-        
-        // Инициализация Telegram WebApp
-        tg.ready();
-        tg.expand();
-        
-        // Применяем цветовую схему Telegram
-        if (tg.themeParams?.bg_color) {
-          document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color);
-        }
-        if (tg.themeParams?.text_color) {
-          document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color);
-        }
-        
-        // Настройки для мобильного интерфейса
-        tg.setHeaderColor('bg_color');
-        tg.setBackgroundColor('#ffffff');
-        
-        console.log('🎉 Telegram WebApp готов к работе!');
-      } else {
-        console.log('🔧 Работаем в браузере (демо-режим)');
+// Telegram WebApp Script
+const telegramScript = document.createElement('script');
+telegramScript.src = 'https://telegram.org/js/telegram-web-app.js';
+telegramScript.async = true;
+document.head.appendChild(telegramScript);
+
+// Инициализация Telegram WebApp
+telegramScript.onload = () => {
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    
+    // Применяем цветовую схему Telegram
+    if (tg.themeParams) {
+      const root = document.documentElement;
+      
+      if (tg.themeParams.bg_color) {
+        root.style.setProperty('--bg-main', tg.themeParams.bg_color);
       }
-    } catch (error) {
-      console.warn('⚠️ Ошибка инициализации Telegram WebApp:', error.message);
+      if (tg.themeParams.text_color) {
+        root.style.setProperty('--text-primary', tg.themeParams.text_color);
+      }
+      if (tg.themeParams.hint_color) {
+        root.style.setProperty('--text-muted', tg.themeParams.hint_color);
+      }
     }
-  };
-  
-  // Обработчик ошибки загрузки
-  telegramScript.onerror = () => {
-    console.log('📱 Telegram WebApp скрипт не загрузился (это нормально для обычного браузера)');
-  };
-  
-  // Добавляем скрипт в head
-  document.head.appendChild(telegramScript);
+    
+    console.log('🎉 Telegram WebApp готов к работе!');
+  }
 };
 
-// Простой обработчик ошибок React
+// Обработчик ошибок загрузки Telegram скрипта
+telegramScript.onerror = () => {
+  console.log('📱 Telegram WebApp скрипт не загрузился (это нормально для браузера)');
+};
+
+// Компонент обертка для обработки ошибок
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('🚨 Ошибка React приложения:', error);
+    console.error('🚨 Ошибка приложения:', error, errorInfo);
     
-    // Отправляем ошибку в Telegram если доступно
-    if (window.Telegram?.WebApp?.sendData) {
+    // В Telegram WebApp отправляем данные об ошибке
+    if (window.Telegram?.WebApp) {
       try {
         window.Telegram.WebApp.sendData(JSON.stringify({
-          type: 'error',
-          message: error.message,
-          timestamp: Date.now()
+          action: 'error',
+          error: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString()
         }));
       } catch (e) {
-        console.log('Не удалось отправить ошибку в Telegram');
+        console.log('Не удалось отправить данные об ошибке в Telegram');
       }
     }
   }
@@ -82,38 +73,62 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{
+          padding: '40px 20px',
+          textAlign: 'center',
+          background: 'linear-gradient(135deg, #F1F8E9 0%, #E8F5E8 100%)',
           minHeight: '100vh',
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
           justifyContent: 'center',
-          padding: '20px',
-          textAlign: 'center',
-          backgroundColor: 'var(--tg-bg, #f8f9fa)',
-          color: 'var(--tg-text, #333)',
-          fontFamily: 'system-ui, -apple-system, sans-serif'
+          alignItems: 'center',
+          fontFamily: 'system-ui, sans-serif'
         }}>
-          <div>
-            <h2 style={{ color: '#8BC34A', marginBottom: '16px' }}>
-              🔧 Что-то пошло не так
-            </h2>
-            <p style={{ marginBottom: '20px', opacity: 0.8 }}>
-              Произошла ошибка. Попробуйте обновить страницу.
+          <div style={{
+            background: 'white',
+            padding: '32px',
+            borderRadius: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔧</div>
+            <h2 style={{ color: '#8BC34A', marginBottom: '16px' }}>Упс! Что-то пошло не так</h2>
+            <p style={{ color: '#666', marginBottom: '24px' }}>
+              Произошла ошибка в работе приложения. Попробуйте обновить страницу.
             </p>
             <button
               onClick={() => window.location.reload()}
               style={{
-                background: 'linear-gradient(135deg, #8BC34A, #FFC107)',
+                background: 'linear-gradient(135deg, #8BC34A 0%, #FFC107 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 24px',
                 borderRadius: '8px',
-                cursor: 'pointer',
                 fontSize: '16px',
-                fontWeight: '600'
+                fontWeight: '600',
+                cursor: 'pointer'
               }}
             >
-              🔄 Обновить
+              🔄 Обновить страницу
             </button>
+            
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <details style={{ marginTop: '20px', textAlign: 'left' }}>
+                <summary style={{ cursor: 'pointer', color: '#8BC34A' }}>
+                  Детали ошибки (только в разработке)
+                </summary>
+                <pre style={{ 
+                  background: '#f5f5f5', 
+                  padding: '12px', 
+                  borderRadius: '4px', 
+                  fontSize: '12px',
+                  overflow: 'auto',
+                  marginTop: '8px'
+                }}>
+                  {this.state.error?.stack || this.state.error?.message || 'Неизвестная ошибка'}
+                </pre>
+              </details>
+            )}
           </div>
         </div>
       );
@@ -123,10 +138,10 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Инициализация React приложения
+// Создаем корневой элемент React
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// Рендер с обработчиком ошибок
+// Рендерим приложение с обработчиком ошибок
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
@@ -135,57 +150,54 @@ root.render(
   </React.StrictMode>
 );
 
-// Инициализируем Telegram WebApp после рендера
-initTelegramWebApp();
-
-// Предотвращаем контекстное меню в Telegram
-document.addEventListener('contextmenu', (event) => {
-  if (window.Telegram?.WebApp) {
-    event.preventDefault();
-  }
-});
-
-// Предотвращаем выделение текста в Telegram
-document.addEventListener('selectstart', (event) => {
-  if (window.Telegram?.WebApp && 
-      event.target.tagName !== 'INPUT' && 
-      event.target.tagName !== 'TEXTAREA') {
-    event.preventDefault();
-  }
-});
-
-// Регистрация Service Worker (только в production)
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Service Worker - исправленная версия
+if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(() => {
-        console.log('✅ Service Worker зарегистрирован');
+      .then((registration) => {
+        console.log('✅ Service Worker зарегистрирован:', registration);
       })
       .catch((error) => {
-        console.log('❌ Service Worker не зарегистрирован:', error.message);
+        console.log('❌ Ошибка регистрации Service Worker:', error);
       });
   });
 }
 
-// Базовые Web Vitals (упрощенно)
-if (process.env.NODE_ENV === 'development') {
-  const logWebVitals = (metric) => {
-    console.log('📊 Web Vitals:', metric);
-  };
-  
-  // Динамический импорт web-vitals только в development
-  import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-    getCLS(logWebVitals);
-    getFID(logWebVitals);
-    getFCP(logWebVitals);
-    getLCP(logWebVitals);
-    getTTFB(logWebVitals);
-  }).catch(() => {
-    // web-vitals не найден, продолжаем без метрик
-  });
-}
+// Отправляем метрики производительности (опционально)
+const reportWebVitals = (onPerfEntry) => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
 
-// Информация о запуске
+// Используем reportWebVitals
+reportWebVitals((metric) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Web Vitals:', metric);
+  }
+});
+
+// Логируем информацию о приложении
 console.log('🧙‍♂️ Гномий Гороскоп запущен!');
-console.log('📱 Режим:', process.env.NODE_ENV || 'development');
+console.log('📱 Режим:', process.env.NODE_ENV);
 console.log('🌐 Telegram WebApp:', !!window.Telegram?.WebApp);
+
+// Предотвращаем контекстное меню для Telegram WebApp
+document.addEventListener('contextmenu', (e) => {
+  if (window.Telegram?.WebApp) {
+    e.preventDefault();
+  }
+});
+
+// Предотвращаем выделение текста для мобильных устройств в Telegram
+document.addEventListener('selectstart', (e) => {
+  if (window.Telegram?.WebApp && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+  }
+});
