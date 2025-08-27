@@ -212,97 +212,119 @@ function App() {
   };
 
   // СТИЛИ
-  const styles = {
+  // Обновите styles объект в App.js
+const styles = {
   app: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #F5F5F0 0%, #E8E8E3 100%)', // Более нейтральный фон
+    backgroundColor: '#f4f4f0', // Чистый цвет без градиента
     padding: '0',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    fontFamily: '"Courier New", monospace',
+    imageRendering: 'pixelated' // Пиксельный рендеринг
   },
   backButton: {
     position: 'fixed',
-    top: '20px',
-    left: '20px',
-    background: 'linear-gradient(135deg, #8B7355 0%, #6B5B47 100%)', // Стальной коричневый
-    color: 'white',
-    border: 'none',
-    borderRadius: '12px',
-    padding: '12px 16px',
+    top: '16px',
+    left: '16px',
+    backgroundColor: '#8a6c4c', // Коричневый из палитры
+    color: '#ffffff',
+    border: '2px solid #000000',
+    borderRadius: '6px',
+    padding: '10px 14px',
     cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-    boxShadow: '0 4px 16px rgba(139, 115, 85, 0.3), 0 2px 8px rgba(0,0,0,0.1)',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    boxShadow: '2px 2px 0px #000000',
     zIndex: 1000,
-    transition: 'all 0.2s ease',
-    backdropFilter: 'blur(10px)'
+    transition: 'all 0.1s ease',
+    fontFamily: '"Courier New", monospace',
+    textTransform: 'uppercase',
+    letterSpacing: '1px'
   },
   header: {
     textAlign: 'center',
-    padding: '30px 20px',
-    background: 'rgba(139, 115, 85, 0.05)', // Очень тонкий оттенок
+    padding: '24px 20px',
+    backgroundColor: '#62862a', // Зеленый из палитры
     marginBottom: '20px',
-    borderBottom: '1px solid rgba(139, 115, 85, 0.1)'
+    border: '3px solid #000000',
+    margin: '16px',
+    borderRadius: '8px',
+    boxShadow: '3px 3px 0px #000000'
   },
   title: {
-    color: '#6B5B47', // Темно-коричневый вместо яркого зеленого
-    fontSize: '28px',
-    fontWeight: '700',
+    color: '#ffffff',
+    fontSize: '24px',
+    fontWeight: 'bold',
     marginBottom: '8px',
-    textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    textShadow: '2px 2px 0px #000000',
+    fontFamily: '"Courier New", monospace',
+    textTransform: 'uppercase',
+    letterSpacing: '2px'
   },
   subtitle: {
-    color: '#7C7C7C', // Графитовый
-    fontStyle: 'italic',
-    fontSize: '16px'
+    color: '#f4f4f0',
+    fontStyle: 'normal',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: '1px'
   },
   offlineBadge: {
-    background: '#B8860B', // Темное золото
-    color: 'white',
-    padding: '6px 14px',
-    borderRadius: '20px',
-    fontSize: '12px',
+    backgroundColor: '#a96a14', // Янтарный
+    color: '#ffffff',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    fontSize: '10px',
     marginTop: '12px',
     display: 'inline-block',
-    fontWeight: '600',
-    boxShadow: '0 2px 8px rgba(184, 134, 11, 0.3)'
+    fontWeight: 'bold',
+    border: '2px solid #000000',
+    boxShadow: '2px 2px 0px #000000',
+    textTransform: 'uppercase'
   },
   profileCard: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,248,248,0.8) 100%)',
-    margin: '20px',
-    padding: '24px',
-    borderRadius: '20px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-    textAlign: 'center',
-    border: '1px solid rgba(139, 115, 85, 0.1)',
-    backdropFilter: 'blur(10px)'
+    backgroundColor: '#b6bb9b', // Шалфей из палитры
+    margin: '16px',
+    padding: '20px',
+    borderRadius: '8px',
+    border: '3px solid #000000',
+    boxShadow: '4px 4px 0px #000000',
+    textAlign: 'center'
   },
   profileTitle: {
-    color: '#6B5B47',
+    color: '#000000',
     marginBottom: '8px',
-    fontSize: '22px',
-    fontWeight: '700'
+    fontSize: '18px',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: '1px'
   },
   profileSubtitle: {
-    color: '#8B7355',
-    fontSize: '14px',
+    color: '#000000',
+    fontSize: '12px',
     marginBottom: '8px',
-    fontWeight: '500'
+    fontWeight: 'bold',
+    textTransform: 'uppercase'
   },
   profileDesc: {
-    color: '#5C5C5C',
+    color: '#000000',
     marginBottom: '16px',
-    lineHeight: '1.5'
+    lineHeight: '1.4',
+    fontSize: '11px'
   },
   selectedSignBadge: {
-    background: 'linear-gradient(135deg, #8B7355 0%, #6B5B47 100%)',
-    color: 'white',
-    padding: '6px 14px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '600',
-    boxShadow: '0 2px 8px rgba(139, 115, 85, 0.3)'
+    backgroundColor: '#8e8e15', // Оливковый
+    color: '#ffffff',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    fontSize: '10px',
+    fontWeight: 'bold',
+    border: '2px solid #000000',
+    boxShadow: '2px 2px 0px #000000',
+    textTransform: 'uppercase',
+    letterSpacing: '1px'
   }
 };
+
 
   // РЕНДЕР ТЕКУЩЕГО ЭКРАНА
   const renderCurrentView = () => {
