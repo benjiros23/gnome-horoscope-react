@@ -1,196 +1,191 @@
-import React, { useState } from 'react';
-import { pixelTheme, pixelStyles } from '../styles/pixelTheme';
+import React, { useState, useEffect } from 'react';
 
-const ZodiacCarousel = ({ selectedSign, onSignChange }) => {
-  const [currentIndex, setCurrentIndex] = useState(4); // Лев по умолчанию
-  
-  const zodiacSigns = [
-    { sign: 'Овен', emoji: '♈', dates: '21.03-20.04', color: pixelTheme.colors.amber },
-    { sign: 'Телец', emoji: '♉', dates: '21.04-20.05', color: pixelTheme.colors.brown },
-    { sign: 'Близнецы', emoji: '♊', dates: '21.05-21.06', color: pixelTheme.colors.sage },
-    { sign: 'Рак', emoji: '♋', dates: '22.06-22.07', color: pixelTheme.colors.forest },
-    { sign: 'Лев', emoji: '♌', dates: '23.07-22.08', color: pixelTheme.colors.olive },
-    { sign: 'Дева', emoji: '♍', dates: '23.08-22.09', color: pixelTheme.colors.amber },
-    { sign: 'Весы', emoji: '♎', dates: '23.09-22.10', color: pixelTheme.colors.brown },
-    { sign: 'Скорпион', emoji: '♏', dates: '23.10-22.11', color: pixelTheme.colors.sage },
-    { sign: 'Стрелец', emoji: '♐', dates: '23.11-21.12', color: pixelTheme.colors.forest },
-    { sign: 'Козерог', emoji: '♑', dates: '22.12-20.01', color: pixelTheme.colors.olive },
-    { sign: 'Водолей', emoji: '♒', dates: '21.01-19.02', color: pixelTheme.colors.amber },
-    { sign: 'Рыбы', emoji: '♓', dates: '20.02-20.03', color: pixelTheme.colors.brown }
-  ];
+const ZODIAC_SIGNS = [
+  { sign: 'Овен', emoji: '♈', dates: '21.03-20.04', color: '#FF6B6B', element: 'Огонь' },
+  { sign: 'Телец', emoji: '♉', dates: '21.04-20.05', color: '#4ECDC4', element: 'Земля' },
+  { sign: 'Близнецы', emoji: '♊', dates: '21.05-21.06', color: '#45B7D1', element: 'Воздух' },
+  { sign: 'Рак', emoji: '♋', dates: '22.06-22.07', color: '#96CEB4', element: 'Вода' },
+  { sign: 'Лев', emoji: '♌', dates: '23.07-22.08', color: '#FECA57', element: 'Огонь' },
+  { sign: 'Дева', emoji: '♍', dates: '23.08-22.09', color: '#48CAE4', element: 'Земля' },
+  { sign: 'Весы', emoji: '♎', dates: '23.09-22.10', color: '#F38BA8', element: 'Воздух' },
+  { sign: 'Скорпион', emoji: '♏', dates: '23.10-22.11', color: '#A8DADC', element: 'Вода' },
+  { sign: 'Стрелец', emoji: '♐', dates: '23.11-21.12', color: '#F1C0E8', element: 'Огонь' },
+  { sign: 'Козерог', emoji: '♑', dates: '22.12-20.01', color: '#CFBAF0', element: 'Земля' },
+  { sign: 'Водолей', emoji: '♒', dates: '21.01-19.02', color: '#A3C4F3', element: 'Воздух' },
+  { sign: 'Рыбы', emoji: '♓', dates: '20.02-20.03', color: '#90DBF4', element: 'Вода' }
+];
 
-  const handlePrevious = () => {
-    const newIndex = currentIndex > 0 ? currentIndex - 1 : zodiacSigns.length - 1;
-    setCurrentIndex(newIndex);
-    onSignChange(zodiacSigns[newIndex].sign);
-  };
+function ZodiacCarousel({ selectedSign, onSignChange, telegramApp }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  const handleNext = () => {
-    const newIndex = currentIndex < zodiacSigns.length - 1 ? currentIndex + 1 : 0;
-    setCurrentIndex(newIndex);
-    onSignChange(zodiacSigns[newIndex].sign);
-  };
+  // Находим индекс выбранного знака при монтировании
+  useEffect(() => {
+    const index = ZODIAC_SIGNS.findIndex(item => item.sign === selectedSign);
+    if (index >= 0) {
+      setCurrentIndex(index);
+    }
+  }, [selectedSign]);
 
-  const handleSignSelect = (index) => {
-    setCurrentIndex(index);
-    onSignChange(zodiacSigns[index].sign);
-  };
-
-  const currentSign = zodiacSigns[currentIndex];
-
-  const styles = {
-    container: {
-      padding: pixelTheme.spacing.lg,
-      textAlign: 'center'
-    },
-    
-    title: {
-      ...pixelStyles.card,
-      backgroundColor: pixelTheme.colors.forest,
-      color: pixelTheme.colors.white,
-      padding: pixelTheme.spacing.md,
-      margin: `0 ${pixelTheme.spacing.lg} ${pixelTheme.spacing.lg}`,
-      fontSize: pixelTheme.fonts.size.normal,
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
-      letterSpacing: '1px'
-    },
-    
-    mainCard: {
-      ...pixelStyles.card,
-      backgroundColor: currentSign.color,
-      padding: pixelTheme.spacing.xl,
-      margin: `0 ${pixelTheme.spacing.lg} ${pixelTheme.spacing.lg}`,
-      minHeight: '180px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
-    
-    signEmoji: {
-      fontSize: '48px',
-      marginBottom: pixelTheme.spacing.md,
-      filter: 'drop-shadow(2px 2px 0px #000000)'
-    },
-    
-    signName: {
-      fontSize: pixelTheme.fonts.size.large,
-      fontWeight: 'bold',
-      color: pixelTheme.colors.black,
-      marginBottom: pixelTheme.spacing.sm,
-      textTransform: 'uppercase',
-      letterSpacing: '2px',
-      textShadow: '1px 1px 0px rgba(255,255,255,0.5)'
-    },
-    
-    signDates: {
-      fontSize: pixelTheme.fonts.size.small,
-      color: pixelTheme.colors.black,
-      fontWeight: 'bold',
-      backgroundColor: 'rgba(0,0,0,0.1)',
-      padding: `${pixelTheme.spacing.xs} ${pixelTheme.spacing.md}`,
-      borderRadius: '4px',
-      border: '1px solid #000000'
-    },
-    
-    navigation: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: pixelTheme.spacing.lg
-    },
-    
-    navButton: {
-      ...pixelStyles.button,
-      backgroundColor: pixelTheme.colors.brown,
-      color: pixelTheme.colors.white,
-      padding: `${pixelTheme.spacing.md} ${pixelTheme.spacing.lg}`,
-      fontSize: pixelTheme.fonts.size.normal,
-      letterSpacing: '1px'
-    },
-    
-    miniGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(6, 1fr)',
-      gap: pixelTheme.spacing.sm,
-      margin: `0 ${pixelTheme.spacing.xl}`
-    },
-    
-    miniSign: (isActive) => ({
-      ...pixelStyles.button,
-      backgroundColor: isActive ? pixelTheme.colors.olive : pixelTheme.colors.sage,
-      color: pixelTheme.colors.black,
-      padding: pixelTheme.spacing.xs,
-      fontSize: pixelTheme.fonts.size.tiny,
-      minHeight: '40px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...(isActive ? pixelStyles.activeButton : {})
-    }),
-    
-    selectButton: {
-      ...pixelStyles.button,
-      backgroundColor: pixelTheme.colors.forest,
-      color: pixelTheme.colors.white,
-      padding: `${pixelTheme.spacing.md} ${pixelTheme.spacing.xl}`,
-      fontSize: pixelTheme.fonts.size.normal,
-      fontWeight: 'bold',
-      marginTop: pixelTheme.spacing.lg,
-      letterSpacing: '2px'
+  // Haptic feedback
+  const hapticFeedback = (type = 'selection') => {
+    if (telegramApp?.HapticFeedback) {
+      try {
+        if (type === 'selection') {
+          telegramApp.HapticFeedback.selectionChanged();
+        } else {
+          telegramApp.HapticFeedback.impactOccurred('light');
+        }
+      } catch (e) {
+        console.log('Haptic feedback недоступен:', e.message);
+      }
     }
   };
 
+  // Переключение на предыдущий знак
+  const handlePrevious = () => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    const newIndex = (currentIndex - 1 + ZODIAC_SIGNS.length) % ZODIAC_SIGNS.length;
+    setCurrentIndex(newIndex);
+    onSignChange(ZODIAC_SIGNS[newIndex].sign);
+    hapticFeedback('selection');
+
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
+  // Переключение на следующий знак
+  const handleNext = () => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    const newIndex = (currentIndex + 1) % ZODIAC_SIGNS.length;
+    setCurrentIndex(newIndex);
+    onSignChange(ZODIAC_SIGNS[newIndex].sign);
+    hapticFeedback('selection');
+
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
+  // Прямой выбор знака по индикатору
+  const handleSelectSign = (index) => {
+    if (isAnimating || index === currentIndex) return;
+    
+    setIsAnimating(true);
+    setCurrentIndex(index);
+    onSignChange(ZODIAC_SIGNS[index].sign);
+    hapticFeedback('impact');
+
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
+  const currentSign = ZODIAC_SIGNS[currentIndex];
+
   return (
-    <div style={styles.container}>
-      <div style={styles.title}>
-        Выберите ваш знак зодиака
+    <div className="zodiac-carousel">
+      <div className="carousel-header">
+        <h3>Выберите ваш знак зодиака</h3>
+        <p className="carousel-subtitle">Листайте или нажимайте на точки внизу</p>
       </div>
-      
-      <div style={styles.navigation}>
-        <button style={styles.navButton} onClick={handlePrevious}>
-          ← Пред
+
+      <div className="carousel-container">
+        {/* Кнопка "Назад" */}
+        <button 
+          className="carousel-nav-btn carousel-prev"
+          onClick={handlePrevious}
+          disabled={isAnimating}
+          aria-label="Предыдущий знак"
+        >
+          <span className="nav-arrow">‹</span>
         </button>
-        <button style={styles.navButton} onClick={handleNext}>
-          След →
+
+        {/* Основная карточка знака */}
+        <div className="carousel-main-item">
+          <div 
+            className={`sign-card ${isAnimating ? 'animating' : ''}`}
+            style={{ '--sign-color': currentSign.color }}
+          >
+            <div className="sign-icon-container">
+              <div className="sign-icon">{currentSign.emoji}</div>
+              <div className="icon-glow"></div>
+            </div>
+            
+            <div className="sign-info">
+              <h2 className="sign-name">{currentSign.sign}</h2>
+              <p className="sign-dates">{currentSign.dates}</p>
+              <span className="sign-element">{currentSign.element}</span>
+            </div>
+
+            {/* Декоративные элементы */}
+            <div className="card-decorations">
+              <div className="star star-1">✨</div>
+              <div className="star star-2">⭐</div>
+              <div className="star star-3">🌟</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Кнопка "Вперед" */}
+        <button 
+          className="carousel-nav-btn carousel-next"
+          onClick={handleNext}
+          disabled={isAnimating}
+          aria-label="Следующий знак"
+        >
+          <span className="nav-arrow">›</span>
         </button>
       </div>
-      
-      <div style={styles.mainCard}>
-        <div style={styles.signEmoji}>
-          {currentSign.emoji}
+
+      {/* Превью соседних знаков */}
+      <div className="carousel-preview">
+        <div className="preview-item prev-preview">
+          <span className="preview-emoji">
+            {ZODIAC_SIGNS[(currentIndex - 1 + ZODIAC_SIGNS.length) % ZODIAC_SIGNS.length].emoji}
+          </span>
+          <span className="preview-name">
+            {ZODIAC_SIGNS[(currentIndex - 1 + ZODIAC_SIGNS.length) % ZODIAC_SIGNS.length].sign}
+          </span>
         </div>
-        <div style={styles.signName}>
-          {currentSign.sign}
+
+        <div className="preview-current">
+          <div className="current-indicator">Выбран</div>
         </div>
-        <div style={styles.signDates}>
-          {currentSign.dates}
+
+        <div className="preview-item next-preview">
+          <span className="preview-emoji">
+            {ZODIAC_SIGNS[(currentIndex + 1) % ZODIAC_SIGNS.length].emoji}
+          </span>
+          <span className="preview-name">
+            {ZODIAC_SIGNS[(currentIndex + 1) % ZODIAC_SIGNS.length].sign}
+          </span>
         </div>
       </div>
-      
-      <div style={styles.miniGrid}>
-        {zodiacSigns.map((sign, index) => (
+
+      {/* Индикаторы точек */}
+      <div className="carousel-indicators">
+        {ZODIAC_SIGNS.map((sign, index) => (
           <button
             key={sign.sign}
-            style={styles.miniSign(index === currentIndex)}
-            onClick={() => handleSignSelect(index)}
-            title={sign.sign}
+            className={`indicator ${index === currentIndex ? 'active' : ''}`}
+            onClick={() => handleSelectSign(index)}
+            disabled={isAnimating}
+            aria-label={`Выбрать ${sign.sign}`}
+            title={`${sign.sign} (${sign.dates})`}
           >
-            <div style={{ fontSize: '12px' }}>{sign.emoji}</div>
-            <div style={{ fontSize: '8px', marginTop: '2px' }}>
-              {sign.sign.slice(0, 3)}
-            </div>
+            <span className="indicator-emoji">{sign.emoji}</span>
           </button>
         ))}
       </div>
-      
-      <button style={styles.selectButton} onClick={() => onSignChange(currentSign.sign)}>
-        ★ Выбрать ★
-      </button>
+
+      {/* Подсказка */}
+      <div className="carousel-hint">
+        <small>
+          💡 Подсказка: смахивайте влево-вправо для быстрого переключения
+        </small>
+      </div>
     </div>
   );
-};
+}
 
 export default ZodiacCarousel;
