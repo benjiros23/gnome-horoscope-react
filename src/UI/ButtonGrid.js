@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import FunctionCarousel from './UI/FunctionCarousel';
-import FunctionTile from './UI/FunctionTile';
+import FunctionCarousel from './UI/FunctionCarousel';  // ← НОВЫЙ компонент
+import FunctionTile from './UI/FunctionTile';          // ← НОВЫЙ компонент  
 import Button from './UI/Button';
 
-const ButtonGrid = ({ onButtonClick }) => {
-  const { theme } = useTheme();
-  const [viewMode, setViewMode] = useState('carousel'); // 'carousel' или 'grid'
+// НЕ ДОЛЖНО БЫТЬ этих импортов:
+// import WoodenCarousel from './WoodenCarousel';      // ← УДАЛИТЬ
+// import WoodenTile from './WoodenTile';              // ← УДАЛИТЬ
 
-  // Функции приложения
+const ButtonGrid = ({ onButtonClick }) => {
+  const { theme } = useTheme(); // ← ВАЖНО: используем тему
+  const [viewMode, setViewMode] = useState('carousel');
+
   const functions = [
     {
       id: 'horoscope',
@@ -66,39 +69,15 @@ const ButtonGrid = ({ onButtonClick }) => {
     }
   };
 
-  const getContainerStyle = () => {
-    return {
-      padding: '20px',
-      maxWidth: '600px',
-      margin: '0 auto'
-    };
-  };
-
-  const getToggleContainerStyle = () => {
-    return {
-      display: 'flex',
-      justifyContent: 'center',
-      marginBottom: '20px',
-      gap: '10px'
-    };
-  };
-
-  const getGridContainerStyle = () => {
-    return {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-      gap: '16px',
-      justifyItems: 'center',
-      padding: '20px',
-      ...theme.card,
-      margin: '0'
-    };
-  };
-
   return (
-    <div style={getContainerStyle()}>
+    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
       {/* Переключатель режимов */}
-      <div style={getToggleContainerStyle()}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '20px',
+        gap: '10px'
+      }}>
         <Button
           variant={viewMode === 'carousel' ? 'primary' : 'ghost'}
           size="small"
@@ -116,15 +95,23 @@ const ButtonGrid = ({ onButtonClick }) => {
         </Button>
       </div>
 
-      {/* Отображение в зависимости от режима */}
+      {/* ИСПОЛЬЗУЕМ НОВЫЕ КОМПОНЕНТЫ */}
       {viewMode === 'carousel' ? (
-        <FunctionCarousel
+        <FunctionCarousel          {/* ← НОВЫЙ компонент */}
           items={functions}
           onItemClick={handleItemClick}
         />
       ) : (
-        <div style={getGridContainerStyle()}>
-          {/* Деревянная текстура для wooden темы */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: '16px',
+          justifyItems: 'center',
+          padding: '20px',
+          ...theme.card,  // ← Используем стили темы
+          margin: '0'
+        }}>
+          {/* Деревянная текстура только для wooden темы */}
           {theme.name === 'wooden' && (
             <div style={{
               position: 'absolute',
@@ -135,7 +122,7 @@ const ButtonGrid = ({ onButtonClick }) => {
           
           <div style={{ position: 'relative', zIndex: 1, display: 'contents' }}>
             {functions.map((item) => (
-              <FunctionTile
+              <FunctionTile          // ← НОВЫЙ компонент
                 key={item.id}
                 icon={item.icon}
                 title={item.title}
