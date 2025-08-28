@@ -97,7 +97,7 @@ const useAPI = () => {
   }, [makeRequest]);
 
   const getHoroscope = useCallback(async (sign) => {
-    return await makeRequest(`/api/horoscope/${encodeURIComponent(sign)}`);
+    return await makeRequest(`/api/horoscope?sign=${encodeURIComponent(sign)}`);
   }, [makeRequest]);
 
   const getAstroEvents = useCallback(async () => {
@@ -137,4 +137,6 @@ const useAPI = () => {
   };
 };
 
+// ИСПРАВЛЕННЫЙ ЭКСПОРТ - и default, и named
 export default useAPI;
+export { useAPI };
