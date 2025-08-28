@@ -6,11 +6,13 @@ const ThemeSelector = ({ style = {} }) => {
 
   const containerStyle = {
     position: 'fixed',
-    top: '20px',
-    right: '20px',
+    top: '10px',                        // Уменьшили отступ сверху
+    right: '10px',                      // Уменьшили отступ справа
     zIndex: 1000,
     display: 'flex',
-    gap: '8px',
+    flexWrap: 'wrap',                   // Перенос на новую строку
+    gap: '6px',                         // Уменьшили gap
+    maxWidth: '200px',                  // Ограничили ширину
     ...style
   };
 
@@ -18,16 +20,17 @@ const ThemeSelector = ({ style = {} }) => {
     background: isActive ? theme.colors.primary : theme.card.background,
     color: isActive ? '#ffffff' : theme.card.color,
     border: `1px solid ${isActive ? theme.colors.primary : theme.colors.border}`,
-    borderRadius: '20px',
-    padding: '6px 12px',
-    fontSize: '12px',
+    borderRadius: '16px',               // Более скругленные углы
+    padding: '4px 8px',                 // Уменьшили padding
+    fontSize: '11px',                   // Уменьшили шрифт
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    boxShadow: isActive ? `0 2px 8px ${theme.colors.primary}40` : 'none'
+    gap: '3px',                         // Уменьшили gap между иконкой и текстом
+    boxShadow: isActive ? `0 2px 8px ${theme.colors.primary}40` : 'none',
+    whiteSpace: 'nowrap'
   });
 
   const { theme } = useTheme();
@@ -79,6 +82,28 @@ const ThemeSelector = ({ style = {} }) => {
       >
         <span>🌙</span>
         <span>Темная</span>
+      </button>
+
+      {/* Новая Facebook кнопка */}
+      <button
+        style={buttonStyle(currentTheme === 'facebook', theme)}
+        onClick={() => handleThemeSwitch('facebook')}
+        title="Facebook тема"
+        onMouseEnter={(e) => {
+          if (currentTheme !== 'facebook') {
+            e.target.style.background = theme.colors.surface;
+            e.target.style.transform = 'scale(1.05)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (currentTheme !== 'facebook') {
+            e.target.style.background = theme.card.background;
+            e.target.style.transform = 'scale(1)';
+          }
+        }}
+      >
+        <span>📘</span>
+        <span>FB</span>
       </button>
     </div>
   );
