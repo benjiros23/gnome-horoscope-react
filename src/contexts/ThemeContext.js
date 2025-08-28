@@ -17,29 +17,45 @@ export const ThemeProvider = ({ children }) => {
   // Загружаем сохраненную тему
   useEffect(() => {
     const savedTheme = localStorage.getItem('gnome-theme');
+    console.log('🎨 Загружаем сохраненную тему:', savedTheme);
     if (savedTheme && themes[savedTheme]) {
       setCurrentTheme(savedTheme);
+      console.log('✅ Тема установлена:', savedTheme);
     }
   }, []);
 
   // Сохраняем тему при изменении
   useEffect(() => {
     localStorage.setItem('gnome-theme', currentTheme);
-    console.log('Тема изменена на:', currentTheme);
+    console.log('💾 Тема сохранена:', currentTheme);
   }, [currentTheme]);
 
   const switchTheme = (themeName) => {
+    console.log('🔄 Переключаем тему с', currentTheme, 'на', themeName);
     if (themes[themeName]) {
       setCurrentTheme(themeName);
+    } else {
+      console.error('❌ Тема не найдена:', themeName);
     }
+  };
+
+  const getTheme = () => {
+    const theme = themes[currentTheme];
+    if (!theme) {
+      console.error('❌ Не удалось найти тему:', currentTheme);
+      return themes.light; // fallback
+    }
+    return theme;
   };
 
   const value = {
     currentTheme,
-    theme: themes[currentTheme],
+    theme: getTheme(),
     switchTheme,
     availableThemes: Object.keys(themes)
   };
+
+  console.log('🎨 ThemeContext рендерится, текущая тема:', currentTheme);
 
   return (
     <ThemeContext.Provider value={value}>
