@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import WoodenCarousel from './WoodenCarousel';
-import WoodenTile from './WoodenTile';
+import { useTheme } from '../contexts/ThemeContext';
+import FunctionCarousel from './UI/FunctionCarousel';
+import FunctionTile from './UI/FunctionTile';
+import Button from './UI/Button';
 
 const ButtonGrid = ({ onButtonClick }) => {
-  const [viewMode, setViewMode] = useState('carousel'); // 'carousel' или 'grid'
+  const { theme } = useTheme();
+  const [viewMode, setViewMode] = useState('carousel');
 
   // Функции приложения
   const functions = [
@@ -63,118 +66,87 @@ const ButtonGrid = ({ onButtonClick }) => {
     }
   };
 
-  const styles = {
-    container: {
-      padding: '20px',
-      maxWidth: '600px',
-      margin: '0 auto'
-    },
-    toggleContainer: {
-      display: 'flex',
-      justifyContent: 'center',
-      marginBottom: '20px',
-      gap: '10px'
-    },
-    toggleButton: {
-      background: 'linear-gradient(135deg, #8b4513, #a0522d)',
-      color: 'white',
-      border: '2px solid #654321',
-      borderRadius: '20px',
-      padding: '8px 16px',
-      fontSize: '14px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      fontFamily: '"Times New Roman", Georgia, serif',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    toggleButtonActive: {
-      boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3), 0 4px 12px rgba(139, 69, 19, 0.4)',
-      transform: 'scale(0.95)'
-    },
-    gridContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-      gap: '16px',
-      justifyItems: 'center',
-      padding: '20px',
-      background: 'linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(160, 82, 45, 0.1))',
-      borderRadius: '20px',
-      border: '2px solid rgba(139, 69, 19, 0.3)',
-      boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.1)'
-    }
+  const containerStyle = {
+    padding: '20px',
+    maxWidth: '600px',
+    margin: '0 auto',
+    fontFamily: theme.container.fontFamily
+  };
+
+  const toggleContainerStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: '20px',
+    gap: '10px'
+  };
+
+  const gridContainerStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: '16px',
+    justifyItems: 'center',
+    padding: '20px',
+    ...theme.card,
+    margin: '0',
+    position: 'relative'
   };
 
   return (
-    <div style={styles.container}>
+    <div style={containerStyle}>
       {/* Переключатель режимов */}
-      <div style={styles.toggleContainer}>
-        <button
-          style={{
-            ...styles.toggleButton,
-            ...(viewMode === 'carousel' ? styles.toggleButtonActive : {})
-          }}
+      <div style={toggleContainerStyle}>
+        <Button
+          variant={viewMode === 'carousel' ? 'primary' : 'ghost'}
+          size="small"
           onClick={() => setViewMode('carousel')}
-          onMouseEnter={(e) => {
-            if (viewMode !== 'carousel') {
-              e.target.style.transform = 'scale(1.05)';
-              e.target.style.boxShadow = '0 6px 16px rgba(139, 69, 19, 0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (viewMode !== 'carousel') {
-              e.target.style.transform = 'scale(1)';
-              e.target.style.boxShadow = 'none';
-            }
-          }}
         >
           🎠 Карусель
-        </button>
+        </Button>
         
-        <button
-          style={{
-            ...styles.toggleButton,
-            ...(viewMode === 'grid' ? styles.toggleButtonActive : {})
-          }}
+        <Button
+          variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+          size="small"
           onClick={() => setViewMode('grid')}
-          onMouseEnter={(e) => {
-            if (viewMode !== 'grid') {
-              e.target.style.transform = 'scale(1.05)';
-              e.target.style.boxShadow = '0 6px 16px rgba(139, 69, 19, 0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (viewMode !== 'grid') {
-              e.target.style.transform = 'scale(1)';
-              e.target.style.boxShadow = 'none';
-            }
-          }}
         >
           📱 Сетка
-        </button>
+        </Button>
       </div>
 
       {/* Отображение в зависимости от режима */}
       {viewMode === 'carousel' ? (
-        <WoodenCarousel
+        <FunctionCarousel
           items={functions}
           onItemClick={handleItemClick}
-          variant="oak"
         />
       ) : (
-        <div style={styles.gridContainer}>
-          {functions.map((item) => (
-            <WoodenTile
-              key={item.id}
-              icon={item.icon}
-              title={item.title}
-              subtitle={item.subtitle}
-              variant="oak"
-              onClick={() => handleItemClick(item)}
-              size="normal"
-            />
-          ))}
+        <div style={gridContainerStyle}>
+          {/* Текстура для wooden темы */}
+          {theme.name === 'wooden' && (
+            <div style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              ...theme.texture
+            }}></div>
+          )}
+          
+          {/* Плитки функций */}
+          <div style={{ 
+            position: 'relative', 
+            zIndex: 1, 
+            display: 'contents',
+            width: '100%'
+          }}>
+            {functions.map((item) => (
+              <FunctionTile
+                key={item.id}
+                icon={item.icon}
+                title={item.title}
+                subtitle={item.subtitle}
+                onClick={() => handleItemClick(item)}
+                size="normal"
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
