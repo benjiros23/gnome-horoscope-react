@@ -1,357 +1,338 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useAPI } from '../hooks/useAPI';
-import { saveToCache, loadFromCache, clearCache } from '../utils/cache';
+import React, { useState, useEffect } from 'react';
+import useAPI from '../hooks/useAPI';
+import GlassCard from './GlassCard';
+import WoodenCard from './WoodenCard';
 
-function HoroscopeView({ selectedSign, onBack, onAddToFavorites, telegramApp }) {
-  const { getHoroscope, loading, error, clearError } = useAPI();
+const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramApp }) => {
   const [horoscopeData, setHoroscopeData] = useState(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isFromCache, setIsFromCache] = useState(false);
-  const loadingTimeoutRef = useRef(null);
-  const lastLoadedSignRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [designTheme] = useState('glass'); // Можно получать из пропсов или контекста
 
-  // Отслеживаем статус сети
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+  // ИСПРАВЛЕННОЕ использование useAPI
+  const api = useAPI();
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Загружаем гороскоп с кешированием на день
-  useEffect(() => {
-    // Если знак не изменился - не загружаем
-    if (lastLoadedSignRef.current === selectedSign) {
-      return;
-    }
-
-    if (!selectedSign) {
-      return;
-    }
-
-    // Очищаем предыдущий таймаут
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-
-    const cacheKeyName = `horoscope_${selectedSign}`;
-
-    // Проверяем кеш сначала
-    const cachedData = loadFromCache(cacheKeyName);
-    if (cachedData) {
-      console.log(`✅ Гороскоп для ${selectedSign} загружен из кеша`);
-      setHoroscopeData(cachedData);
-      setIsFromCache(true);
-      lastLoadedSignRef.current = selectedSign;
-      return;
-    }
-
-    // Загружаем с сервера, если нет кеша
-    loadingTimeoutRef.current = setTimeout(async () => {
+  const loadHoroscope = async (sign) => {
+    if (!sign) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🔮 Загружаем гороскоп для знака:', sign);
+      
+      // Используем правильный метод из хука
+      const data = await api.getHoroscope(sign);
+      
+      console.log('✅ Гороскоп получен:', data);
+      setHoroscopeData(data);
+      
+      // Сохраняем в кеш
       try {
-        clearError();
-        setIsFromCache(false);
-        console.log(`🔮 Загружаем новый гороскоп для ${selectedSign}...`);
-        
-        const data = await getHoroscope(selectedSign);
-        
-        // Сохраняем в кеш на весь день
-        saveToCache(cacheKeyName, data);
-        
-        setHoroscopeData(data);
-        lastLoadedSignRef.current = selectedSign;
-        
-        // Haptic feedback при успешной загрузке
-        if (telegramApp?.HapticFeedback) {
-          try {
-            telegramApp.HapticFeedback.notificationOccurred('success');
-          } catch (e) {
-            console.log('Haptic feedback недоступен:', e.message);
+        localStorage.setItem(`horoscope_${sign}`, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
+      } catch (cacheError) {
+        console.warn('Не удалось сохранить в кеш:', cacheError);
+      }
+      
+    } catch (fetchError) {
+      console.error('❌ Ошибка загрузки гороскопа:', fetchError);
+      setError(fetchError.message || 'Не удалось загрузить гороскоп');
+      
+      // Пытаемся загрузить из кеша при ошибке
+      try {
+        const cached = localStorage.getItem(`horoscope_${sign}`);
+        if (cached) {
+          const { data } = JSON.parse(cached);
+          setHoroscopeData(data);
+          setError('Показан кешированный гороскоп (нет связи с сервером)');
+          console.log('📦 Загружен из кеша:', data);
+        }
+      } catch (cacheError) {
+        console.error('Ошибка загрузки из кеша:', cacheError);
+      }
+      
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Загрузка при монтировании компонента
+  useEffect(() => {
+    console.log('🔮 HoroscopeView смонтирован, selectedSign:', selectedSign);
+    
+    if (selectedSign) {
+      // Проверяем кеш сначала
+      try {
+        const cached = localStorage.getItem(`horoscope_${selectedSign}`);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          const isExpired = Date.now() - timestamp > 3600000; // 1 час
+          
+          if (!isExpired) {
+            console.log('✅ Гороскоп для', selectedSign, 'загружен из кеша');
+            setHoroscopeData(data);
+            return;
           }
         }
-        
-        console.log('✅ Гороскоп загружен и сохранен в кеш:', data);
-      } catch (err) {
-        console.error('❌ Ошибка загрузки гороскопа:', err);
-        setIsFromCache(false);
-        
-        // Haptic feedback при ошибке
-        if (telegramApp?.HapticFeedback) {
-          try {
-            telegramApp.HapticFeedback.notificationOccurred('error');
-          } catch (e) {
-            console.log('Haptic feedback недоступен:', e.message);
-          }
-        }
+      } catch (cacheError) {
+        console.warn('Ошибка чтения кеша:', cacheError);
       }
-    }, 300);
+      
+      // Загружаем с сервера, если нет в кеше или устарел
+      setTimeout(() => {
+        console.log('🔮 Загружаем новый гороскоп для', selectedSign);
+        loadHoroscope(selectedSign);
+      }, 300);
+    }
+  }, [selectedSign]);
 
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, [selectedSign, getHoroscope, clearError, telegramApp]);
+  // Принудительная загрузка нового гороскопа
+  const handleRefresh = () => {
+    if (selectedSign) {
+      // Очищаем кеш
+      try {
+        localStorage.removeItem(`horoscope_${selectedSign}`);
+      } catch (e) {}
+      
+      console.log('🔄 Принудительное получение нового гороскопа...');
+      loadHoroscope(selectedSign);
+    }
+  };
 
-  // Добавить в избранное
   const handleAddToFavorites = () => {
     if (horoscopeData && onAddToFavorites) {
       const favoriteItem = {
-        id: Date.now(),
         type: 'horoscope',
-        title: `🔮 Гороскоп для ${selectedSign}`,
-        content: horoscopeData.text,
-        date: new Date().toLocaleDateString('ru-RU'),
-        source: horoscopeData.source || 'internet'
+        title: `Гороскоп для ${horoscopeData.sign}`,
+        content: horoscopeData.horoscope.general,
+        date: horoscopeData.date,
+        sign: horoscopeData.sign,
+        gnome: horoscopeData.gnome
       };
       
       onAddToFavorites(favoriteItem);
       
-      if (telegramApp) {
-        telegramApp.showAlert('❤️ Добавлено в избранное!');
-      } else {
-        alert('❤️ Добавлено в избранное!');
-      }
-      
-      if (telegramApp?.HapticFeedback) {
-        try {
-          telegramApp.HapticFeedback.impactOccurred('light');
-        } catch (e) {
-          console.log('Haptic feedback недоступен:', e.message);
-        }
-      }
-    }
-  };
-
-  // Получить новый гороскоп (принудительно)
-  const handleGetNewHoroscope = async () => {
-    if (selectedSign) {
+      // Безопасный haptic feedback
       try {
-        const cacheKeyName = `horoscope_${selectedSign}`;
-        clearCache(cacheKeyName); // Очищаем кеш
-        
-        lastLoadedSignRef.current = null; // Сбрасываем состояние
-        clearError();
-        setIsFromCache(false);
-        console.log('🔄 Принудительное получение нового гороскопа...');
-        
-        const data = await getHoroscope(selectedSign);
-        
-        // Сохраняем новый гороскоп в кеш
-        saveToCache(cacheKeyName, data);
-        
-        setHoroscopeData(data);
-        lastLoadedSignRef.current = selectedSign;
-        
-        if (telegramApp?.HapticFeedback) {
-          try {
-            telegramApp.HapticFeedback.impactOccurred('medium');
-          } catch (e) {
-            console.log('Haptic feedback недоступен:', e.message);
-          }
+        if (telegramApp && parseFloat(telegramApp.version) >= 6.1 && telegramApp.HapticFeedback) {
+          telegramApp.HapticFeedback.notificationOccurred('success');
         }
-        
-        console.log('✅ Новый гороскоп получен и сохранен:', data);
-      } catch (err) {
-        console.error('Ошибка получения нового гороскопа:', err);
-        lastLoadedSignRef.current = selectedSign;
-      }
+      } catch (e) {}
     }
   };
 
-  // Поделиться гороскопом
-  const handleShare = () => {
-    if (horoscopeData && telegramApp) {
-      const shareText = `🧙‍♂️ Гномий гороскоп для ${selectedSign}:\n\n${horoscopeData.text}\n\n#ГномийГороскоп`;
-      
-      telegramApp.sendData(JSON.stringify({
-        action: 'share_horoscope',
-        sign: selectedSign,
-        text: horoscopeData.text
-      }));
+  // Выбор компонента карточки
+  const Card = designTheme === 'wooden' ? WoodenCard : GlassCard;
+
+  const styles = {
+    container: {
+      padding: '20px',
+      maxWidth: '600px',
+      margin: '0 auto'
+    },
+    loadingSpinner: {
+      textAlign: 'center',
+      padding: '40px',
+      fontSize: '24px'
+    },
+    errorMessage: {
+      color: '#dc3545',
+      textAlign: 'center',
+      padding: '20px',
+      backgroundColor: 'rgba(220, 53, 69, 0.1)',
+      borderRadius: '8px',
+      margin: '20px 0'
+    },
+    refreshButton: {
+      background: 'linear-gradient(135deg, #28a745, #20c997)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '12px',
+      padding: '12px 24px',
+      fontSize: '16px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      margin: '10px 5px',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 12px rgba(40, 167, 69, 0.3)'
+    },
+    favoriteButton: {
+      background: 'linear-gradient(135deg, #ffc107, #fd7e14)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '12px',
+      padding: '12px 24px',
+      fontSize: '16px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      margin: '10px 5px',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
+    },
+    horoscopeSection: {
+      marginBottom: '20px',
+      padding: '16px',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '12px',
+      backdropFilter: 'blur(8px)'
+    },
+    sectionTitle: {
+      fontSize: '18px',
+      fontWeight: '700',
+      marginBottom: '8px',
+      color: '#2d3748'
+    },
+    sectionText: {
+      fontSize: '16px',
+      lineHeight: '1.5',
+      color: '#4a5568'
+    },
+    metaInfo: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '10px',
+      marginTop: '20px'
+    },
+    metaItem: {
+      backgroundColor: 'rgba(139, 195, 74, 0.2)',
+      color: '#2e7d0f',
+      padding: '6px 12px',
+      borderRadius: '16px',
+      fontSize: '14px',
+      fontWeight: '600',
+      border: '1px solid rgba(139, 195, 74, 0.3)'
     }
   };
 
-  // Форматирование даты
-  const formatDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ru-RU', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Сегодня';
-    }
-  };
-
-  // Получаем бейдж источника
-  const getSourceBadge = () => {
-    if (!horoscopeData) return null;
-    
-    if (isFromCache) {
-      return (
-        <div className="source-badge cached">
-          💾 Сохранен на день
-        </div>
-      );
-    } else if (horoscopeData.source === 'offline') {
-      return (
-        <div className="source-badge offline">
-          📱 Оффлайн режим
-        </div>
-      );
-    } else {
-      return (
-        <div className="source-badge online">
-          🌐 Живые данные
-        </div>
-      );
-    }
-  };
+  console.log('🎨 HoroscopeView: Рендеринг, состояние:', { 
+    loading, 
+    error: !!error, 
+    horoscopeData: !!horoscopeData,
+    selectedSign 
+  });
 
   return (
-    <div className="horoscope-view content-enter">
-      <div className="card">
-        <div className="content-header">
-          <h3 className="content-title">🔮 Гороскоп на сегодня</h3>
-          {!isOnline && (
-            <div className="offline-indicator">
-              📵 Нет интернета
-            </div>
-          )}
-        </div>
-
-        {/* Индикатор загрузки */}
+    <div style={styles.container}>
+      <Card 
+        title={`🔮 Гороскоп для знака ${selectedSign}`}
+        subtitle={horoscopeData ? `от ${horoscopeData.gnome}` : 'Загрузка...'}
+      >
         {loading && (
-          <div className="loading-container">
-            <div className="loading-indicator">
-              Звезды шепчут гному-звездочету...
-            </div>
-            <p>Загружаем актуальный гороскоп для {selectedSign}</p>
+          <div style={styles.loadingSpinner}>
+            ⏳ Звезды составляют ваш гороскоп...
           </div>
         )}
 
-        {/* Ошибка загрузки */}
-        {error && !loading && (
-          <div className="error-container">
-            <div className="error-icon">⚠️</div>
-            <h4>Не удалось загрузить гороскоп</h4>
-            <p className="error-message">{error}</p>
-            <div className="error-actions">
-              <button className="btn-primary" onClick={handleGetNewHoroscope}>
-                🔄 Попробовать снова
-              </button>
-              <button className="btn-secondary" onClick={onBack}>
-                ← Назад
-              </button>
-            </div>
+        {error && (
+          <div style={styles.errorMessage}>
+            ❌ {error}
           </div>
         )}
 
-        {/* Контент гороскопа */}
         {horoscopeData && !loading && (
-          <div className="horoscope-content">
-            {/* Заголовок */}
-            <div className="horoscope-header">
-              <div className="sign-info">
-                <h4 className="sign-name">{selectedSign}</h4>
-                <p className="date-info">{formatDate(horoscopeData.date)}</p>
-              </div>
-              {getSourceBadge()}
-            </div>
-
-            {/* Текст гороскопа */}
-            <div className="horoscope-text-container">
-              <div className="content-highlight">
-                <p className="horoscope-text">{horoscopeData.text}</p>
+          <div>
+            {/* Общий гороскоп */}
+            <div style={styles.horoscopeSection}>
+              <div style={styles.sectionTitle}>✨ Общий прогноз</div>
+              <div style={styles.sectionText}>
+                {horoscopeData.horoscope.general}
               </div>
             </div>
 
-            {/* Дополнительная информация */}
-            {horoscopeData.mood && (
-              <div className="extra-info">
-                <h5>🎭 Настроение:</h5>
-                <p>{horoscopeData.mood}</p>
+            {/* Любовь */}
+            <div style={styles.horoscopeSection}>
+              <div style={styles.sectionTitle}>💝 Любовь и отношения</div>
+              <div style={styles.sectionText}>
+                {horoscopeData.horoscope.love}
               </div>
-            )}
+            </div>
 
-            {horoscopeData.color && (
-              <div className="extra-info">
-                <h5>🎨 Цвет дня:</h5>
-                <span className="lucky-color" style={{ backgroundColor: horoscopeData.color }}>
-                  {horoscopeData.color}
-                </span>
+            {/* Работа */}
+            <div style={styles.horoscopeSection}>
+              <div style={styles.sectionTitle}>💼 Карьера и финансы</div>
+              <div style={styles.sectionText}>
+                {horoscopeData.horoscope.work}
               </div>
-            )}
+            </div>
 
-            {horoscopeData.luckyNumber && (
-              <div className="extra-info">
-                <h5>🍀 Счастливое число:</h5>
-                <span className="lucky-number">{horoscopeData.luckyNumber}</span>
+            {/* Здоровье */}
+            <div style={styles.horoscopeSection}>
+              <div style={styles.sectionTitle}>🏃‍♂️ Здоровье</div>
+              <div style={styles.sectionText}>
+                {horoscopeData.horoscope.health}
               </div>
-            )}
+            </div>
+
+            {/* Мета-информация */}
+            <div style={styles.metaInfo}>
+              <span style={styles.metaItem}>
+                🍀 Счастливое число: {horoscopeData.luckyNumber}
+              </span>
+              <span style={styles.metaItem}>
+                🎨 Цвет: {horoscopeData.luckyColor}
+              </span>
+              <span style={styles.metaItem}>
+                🌟 Элемент: {horoscopeData.element}
+              </span>
+              <span style={styles.metaItem}>
+                💕 Совместимость: {horoscopeData.compatibility}
+              </span>
+            </div>
 
             {/* Кнопки действий */}
-            <div className="action-buttons">
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
               <button 
-                className="btn-favorite" 
+                style={styles.refreshButton}
+                onClick={handleRefresh}
+                disabled={loading}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 16px rgba(40, 167, 69, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+                  }
+                }}
+              >
+                🔄 Получить новый гороскоп
+              </button>
+              
+              <button 
+                style={styles.favoriteButton}
                 onClick={handleAddToFavorites}
-                title="Добавить в избранное"
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(255, 193, 7, 0.3)';
+                }}
               >
-                ❤️ В избранное
+                ⭐ Добавить в избранное
               </button>
-              
-              {telegramApp && (
-                <button 
-                  className="btn-primary" 
-                  onClick={handleShare}
-                  title="Поделиться"
-                >
-                  📤 Поделиться
-                </button>
-              )}
-              
-              <button 
-                className="btn-secondary" 
-                onClick={handleGetNewHoroscope}
-                title="Получить новый гороскоп (обновляет кеш)"
-              >
-                🔄 Новый гороскоп
-              </button>
-              
-              <button 
-                className="btn-secondary" 
-                onClick={onBack}
-              >
-                ← Назад
-              </button>
-            </div>
-
-            {/* Информация об источнике */}
-            <div className="source-info">
-              <small>
-                {isFromCache 
-                  ? '💾 Гороскоп сохранен на весь день. Завтра будет новый!'
-                  : horoscopeData.source === 'offline' 
-                    ? '📱 Данные из кэша. Подключитесь к интернету для актуальной информации.'
-                    : '🌐 Свежий гороскоп от гномьих астрологов'
-                }
-              </small>
             </div>
           </div>
         )}
-      </div>
+
+        {!horoscopeData && !loading && !error && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
+            <h4>Выберите знак зодиака</h4>
+            <p>Чтобы увидеть персональный гороскоп, выберите ваш знак зодиака.</p>
+          </div>
+        )}
+      </Card>
     </div>
   );
-}
+};
 
 export default HoroscopeView;
