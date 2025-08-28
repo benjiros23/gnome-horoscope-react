@@ -3,10 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-// Создаем корневой элемент
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// Рендерим приложение
 root.render(
   <React.StrictMode>
     <App />
@@ -24,3 +22,4 @@ if ('serviceWorker' in navigator) {
 }
 
 console.log('🧙‍♂️ Гномий Гороскоп запущен без Service Worker!');
+console.log('📱 Режим:', process.env.NODE_ENV || 'development');
