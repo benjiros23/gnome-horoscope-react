@@ -1,28 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import useAPI from '../hooks/useAPI';
-import GlassCard from './GlassCard';
-import WoodenCard from './WoodenCard';
 
 const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramApp }) => {
   const [horoscopeData, setHoroscopeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [designTheme] = useState('glass'); // Можно получать из пропсов или контекста
 
-  // ИСПРАВЛЕННОЕ использование useAPI
-  const api = useAPI();
+  // ПРАВИЛЬНОЕ использование useAPI хука
+  const { getHoroscope } = useAPI();
 
   const loadHoroscope = async (sign) => {
     if (!sign) return;
     
     setLoading(true);
     setError(null);
+    setHoroscopeData(null);
     
     try {
       console.log('🔮 Загружаем гороскоп для знака:', sign);
       
-      // Используем правильный метод из хука
-      const data = await api.getHoroscope(sign);
+      // Правильный вызов метода из хука
+      const data = await getHoroscope(sign);
       
       console.log('✅ Гороскоп получен:', data);
       setHoroscopeData(data);
@@ -33,6 +31,7 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
           data,
           timestamp: Date.now()
         }));
+        console.log('💾 Гороскоп сохранен в кеш');
       } catch (cacheError) {
         console.warn('Не удалось сохранить в кеш:', cacheError);
       }
@@ -59,7 +58,7 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
     }
   };
 
-  // Загрузка при монтировании компонента
+  // Проверка кеша и загрузка
   useEffect(() => {
     console.log('🔮 HoroscopeView смонтирован, selectedSign:', selectedSign);
     
@@ -81,13 +80,15 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
         console.warn('Ошибка чтения кеша:', cacheError);
       }
       
-      // Загружаем с сервера, если нет в кеше или устарел
-      setTimeout(() => {
-        console.log('🔮 Загружаем новый гороскоп для', selectedSign);
+      // Загружаем с сервера с небольшой задержкой
+      const timer = setTimeout(() => {
+        console.log('🔮 Загружаем новый гороскоп для', selectedSign + '...');
         loadHoroscope(selectedSign);
       }, 300);
+
+      return () => clearTimeout(timer);
     }
-  }, [selectedSign]);
+  }, [selectedSign, getHoroscope]);
 
   // Принудительная загрузка нового гороскопа
   const handleRefresh = () => {
@@ -95,7 +96,9 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
       // Очищаем кеш
       try {
         localStorage.removeItem(`horoscope_${selectedSign}`);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Ошибка очистки кеша:', e);
+      }
       
       console.log('🔄 Принудительное получение нового гороскопа...');
       loadHoroscope(selectedSign);
@@ -120,12 +123,11 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
         if (telegramApp && parseFloat(telegramApp.version) >= 6.1 && telegramApp.HapticFeedback) {
           telegramApp.HapticFeedback.notificationOccurred('success');
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('Haptic feedback недоступен');
+      }
     }
   };
-
-  // Выбор компонента карточки
-  const Card = designTheme === 'wooden' ? WoodenCard : GlassCard;
 
   const styles = {
     container: {
@@ -133,46 +135,47 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
       maxWidth: '600px',
       margin: '0 auto'
     },
+    card: {
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderRadius: '20px',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
+      padding: '24px',
+      margin: '16px',
+      color: '#2d3748'
+    },
+    title: {
+      fontSize: '20px',
+      fontWeight: '700',
+      marginBottom: '8px',
+      color: '#1a202c',
+      textAlign: 'center'
+    },
+    subtitle: {
+      fontSize: '14px',
+      fontWeight: '500',
+      marginBottom: '16px',
+      color: '#4a5568',
+      fontStyle: 'italic',
+      textAlign: 'center'
+    },
     loadingSpinner: {
       textAlign: 'center',
       padding: '40px',
-      fontSize: '24px'
+      fontSize: '18px'
     },
     errorMessage: {
       color: '#dc3545',
       textAlign: 'center',
       padding: '20px',
       backgroundColor: 'rgba(220, 53, 69, 0.1)',
-      borderRadius: '8px',
-      margin: '20px 0'
-    },
-    refreshButton: {
-      background: 'linear-gradient(135deg, #28a745, #20c997)',
-      color: 'white',
-      border: 'none',
       borderRadius: '12px',
-      padding: '12px 24px',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      margin: '10px 5px',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 12px rgba(40, 167, 69, 0.3)'
+      margin: '20px 0',
+      border: '1px solid rgba(220, 53, 69, 0.2)'
     },
-    favoriteButton: {
-      background: 'linear-gradient(135deg, #ffc107, #fd7e14)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '12px',
-      padding: '12px 24px',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      margin: '10px 5px',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
-    },
-    horoscopeSection: {
+    section: {
       marginBottom: '20px',
       padding: '16px',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -180,47 +183,82 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
       backdropFilter: 'blur(8px)'
     },
     sectionTitle: {
-      fontSize: '18px',
+      fontSize: '16px',
       fontWeight: '700',
       marginBottom: '8px',
       color: '#2d3748'
     },
     sectionText: {
-      fontSize: '16px',
+      fontSize: '15px',
       lineHeight: '1.5',
       color: '#4a5568'
     },
-    metaInfo: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      flexWrap: 'wrap',
+    metaGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
       gap: '10px',
       marginTop: '20px'
     },
     metaItem: {
       backgroundColor: 'rgba(139, 195, 74, 0.2)',
       color: '#2e7d0f',
-      padding: '6px 12px',
-      borderRadius: '16px',
+      padding: '8px 12px',
+      borderRadius: '12px',
       fontSize: '14px',
       fontWeight: '600',
-      border: '1px solid rgba(139, 195, 74, 0.3)'
+      border: '1px solid rgba(139, 195, 74, 0.3)',
+      textAlign: 'center'
+    },
+    buttonContainer: {
+      display: 'flex',
+      gap: '10px',
+      justifyContent: 'center',
+      marginTop: '24px',
+      flexWrap: 'wrap'
+    },
+    button: {
+      border: 'none',
+      borderRadius: '12px',
+      padding: '12px 20px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+    },
+    refreshButton: {
+      background: 'linear-gradient(135deg, #28a745, #20c997)',
+      color: 'white'
+    },
+    favoriteButton: {
+      background: 'linear-gradient(135deg, #ffc107, #fd7e14)',
+      color: 'white'
+    },
+    placeholderContainer: {
+      textAlign: 'center',
+      padding: '40px 20px'
     }
   };
 
   console.log('🎨 HoroscopeView: Рендеринг, состояние:', { 
     loading, 
     error: !!error, 
-    horoscopeData: !!horoscopeData,
+    hasData: !!horoscopeData,
     selectedSign 
   });
 
   return (
     <div style={styles.container}>
-      <Card 
-        title={`🔮 Гороскоп для знака ${selectedSign}`}
-        subtitle={horoscopeData ? `от ${horoscopeData.gnome}` : 'Загрузка...'}
-      >
+      <div style={styles.card}>
+        <h3 style={styles.title}>
+          🔮 Гороскоп для знака {selectedSign}
+        </h3>
+        {horoscopeData && (
+          <p style={styles.subtitle}>
+            от {horoscopeData.gnome}
+          </p>
+        )}
+
         {loading && (
           <div style={styles.loadingSpinner}>
             ⏳ Звезды составляют ваш гороскоп...
@@ -235,102 +273,102 @@ const HoroscopeView = ({ selectedSign, onSignSelect, onAddToFavorites, telegramA
 
         {horoscopeData && !loading && (
           <div>
-            {/* Общий гороскоп */}
-            <div style={styles.horoscopeSection}>
+            {/* Общий прогноз */}
+            <div style={styles.section}>
               <div style={styles.sectionTitle}>✨ Общий прогноз</div>
               <div style={styles.sectionText}>
-                {horoscopeData.horoscope.general}
+                {horoscopeData.horoscope?.general || 'Общий прогноз недоступен'}
               </div>
             </div>
 
             {/* Любовь */}
-            <div style={styles.horoscopeSection}>
+            <div style={styles.section}>
               <div style={styles.sectionTitle}>💝 Любовь и отношения</div>
               <div style={styles.sectionText}>
-                {horoscopeData.horoscope.love}
+                {horoscopeData.horoscope?.love || 'Прогноз по любви недоступен'}
               </div>
             </div>
 
             {/* Работа */}
-            <div style={styles.horoscopeSection}>
+            <div style={styles.section}>
               <div style={styles.sectionTitle}>💼 Карьера и финансы</div>
               <div style={styles.sectionText}>
-                {horoscopeData.horoscope.work}
+                {horoscopeData.horoscope?.work || 'Прогноз по работе недоступен'}
               </div>
             </div>
 
             {/* Здоровье */}
-            <div style={styles.horoscopeSection}>
+            <div style={styles.section}>
               <div style={styles.sectionTitle}>🏃‍♂️ Здоровье</div>
               <div style={styles.sectionText}>
-                {horoscopeData.horoscope.health}
+                {horoscopeData.horoscope?.health || 'Прогноз по здоровью недоступен'}
               </div>
             </div>
 
-            {/* Мета-информация */}
-            <div style={styles.metaInfo}>
-              <span style={styles.metaItem}>
-                🍀 Счастливое число: {horoscopeData.luckyNumber}
-              </span>
-              <span style={styles.metaItem}>
-                🎨 Цвет: {horoscopeData.luckyColor}
-              </span>
-              <span style={styles.metaItem}>
-                🌟 Элемент: {horoscopeData.element}
-              </span>
-              <span style={styles.metaItem}>
-                💕 Совместимость: {horoscopeData.compatibility}
-              </span>
+            {/* Дополнительная информация */}
+            <div style={styles.metaGrid}>
+              <div style={styles.metaItem}>
+                🍀 Число: {horoscopeData.luckyNumber || '?'}
+              </div>
+              <div style={styles.metaItem}>
+                🎨 Цвет: {horoscopeData.luckyColor || 'Неизвестно'}
+              </div>
+              <div style={styles.metaItem}>
+                🌟 Элемент: {horoscopeData.element || 'Неизвестно'}
+              </div>
+              <div style={styles.metaItem}>
+                💕 Совместимость: {horoscopeData.compatibility || 'Неизвестно'}
+              </div>
             </div>
 
             {/* Кнопки действий */}
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <div style={styles.buttonContainer}>
               <button 
-                style={styles.refreshButton}
+                style={{...styles.button, ...styles.refreshButton}}
                 onClick={handleRefresh}
                 disabled={loading}
                 onMouseEnter={(e) => {
                   if (!loading) {
                     e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 6px 16px rgba(40, 167, 69, 0.4)';
+                    e.target.style.boxShadow = '0 6px 16px rgba(40, 167, 69, 0.25)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!loading) {
                     e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
                   }
                 }}
               >
-                🔄 Получить новый гороскоп
+                🔄 Новый гороскоп
               </button>
               
               <button 
-                style={styles.favoriteButton}
+                style={{...styles.button, ...styles.favoriteButton}}
                 onClick={handleAddToFavorites}
                 onMouseEnter={(e) => {
                   e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.4)';
+                  e.target.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.25)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(255, 193, 7, 0.3)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
                 }}
               >
-                ⭐ Добавить в избранное
+                ⭐ В избранное
               </button>
             </div>
           </div>
         )}
 
         {!horoscopeData && !loading && !error && (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
+          <div style={styles.placeholderContainer}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
             <h4>Выберите знак зодиака</h4>
-            <p>Чтобы увидеть персональный гороскоп, выберите ваш знак зодиака.</p>
+            <p>Чтобы увидеть персональный гороскоп, выберите ваш знак зодиака в карусели выше.</p>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 };
