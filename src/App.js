@@ -254,14 +254,15 @@ function App() {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'horoscope':
-        return (
-          <HoroscopeView
-            selectedSign={selectedSign}
-            onSignSelect={handleSignSelect}
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+  return (
+    <HoroscopeView
+      selectedSign={selectedSign}
+      onSignSelect={handleSignSelect}
+      onAddToFavorites={handleAddToFavorites}
+      telegramApp={telegramApp}
+      designTheme={designTheme} // Добавить эту строку
+    />
+  );
       
       case 'moon':
         return (
@@ -303,13 +304,14 @@ function App() {
           />
         );
       
-      case 'mercury':
-        return (
-          <MercuryView
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+     case 'mercury':
+  return (
+    <MercuryView
+      onAddToFavorites={handleAddToFavorites}
+      telegramApp={telegramApp}
+      designTheme={designTheme} // Добавить эту строку
+    />
+  );
       
       case 'favorites':
         return (
@@ -432,13 +434,14 @@ function App() {
             </Card>
 
             {/* Карусель знаков */}
-            {ZodiacCarousel && (
-              <ZodiacCarousel
-                selectedSign={selectedSign}
-                onSignChange={handleSignSelect}
-                telegramApp={telegramApp}
-              />
-            )}
+          {ZodiacCarousel && (
+  <ZodiacCarousel
+    selectedSign={selectedSign}
+    onSignChange={handleSignSelect}
+    telegramApp={telegramApp}
+    designTheme={designTheme} // Добавить эту строку
+  />
+)}
 
             {/* Сетка кнопок */}
             <ButtonGrid onButtonClick={handleButtonClick} />
