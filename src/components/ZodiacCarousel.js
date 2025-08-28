@@ -1,356 +1,294 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
-const ZODIAC_SIGNS = [
-  { sign: 'Овен', emoji: '♈', dates: '21.03-20.04', color: '#FF6B6B', element: 'Огонь' },
-  { sign: 'Телец', emoji: '♉', dates: '21.04-20.05', color: '#4ECDC4', element: 'Земля' },
-  { sign: 'Близнецы', emoji: '♊', dates: '21.05-21.06', color: '#45B7D1', element: 'Воздух' },
-  { sign: 'Рак', emoji: '♋', dates: '22.06-22.07', color: '#96CEB4', element: 'Вода' },
-  { sign: 'Лев', emoji: '♌', dates: '23.07-22.08', color: '#FECA57', element: 'Огонь' },
-  { sign: 'Дева', emoji: '♍', dates: '23.08-22.09', color: '#48CAE4', element: 'Земля' },
-  { sign: 'Весы', emoji: '♎', dates: '23.09-22.10', color: '#F38BA8', element: 'Воздух' },
-  { sign: 'Скорпион', emoji: '♏', dates: '23.10-22.11', color: '#A8DADC', element: 'Вода' },
-  { sign: 'Стрелец', emoji: '♐', dates: '23.11-21.12', color: '#F1C0E8', element: 'Огонь' },
-  { sign: 'Козерог', emoji: '♑', dates: '22.12-20.01', color: '#CFBAF0', element: 'Земля' },
-  { sign: 'Водолей', emoji: '♒', dates: '21.01-19.02', color: '#A3C4F3', element: 'Воздух' },
-  { sign: 'Рыбы', emoji: '♓', dates: '20.02-20.03', color: '#90DBF4', element: 'Вода' }
-];
-
-function ZodiacCarousel({ selectedSign, onSignChange, telegramApp }) {
+const ZodiacCarousel = ({ selectedSign, onSignChange, telegramApp }) => {
   const { theme } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const scrollRef = useRef(null);
 
-  useEffect(() => {
-    const index = ZODIAC_SIGNS.findIndex(item => item.sign === selectedSign);
-    if (index >= 0) {
-      setCurrentIndex(index);
+  const zodiacSigns = [
+    { sign: 'Овен', emoji: '♈', dates: '21.03-20.04', element: 'fire' },
+    { sign: 'Телец', emoji: '♉', dates: '21.04-20.05', element: 'earth' },
+    { sign: 'Близнецы', emoji: '♊', dates: '21.05-21.06', element: 'air' },
+    { sign: 'Рак', emoji: '♋', dates: '22.06-22.07', element: 'water' },
+    { sign: 'Лев', emoji: '♌', dates: '23.07-22.08', element: 'fire' },
+    { sign: 'Дева', emoji: '♍', dates: '23.08-22.09', element: 'earth' },
+    { sign: 'Весы', emoji: '♎', dates: '23.09-22.10', element: 'air' },
+    { sign: 'Скорпион', emoji: '♏', dates: '23.10-22.11', element: 'water' },
+    { sign: 'Стрелец', emoji: '♐', dates: '23.11-21.12', element: 'fire' },
+    { sign: 'Козерог', emoji: '♑', dates: '22.12-20.01', element: 'earth' },
+    { sign: 'Водолей', emoji: '♒', dates: '21.01-19.02', element: 'air' },
+    { sign: 'Рыбы', emoji: '♓', dates: '20.02-20.03', element: 'water' }
+  ];
+
+  const getElementColor = (element) => {
+    switch (element) {
+      case 'fire': return '#FF6B6B';
+      case 'earth': return '#96CEB4';
+      case 'air': return '#45B7D1';
+      case 'water': return '#4ECDC4';
+      default: return theme.colors.primary;
     }
-  }, [selectedSign]);
+  };
 
-  const hapticFeedback = (type = 'selection') => {
+  const handlePrevious = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -150, behavior: 'smooth' });
+    }
+    
     try {
-      if (telegramApp?.HapticFeedback && parseFloat(telegramApp.version) >= 6.1) {
-        if (type === 'selection') {
-          telegramApp.HapticFeedback.selectionChanged();
-        } else {
-          telegramApp.HapticFeedback.impactOccurred('light');
-        }
+      if (telegramApp?.HapticFeedback) {
+        telegramApp.HapticFeedback.impactOccurred('light');
       }
     } catch (e) {}
   };
 
-  const handlePrevious = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    const newIndex = (currentIndex - 1 + ZODIAC_SIGNS.length) % ZODIAC_SIGNS.length;
-    setCurrentIndex(newIndex);
-    onSignChange(ZODIAC_SIGNS[newIndex].sign);
-    hapticFeedback('selection');
-    setTimeout(() => setIsAnimating(false), 400);
-  };
-
   const handleNext = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    const newIndex = (currentIndex + 1) % ZODIAC_SIGNS.length;
-    setCurrentIndex(newIndex);
-    onSignChange(ZODIAC_SIGNS[newIndex].sign);
-    hapticFeedback('selection');
-    setTimeout(() => setIsAnimating(false), 400);
-  };
-
-  const handleSelectSign = (index) => {
-    if (isAnimating || index === currentIndex) return;
-    setIsAnimating(true);
-    setCurrentIndex(index);
-    onSignChange(ZODIAC_SIGNS[index].sign);
-    hapticFeedback('impact');
-    setTimeout(() => setIsAnimating(false), 400);
-  };
-
-  const currentSign = ZODIAC_SIGNS[currentIndex];
-
-  // Стили на основе темы
-  const getStyles = () => {
-    const elementColor = currentSign.color;
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 150, behavior: 'smooth' });
+    }
     
-    return {
-      container: {
-        padding: '20px',
-        maxWidth: '400px',
-        margin: '0 auto',
-        fontFamily: theme.container.fontFamily
-      },
-      
-      header: {
-        textAlign: 'center',
-        marginBottom: '20px'
-      },
-      
-      title: {
-        ...theme.typography.subtitle,
-        color: theme.name === 'wooden' ? '#8b4513' : theme.colors.text.primary,
-        marginBottom: '8px'
-      },
-      
-      subtitle: {
-        ...theme.typography.small,
-        color: theme.name === 'wooden' ? '#a0522d' : theme.colors.text.secondary,
-        opacity: 0.8
-      },
-      
-      carouselContainer: {
-        ...theme.card,
-        position: 'relative',
-        overflow: 'hidden',
-        padding: '24px',
-        margin: '0'
-      },
-      
-      signCard: {
-        background: theme.name === 'wooden' 
-          ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))'
-          : `linear-gradient(135deg, ${elementColor}15, ${elementColor}05)`,
-        backdropFilter: 'blur(12px)',
-        borderRadius: '20px',
-        border: theme.name === 'wooden' 
-          ? '2px solid rgba(139, 69, 19, 0.3)'
-          : `2px solid ${elementColor}40`,
-        padding: '24px',
-        textAlign: 'center',
-        color: theme.name === 'wooden' ? '#3e2723' : theme.colors.text.primary,
-        boxShadow: theme.name === 'wooden' 
-          ? 'inset 0 2px 8px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.15)'
-          : `0 8px 24px ${elementColor}20, inset 0 1px 0 rgba(255,255,255,0.2)`,
-        transform: isAnimating ? 'scale(0.95) rotateY(10deg)' : 'scale(1) rotateY(0deg)',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-        transformStyle: 'preserve-3d',
-        perspective: '1000px'
-      },
-      
-      navButton: {
-        ...theme.button.primary,
-        position: 'absolute',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        width: '50px',
-        height: '50px',
-        borderRadius: '50%',
-        fontSize: '20px',
-        fontWeight: '600',
-        zIndex: 10,
-        padding: '0',
-        minWidth: 'auto'
+    try {
+      if (telegramApp?.HapticFeedback) {
+        telegramApp.HapticFeedback.impactOccurred('light');
       }
-    };
+    } catch (e) {}
   };
 
-  const styles = getStyles();
+  const handleSignClick = (sign) => {
+    if (onSignChange) {
+      onSignChange(sign.sign);
+    }
+    
+    try {
+      if (telegramApp?.HapticFeedback) {
+        telegramApp.HapticFeedback.selectionChanged();
+      }
+    } catch (e) {}
+  };
+
+  const containerStyle = {
+    ...theme.card,
+    padding: '20px',
+    margin: '16px 8px',
+    position: 'relative',
+    overflow: 'hidden'
+  };
+
+  const titleStyle = {
+    textAlign: 'center',
+    marginBottom: '20px',
+    fontSize: '18px',
+    fontWeight: '600',
+    color: theme.card.color
+  };
+
+  const carouselWrapperStyle = {
+    position: 'relative',
+    width: '100%'
+  };
+
+  const scrollContainerStyle = {
+    display: 'flex',
+    gap: '16px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+    WebkitOverflowScrolling: 'touch',
+    scrollBehavior: 'smooth',
+    padding: '10px 0',
+    '::-webkit-scrollbar': {
+      display: 'none'
+    }
+  };
+
+  const arrowButtonStyle = (position) => ({
+    position: 'absolute',
+    top: '50%',
+    [position]: '10px',
+    transform: 'translateY(-50%)',
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    background: theme.name === 'facebook' 
+      ? 'linear-gradient(135deg, #1877F2, #42A5F5)'
+      : theme.name === 'dark'
+        ? 'linear-gradient(135deg, #667eea, #764ba2)'
+        : 'linear-gradient(135deg, #667eea, #764ba2)',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    color: '#ffffff',
+    fontWeight: 'bold',
+    zIndex: 10,
+    boxShadow: theme.name === 'facebook'
+      ? '0 4px 16px rgba(24, 119, 242, 0.4)'
+      : '0 4px 16px rgba(102, 126, 234, 0.4)',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)'
+  });
+
+  const signCardStyle = (sign, isSelected) => ({
+    minWidth: '130px',
+    width: '130px',
+    height: '160px',
+    background: isSelected
+      ? `linear-gradient(135deg, ${getElementColor(sign.element)}, ${getElementColor(sign.element)}cc)`
+      : theme.name === 'facebook' 
+        ? '#FFFFFF'
+        : theme.name === 'dark' 
+          ? '#495057'
+          : '#FFFFFF',
+    border: isSelected 
+      ? `3px solid ${getElementColor(sign.element)}`
+      : `2px solid ${theme.colors.border}`,
+    borderRadius: '16px',
+    padding: '16px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: isSelected 
+      ? `0 8px 24px ${getElementColor(sign.element)}40`
+      : theme.name === 'facebook'
+        ? '0 2px 8px rgba(0,0,0,0.1)'
+        : '0 2px 8px rgba(0,0,0,0.15)',
+    transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+    color: isSelected ? '#ffffff' : theme.card.color,
+    position: 'relative',
+    overflow: 'hidden'
+  });
+
+  const signEmojiStyle = {
+    fontSize: '32px',
+    marginBottom: '8px',
+    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+  };
+
+  const signNameStyle = (isSelected) => ({
+    fontSize: '14px',
+    fontWeight: '700',
+    marginBottom: '6px',
+    textAlign: 'center',
+    color: isSelected ? '#ffffff' : theme.card.color,
+    textShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
+  });
+
+  const signDatesStyle = (isSelected) => ({
+    fontSize: '11px',
+    fontWeight: '500',
+    opacity: isSelected ? 0.9 : 0.7,
+    textAlign: 'center',
+    color: isSelected ? '#ffffff' : theme.colors.textSecondary,
+    textShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'
+  });
+
+  const elementBadgeStyle = (element, isSelected) => ({
+    position: 'absolute',
+    bottom: '8px',
+    right: '8px',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    background: isSelected ? 'rgba(255,255,255,0.8)' : getElementColor(element),
+    border: isSelected ? '1px solid rgba(255,255,255,0.6)' : 'none'
+  });
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Выберите ваш знак зодиака</h3>
-        <p style={styles.subtitle}>Листайте или выберите из списка ниже</p>
-      </div>
-
-      <div style={styles.carouselContainer}>
-        {/* Деревянная текстура для wooden темы */}
-        {theme.name === 'wooden' && (
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            ...theme.texture
-          }}></div>
-        )}
-
-        {/* Кнопка назад */}
-        <button 
-          style={{...styles.navButton, left: '-25px'}}
+    <div style={containerStyle}>
+      <h3 style={titleStyle}>
+        Выберите ваш знак зодиака
+      </h3>
+      
+      <div style={carouselWrapperStyle}>
+        {/* Левая стрелка */}
+        <button
+          style={arrowButtonStyle('left')}
           onClick={handlePrevious}
-          disabled={isAnimating}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-50%) scale(1.1)';
+            e.target.style.boxShadow = theme.name === 'facebook'
+              ? '0 6px 20px rgba(24, 119, 242, 0.5)'
+              : '0 6px 20px rgba(102, 126, 234, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(-50%) scale(1)';
+            e.target.style.boxShadow = arrowButtonStyle('left').boxShadow;
+          }}
+          aria-label="Предыдущий знак"
         >
-          ‹
+          ←
         </button>
 
-        {/* Основная карточка знака */}
-        <div style={styles.signCard}>
-          {/* Иконка знака */}
-          <div style={{
-            fontSize: '64px',
-            marginBottom: '16px',
-            filter: theme.name === 'glass' 
-              ? `drop-shadow(0 0 20px ${currentSign.color}80)` 
-              : theme.name === 'wooden'
-                ? 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
-                : 'none',
-            transition: 'all 0.3s ease',
-            transform: isAnimating ? 'rotateY(180deg)' : 'rotateY(0deg)'
-          }}>
-            {currentSign.emoji}
-          </div>
-          
-          {/* Анимированное кольцо для glass темы */}
-          {theme.name === 'glass' && (
-            <div style={{
-              position: 'absolute',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%, -60px)',
-              width: '100px', height: '100px',
-              border: `2px solid ${currentSign.color}60`,
-              borderRadius: '50%',
-              animation: 'pulse 2s ease-in-out infinite',
-              pointerEvents: 'none'
-            }}></div>
-          )}
-
-          {/* Информация о знаке */}
-          <h2 style={{
-            ...theme.typography.title,
-            color: theme.name === 'wooden' ? '#3e2723' : currentSign.color,
-            marginBottom: '8px'
-          }}>
-            {currentSign.sign}
-          </h2>
-          
-          <p style={{
-            ...theme.typography.caption,
-            marginBottom: '12px'
-          }}>
-            {currentSign.dates}
-          </p>
-          
-          <span style={{
-            background: theme.name === 'wooden' 
-              ? 'rgba(139, 69, 19, 0.2)' 
-              : `${currentSign.color}20`,
-            color: theme.name === 'wooden' ? '#8b4513' : currentSign.color,
-            padding: '4px 12px',
-            borderRadius: '16px',
-            fontSize: '12px',
-            fontWeight: '600',
-            border: theme.name === 'wooden' 
-              ? '1px solid rgba(139, 69, 19, 0.3)' 
-              : `1px solid ${currentSign.color}40`,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
-            {currentSign.element}
-          </span>
-        </div>
-
-        {/* Кнопка вперед */}
-        <button 
-          style={{...styles.navButton, right: '-25px'}}
+        {/* Правая стрелка */}
+        <button
+          style={arrowButtonStyle('right')}
           onClick={handleNext}
-          disabled={isAnimating}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-50%) scale(1.1)';
+            e.target.style.boxShadow = theme.name === 'facebook'
+              ? '0 6px 20px rgba(24, 119, 242, 0.5)'
+              : '0 6px 20px rgba(102, 126, 234, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(-50%) scale(1)';
+            e.target.style.boxShadow = arrowButtonStyle('right').boxShadow;
+          }}
+          aria-label="Следующий знак"
         >
-          ›
+          →
         </button>
-      </div>
 
-      {/* Превью соседних знаков */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: '16px',
-        padding: '0 40px'
-      }}>
-        <div style={{ textAlign: 'center', opacity: 0.6, fontSize: '12px' }}>
-          <div style={{ fontSize: '20px', marginBottom: '4px' }}>
-            {ZODIAC_SIGNS[(currentIndex - 1 + ZODIAC_SIGNS.length) % ZODIAC_SIGNS.length].emoji}
-          </div>
-          <span>{ZODIAC_SIGNS[(currentIndex - 1 + ZODIAC_SIGNS.length) % ZODIAC_SIGNS.length].sign}</span>
-        </div>
-
-        <div style={{
-          textAlign: 'center',
-          fontSize: '12px',
-          fontWeight: '600',
-          color: theme.name === 'wooden' ? '#8b4513' : currentSign.color
-        }}>
-          Выбран
-        </div>
-
-        <div style={{ textAlign: 'center', opacity: 0.6, fontSize: '12px' }}>
-          <div style={{ fontSize: '20px', marginBottom: '4px' }}>
-            {ZODIAC_SIGNS[(currentIndex + 1) % ZODIAC_SIGNS.length].emoji}
-          </div>
-          <span>{ZODIAC_SIGNS[(currentIndex + 1) % ZODIAC_SIGNS.length].sign}</span>
-        </div>
-      </div>
-
-      {/* Индикаторы-эмодзи */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        gap: '8px',
-        marginTop: '20px',
-        padding: '16px',
-        ...theme.card,
-        margin: '16px 0 0 0'
-      }}>
-        {theme.name === 'wooden' && (
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            ...theme.texture
-          }}></div>
-        )}
-        
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
-          {ZODIAC_SIGNS.map((sign, index) => (
-            <button
-              key={sign.sign}
-              onClick={() => handleSelectSign(index)}
-              disabled={isAnimating}
-              title={`${sign.sign} (${sign.dates})`}
-              style={{
-                background: index === currentIndex 
-                  ? (theme.name === 'wooden' 
-                    ? 'linear-gradient(135deg, #8b4513, #a0522d)' 
-                    : `linear-gradient(135deg, ${sign.color}40, ${sign.color}20)`)
-                  : 'transparent',
-                border: index === currentIndex 
-                  ? (theme.name === 'wooden' ? '2px solid #654321' : `2px solid ${sign.color}60`)
-                  : '2px solid transparent',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                fontSize: '18px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transform: index === currentIndex ? 'scale(1.2)' : 'scale(1)',
-                boxShadow: index === currentIndex 
-                  ? `0 4px 12px ${theme.name === 'wooden' ? 'rgba(139, 69, 19, 0.3)' : sign.color}40`
-                  : 'none',
-                filter: index === currentIndex 
-                  ? (theme.name === 'glass' ? `drop-shadow(0 0 8px ${sign.color}80)` : 'none')
-                  : 'grayscale(50%)',
-                opacity: index === currentIndex ? 1 : 0.7
-              }}
-            >
-              {sign.emoji}
-            </button>
-          ))}
+        {/* Карусель знаков */}
+        <div 
+          ref={scrollRef}
+          style={scrollContainerStyle}
+        >
+          {zodiacSigns.map((sign) => {
+            const isSelected = selectedSign === sign.sign;
+            
+            return (
+              <div
+                key={sign.sign}
+                style={signCardStyle(sign, isSelected)}
+                onClick={() => handleSignClick(sign)}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.transform = 'scale(1.02) translateY(-2px)';
+                    e.currentTarget.style.boxShadow = `0 4px 16px ${getElementColor(sign.element)}30`;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = signCardStyle(sign, isSelected).boxShadow;
+                  }
+                }}
+              >
+                <div style={signEmojiStyle}>{sign.emoji}</div>
+                <div style={signNameStyle(isSelected)}>{sign.sign}</div>
+                <div style={signDatesStyle(isSelected)}>{sign.dates}</div>
+                <div style={elementBadgeStyle(sign.element, isSelected)}></div>
+              </div>
+            );
+          })}
         </div>
       </div>
-
-      {/* CSS анимации */}
+      
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; transform: translate(-50%, -60px) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -60px) scale(1.1); }
+        div[style*="overflowX: auto"]::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>
   );
-}
+};
 
 export default ZodiacCarousel;
