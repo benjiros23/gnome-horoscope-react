@@ -11,15 +11,13 @@ root.render(
   </React.StrictMode>
 );
 
-// ОТКЛЮЧАЕМ Service Worker - он мешает API запросам
+// Отключаем Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     registrations.forEach(registration => {
       registration.unregister();
-      console.log('🗑️ Service Worker удален:', registration.scope);
     });
   });
 }
 
-console.log('🧙‍♂️ Гномий Гороскоп запущен без Service Worker!');
-console.log('📱 Режим:', process.env.NODE_ENV || 'development');
+console.log('🧙‍♂️ Гномий Гороскоп с единой системой стилей запущен!');
