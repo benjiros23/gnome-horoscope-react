@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import ThemeSelector from './components/UI/ThemeSelector';
+import Card from './components/UI/Card';
+import Button from './components/UI/Button';
 import HoroscopeView from './components/HoroscopeView';
 import ZodiacCarousel from './components/ZodiacCarousel';
 import MoonView from './components/MoonView';
@@ -8,9 +12,6 @@ import AstroEventsView from './components/AstroEventsView';
 import DayCardView from './components/DayCardView';
 import MercuryView from './components/MercuryView';
 import ButtonGrid from './components/ButtonGrid';
-import GlassCard from './components/GlassCard';
-import WoodenCard from './components/WoodenCard';
-import './App.css';
 
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
@@ -42,12 +43,12 @@ const GNOME_PROFILES = {
   'Рыбы': { name: 'Гном Мечтатель', title: 'Морской волшебник', desc: 'Творческий, эмпатичный' }
 };
 
-function App() {
+function AppContent() {
+  const { theme } = useTheme();
   const [currentView, setCurrentView] = useState('home');
   const [selectedSign, setSelectedSign] = useState('Лев');
   const [telegramApp, setTelegramApp] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [designTheme, setDesignTheme] = useState('glass'); // 'glass' или 'wooden'
   
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -58,28 +59,6 @@ function App() {
       return [];
     }
   });
-
-  // Безопасные функции Telegram
-  const silentTelegramAction = (action) => {
-    try {
-      const tg = window.Telegram?.WebApp;
-      if (tg && parseFloat(tg.version) >= 6.1) {
-        action(tg);
-      }
-    } catch (error) {
-      // Тихо игнорируем ошибки
-    }
-  };
-
-  const safeHapticFeedback = (type) => {
-    silentTelegramAction((tg) => {
-      if (type === 'impact') {
-        tg.HapticFeedback.impactOccurred('light');
-      } else if (type === 'selection') {
-        tg.HapticFeedback.selectionChanged();
-      }
-    });
-  };
 
   // Telegram WebApp инициализация
   useEffect(() => {
@@ -92,19 +71,35 @@ function App() {
       try {
         if (tg.MainButton) {
           tg.MainButton.setText('🃏 Получить карту дня');
-          tg.MainButton.color = '#8BC34A';
+          tg.MainButton.color = theme.colors.primary;
           tg.MainButton.show();
           tg.MainButton.onClick(() => setCurrentView('cards'));
         }
-      } catch (error) {
-        // Игнорируем ошибки
-      }
+      } catch (error) {}
       
-      console.log('✅ Telegram WebApp инициализирован (версия:', tg.version + ')');
+      console.log('✅ Telegram WebApp инициализирован');
     }
-  }, []);
+  }, [theme]);
 
-  // BackButton
+  const silentTelegramAction = (action) => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      if (tg && parseFloat(tg.version) >= 6.1) {
+        action(tg);
+      }
+    } catch (error) {}
+  };
+
+  const safeHapticFeedback = (type) => {
+    silentTelegramAction((tg) => {
+      if (type === 'impact') {
+        tg.HapticFeedback.impactOccurred('light');
+      } else if (type === 'selection') {
+        tg.HapticFeedback.selectionChanged();
+      }
+    });
+  };
+
   useEffect(() => {
     silentTelegramAction((tg) => {
       if (currentView !== 'home') {
@@ -136,7 +131,6 @@ function App() {
   }, [favorites]);
 
   const handleButtonClick = (buttonId) => {
-    console.log('Выбрана функция:', buttonId);
     setCurrentView(buttonId);
     safeHapticFeedback('selection');
   };
@@ -148,7 +142,6 @@ function App() {
   const handleSignSelect = (sign) => {
     setSelectedSign(sign);
     safeHapticFeedback('impact');
-    console.log(`Выбран знак: ${sign}`);
   };
 
   const handleAddToFavorites = (item) => {
@@ -180,138 +173,46 @@ function App() {
       });
       
       safeHapticFeedback('impact');
-      console.log('✅ Добавлено в избранное:', newItem);
       
     } catch (error) {
       console.error('Ошибка добавления в избранное:', error);
     }
   };
 
-  const handleRemoveFromFavorites = (itemId) => {
-    setFavorites(prev => prev.filter(item => item.id !== itemId));
-  };
-
-  const handleClearFavorites = () => {
-    if (telegramApp) {
-      telegramApp.showConfirm('Удалить все избранные элементы?', (confirmed) => {
-        if (confirmed) {
-          setFavorites([]);
-        }
-      });
-    } else {
-      if (window.confirm('Удалить все избранные элементы?')) {
-        setFavorites([]);
-      }
-    }
-  };
-
-  // Выбор компонента карточки
-  const Card = designTheme === 'wooden' ? WoodenCard : GlassCard;
-
-  const styles = {
-    app: {
-      minHeight: '100vh',
-      background: designTheme === 'wooden' 
-        ? 'linear-gradient(135deg, #8b4513 0%, #d2691e 50%, #cd853f 100%)'
-        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '0',
-      fontFamily: 'system-ui, sans-serif'
-    },
-    backButton: {
-      position: 'fixed',
-      top: '20px',
-      left: '20px',
-      background: designTheme === 'wooden'
-        ? 'linear-gradient(135deg, #8b4513, #a0522d)'
-        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1))',
-      color: 'white',
-      border: designTheme === 'wooden' ? '2px solid #654321' : '1px solid rgba(255, 255, 255, 0.3)',
-      borderRadius: '12px',
-      padding: '12px 16px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-      zIndex: 1000,
-      backdropFilter: designTheme === 'wooden' ? 'none' : 'blur(10px)'
-    },
-    themeToggle: {
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      background: 'rgba(255, 255, 255, 0.2)',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
-      borderRadius: '50px',
-      padding: '8px 16px',
-      color: 'white',
-      fontSize: '12px',
-      cursor: 'pointer',
-      backdropFilter: 'blur(10px)',
-      zIndex: 1000
-    }
-  };
-
   const renderCurrentView = () => {
+    const viewProps = {
+      onAddToFavorites: handleAddToFavorites,
+      telegramApp,
+      designTheme: theme.name
+    };
+
     switch (currentView) {
       case 'horoscope':
-  return (
-    <HoroscopeView
-      selectedSign={selectedSign}
-      onSignSelect={handleSignSelect}
-      onAddToFavorites={handleAddToFavorites}
-      telegramApp={telegramApp}
-      designTheme={designTheme} // Добавить эту строку
-    />
-  );
+        return (
+          <HoroscopeView
+            selectedSign={selectedSign}
+            onSignSelect={handleSignSelect}
+            {...viewProps}
+          />
+        );
       
       case 'moon':
-        return (
-          <MoonView
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+        return <MoonView {...viewProps} />;
       
       case 'numerology':
-        return (
-          <NumerologyView
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+        return <NumerologyView {...viewProps} />;
       
       case 'compatibility':
-        return (
-          <CompatibilityView
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+        return <CompatibilityView {...viewProps} />;
       
       case 'cards':
-        return (
-          <DayCardView
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+        return <DayCardView {...viewProps} />;
       
       case 'events':
-        return (
-          <AstroEventsView
-            onAddToFavorites={handleAddToFavorites}
-            telegramApp={telegramApp}
-          />
-        );
+        return <AstroEventsView {...viewProps} />;
       
-     case 'mercury':
-  return (
-    <MercuryView
-      onAddToFavorites={handleAddToFavorites}
-      telegramApp={telegramApp}
-      designTheme={designTheme} // Добавить эту строку
-    />
-  );
+      case 'mercury':
+        return <MercuryView {...viewProps} />;
       
       case 'favorites':
         return (
@@ -324,69 +225,22 @@ function App() {
                   <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
                 </div>
               ) : (
-                <>
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    marginBottom: '20px' 
-                  }}>
-                    <p>Сохранено: <strong>{favorites.length}</strong></p>
-                    <button 
-                      onClick={handleClearFavorites}
-                      style={{
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}
+                <div>
+                  <p>Сохранено: <strong>{favorites.length}</strong></p>
+                  {favorites.map((item) => (
+                    <Card 
+                      key={item.id}
+                      title={item.title}
+                      style={{ margin: '8px 0' }}
                     >
-                      🗑️ Очистить
-                    </button>
-                  </div>
-                  
-                  <div>
-                    {favorites.map((item) => (
-                      <Card 
-                        key={item.id}
-                        title={item.title}
-                        style={{ margin: '8px 0' }}
-                      >
-                        <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px 0' }}>
-                          {item.date}
-                        </p>
-                        <p style={{ margin: 0 }}>{item.content}</p>
-                        <button 
-                          onClick={() => handleRemoveFromFavorites(item.id)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '18px',
-                            cursor: 'pointer',
-                            color: '#dc3545',
-                            float: 'right'
-                          }}
-                        >
-                          ×
-                        </button>
-                      </Card>
-                    ))}
-                  </div>
-                </>
+                      <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 8px 0' }}>
+                        {item.date}
+                      </p>
+                      <p style={{ margin: 0 }}>{item.content}</p>
+                    </Card>
+                  ))}
+                </div>
               )}
-            </Card>
-          </div>
-        );
-      
-      case 'advice':
-        return (
-          <div style={{ padding: '20px' }}>
-            <Card title="🚧 Совет дня">
-              <p>Этот раздел находится в разработке...</p>
-              <p>📱 Подключение к API готово</p>
-              <p>🔗 Скоро будет доступен</p>
             </Card>
           </div>
         );
@@ -398,13 +252,14 @@ function App() {
             <Card title="🧙‍♂️ Гномий Гороскоп" subtitle="Магические предсказания от древних гномов">
               {!isOnline && (
                 <div style={{
-                  background: '#ff9800',
-                  color: 'white',
-                  padding: '4px 12px',
+                  background: theme.colors.states.warning + '20',
+                  color: theme.colors.states.warning,
+                  padding: '8px 16px',
                   borderRadius: '16px',
                   fontSize: '12px',
                   marginTop: '10px',
-                  display: 'inline-block'
+                  display: 'inline-block',
+                  border: `1px solid ${theme.colors.states.warning}40`
                 }}>
                   📵 Оффлайн режим
                 </div>
@@ -413,35 +268,35 @@ function App() {
 
             {/* Карточка профиля */}
             <Card 
-              title={GNOME_PROFILES[selectedSign]?.name || 'Гnom Мудрый'}
+              title={GNOME_PROFILES[selectedSign]?.name || 'Гном Мудрый'}
               subtitle={GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
             >
-              <p style={{ marginBottom: '12px' }}>
+              <p style={{ ...theme.typography.body, marginBottom: '12px' }}>
                 {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
               </p>
               <div style={{
-                background: 'rgba(139, 195, 74, 0.2)',
-                color: '#2e7d0f',
+                background: theme.colors.primary + '20',
+                color: theme.name === 'wooden' ? theme.colors.primary : theme.colors.primary,
                 padding: '8px 16px',
                 borderRadius: '20px',
                 fontSize: '14px',
                 fontWeight: 'bold',
                 display: 'inline-block',
-                border: '1px solid rgba(139, 195, 74, 0.3)'
+                border: `1px solid ${theme.colors.primary}40`
               }}>
                 {selectedSign} ({ZODIAC_SIGNS.find(s => s.sign === selectedSign)?.dates})
               </div>
             </Card>
 
             {/* Карусель знаков */}
-          {ZodiacCarousel && (
-  <ZodiacCarousel
-    selectedSign={selectedSign}
-    onSignChange={handleSignSelect}
-    telegramApp={telegramApp}
-    designTheme={designTheme} // Добавить эту строку
-  />
-)}
+            {ZodiacCarousel && (
+              <ZodiacCarousel
+                selectedSign={selectedSign}
+                onSignChange={handleSignSelect}
+                telegramApp={telegramApp}
+                designTheme={theme.name}
+              />
+            )}
 
             {/* Сетка кнопок */}
             <ButtonGrid onButtonClick={handleButtonClick} />
@@ -454,23 +309,66 @@ function App() {
     (!telegramApp || !telegramApp.BackButton || parseFloat(telegramApp.version) < 6.1);
 
   return (
-    <div style={styles.app}>
-      {/* Переключатель темы */}
-      <button 
-        style={styles.themeToggle}
-        onClick={() => setDesignTheme(designTheme === 'glass' ? 'wooden' : 'glass')}
-      >
-        {designTheme === 'glass' ? '🪵 Дерево' : '💎 Стекло'}
-      </button>
+    <div style={theme.container}>
+      {/* Переключатель тем */}
+      <ThemeSelector />
 
       {showFallbackBackButton && (
-        <button style={styles.backButton} onClick={handleBackToHome}>
-          ← Назад в главное меню
-        </button>
+        <Button
+          variant="ghost"
+          onClick={handleBackToHome}
+          style={{
+            position: 'fixed',
+            top: '70px',
+            left: '20px',
+            zIndex: 1000
+          }}
+        >
+          ← Назад
+        </Button>
       )}
       
       {renderCurrentView()}
+
+      {/* CSS анимации */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        ${theme.name === 'wooden' ? `
+          @keyframes wobble {
+            0%, 100% { transform: rotate(-1deg); }
+            50% { transform: rotate(1deg); }
+          }
+          @keyframes carve {
+            0% { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+          }
+        ` : ''}
+      `}</style>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
