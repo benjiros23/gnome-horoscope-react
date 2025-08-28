@@ -14,6 +14,10 @@ import DayCardView from './components/DayCardView';
 import MercuryView from './components/MercuryView';
 import ButtonGrid from './components/ButtonGrid';
 
+// 🚀 НОВЫЕ ИМПОРТЫ для актуальных данных
+import { EnhancedMoonPhase } from './enhanced_moonPhase';
+import { useAstrologyData } from './hooks/useAstrologyData';
+
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
   { sign: 'Телец', emoji: '♉', dates: '21.04-20.05' },
@@ -46,7 +50,15 @@ const GNOME_PROFILES = {
 
 function AppContent() {
   const { theme, currentTheme } = useTheme();
-  
+
+  // 🚀 НОВЫЙ ХУК для актуальных астрологических данных
+  const astrologyData = useAstrologyData({
+    autoUpdate: true,
+    updateInterval: 6 * 60 * 60 * 1000, // 6 часов
+    coordinates: { lat: 55.7558, lng: 37.6173 }, // Москва
+    enableHoroscope: false
+  });
+
   // Восстанавливаем сохраненное состояние
   const [currentView, setCurrentView] = useState(() => {
     try {
@@ -57,7 +69,7 @@ function AppContent() {
       return 'home';
     }
   });
-  
+
   const [selectedSign, setSelectedSign] = useState(() => {
     try {
       const savedSign = localStorage.getItem('gnome-selected-sign');
@@ -67,7 +79,7 @@ function AppContent() {
       return 'Лев';
     }
   });
-  
+
   const [telegramApp, setTelegramApp] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -80,6 +92,23 @@ function AppContent() {
       return [];
     }
   });
+
+  // 🚀 ИНИЦИАЛИЗАЦИЯ SunCalc при загрузке приложения
+  useEffect(() => {
+    const initSunCalc = () => {
+      if (typeof window !== 'undefined' && window.SunCalc) {
+        console.log('✅ SunCalc готов к использованию');
+        // Тестируем EnhancedMoonPhase
+        const debugInfo = EnhancedMoonPhase.debugInfo();
+        console.log('🌙 Enhanced MoonPhase status:', debugInfo);
+      } else {
+        console.warn('⚠️ SunCalc не загружен. Добавьте скрипт в index.html');
+      }
+    };
+
+    // Задержка для загрузки SunCalc скрипта
+    setTimeout(initSunCalc, 1000);
+  }, []);
 
   // Сохраняем состояние при изменении
   useEffect(() => {
@@ -106,6 +135,17 @@ function AppContent() {
     setForceUpdate(prev => prev + 1);
   }, [currentTheme]);
 
+  // 🚀 ЛОГИРОВАНИЕ состояния актуальных данных
+  useEffect(() => {
+    if (astrologyData.moon) {
+      console.log('🌙 Актуальные лунные данные обновлены:', {
+        phase: astrologyData.moon.phase,
+        source: astrologyData.source,
+        lastUpdated: astrologyData.lastUpdated
+      });
+    }
+  }, [astrologyData.moon, astrologyData.lastUpdated]);
+
   // Telegram WebApp инициализация
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -113,7 +153,7 @@ function AppContent() {
       setTelegramApp(tg);
       tg.ready();
       tg.expand();
-      
+
       try {
         if (tg.MainButton) {
           tg.MainButton.setText('🃏 Получить карту дня');
@@ -124,7 +164,7 @@ function AppContent() {
       } catch (error) {
         console.log('Ошибка MainButton:', error);
       }
-      
+
       console.log('✅ Telegram WebApp инициализирован');
     }
   }, [theme.colors.primary]);
@@ -188,7 +228,6 @@ function AppContent() {
 
   const handleBackToHome = () => {
     setCurrentView('home');
-    // При возврате на главную, очищаем сохранение
     try {
       localStorage.setItem('gnome-current-view', 'home');
     } catch (error) {
@@ -203,12 +242,12 @@ function AppContent() {
 
   const handleAddToFavorites = (item) => {
     try {
-      const exists = favorites.some(fav => 
-        fav.type === item.type && 
-        fav.title === item.title && 
+      const exists = favorites.some(fav =>
+        fav.type === item.type &&
+        fav.title === item.title &&
         fav.date === item.date
       );
-      
+
       if (exists) {
         if (telegramApp) {
           telegramApp.showAlert('Этот элемент уже в избранном!');
@@ -217,20 +256,19 @@ function AppContent() {
         }
         return;
       }
-      
+
       const newItem = {
         ...item,
         id: Date.now() + Math.random(),
         addedAt: new Date().toISOString()
       };
-      
+
       setFavorites(prev => {
         const updated = [newItem, ...prev];
         return updated.length > 50 ? updated.slice(0, 50) : updated;
       });
-      
+
       safeHapticFeedback('impact');
-      
     } catch (error) {
       console.error('Ошибка добавления в избранное:', error);
     }
@@ -240,152 +278,275 @@ function AppContent() {
     const viewProps = {
       onAddToFavorites: handleAddToFavorites,
       telegramApp,
-      key: `${currentView}-${forceUpdate}`
+      key: `${currentView}-${forceUpdate}`,
+      // 🚀 ПЕРЕДАЕМ актуальные данные во все компоненты
+      astrologyData,
+      enhancedMoonPhase: EnhancedMoonPhase
     };
 
     switch (currentView) {
       case 'horoscope':
         return (
-          <HoroscopeView
-            selectedSign={selectedSign}
-            onSignSelect={handleSignSelect}
-            {...viewProps}
-          />
+          <Card title="🔮 Гороскоп" subtitle="Добавляйте интересные гороскопы и предсказания в избранное!">
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              <span>Сохранено: <strong>{favorites.filter(f => f.type === 'horoscope').length}</strong></span>
+              {/* 🚀 ИНДИКАТОР актуальных данных */}
+              {astrologyData.lastUpdated && (
+                <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                  Обновлено: {astrologyData.lastUpdated.toLocaleTimeString('ru-RU')}
+                </span>
+              )}
+            </div>
+
+            <ZodiacCarousel 
+              signs={ZODIAC_SIGNS}
+              selectedSign={selectedSign}
+              onSignSelect={handleSignSelect}
+              gnomeProfiles={GNOME_PROFILES}
+            />
+            
+            <HoroscopeView 
+              selectedSign={selectedSign} 
+              gnomeProfile={GNOME_PROFILES[selectedSign]}
+              {...viewProps}
+            />
+          </Card>
         );
-      
+
       case 'moon':
-        return <MoonView {...viewProps} />;
-      
-      case 'numerology':
-        return <NumerologyView {...viewProps} />;
-      
+        return (
+          <Card title="🌙 Лунный календарь" subtitle="Следите за фазами луны и получайте советы гномов">
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              <span>Сохранено: <strong>{favorites.filter(f => f.type === 'moon').length}</strong></span>
+              {/* 🚀 СТАТУС актуальных лунных данных */}
+              <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                {astrologyData.loading ? (
+                  <span>🔄 Обновление...</span>
+                ) : astrologyData.source ? (
+                  <span>✅ Источник: {astrologyData.source}</span>
+                ) : null}
+              </div>
+            </div>
+
+            {/* 🚀 ПЕРЕДАЕМ актуальные данные в MoonView */}
+            <MoonView 
+              {...viewProps}
+              realTimeMoonData={astrologyData.moon}
+              onRefreshMoonData={astrologyData.refresh}
+            />
+          </Card>
+        );
+
       case 'compatibility':
-        return <CompatibilityView {...viewProps} />;
-      
-      case 'cards':
-        return <DayCardView {...viewProps} />;
-      
+        return (
+          <Card title="💕 Совместимость знаков" subtitle="Узнайте совместимость между знаками зодиака">
+            <CompatibilityView {...viewProps} />
+          </Card>
+        );
+
+      case 'numerology':
+        return (
+          <Card title="🔢 Нумерология" subtitle="Откройте тайны чисел вашей судьбы">
+            <NumerologyView {...viewProps} />
+          </Card>
+        );
+
       case 'events':
-        return <AstroEventsView {...viewProps} />;
-      
+        return (
+          <Card title="🌌 Астрологические события" subtitle="Важные астрономические события и их влияние">
+            <AstroEventsView {...viewProps} />
+          </Card>
+        );
+
+      case 'cards':
+        return (
+          <Card title="🃏 Карта дня" subtitle="Получите совет и предсказание на сегодня">
+            <DayCardView {...viewProps} />
+          </Card>
+        );
+
       case 'mercury':
-        return <MercuryView {...viewProps} />;
-      
+        return (
+          <Card title="🪐 Меркурий в ретрограде" subtitle="Влияние ретроградного Меркурия на вашу жизнь">
+            <MercuryView {...viewProps} />
+          </Card>
+        );
+
       case 'favorites':
         return (
-          <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-            <Card title="❤️ Избранное" key={`favorites-${forceUpdate}`}>
+          <Card title="⭐ Избранное" subtitle="Ваши сохраненные гороскопы и предсказания">
+            <div style={{ minHeight: '200px' }}>
               {favorites.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-                  <h4>Здесь пока пусто</h4>
-                  <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 20px',
+                  color: theme.colors.textSecondary 
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📫</div>
+                  <p>Пока что здесь пусто</p>
+                  <p style={{ fontSize: '14px' }}>
+                    Добавляйте интересные гороскопы и предсказания в избранное!
+                  </p>
                 </div>
               ) : (
                 <div>
-                  <p>Сохранено: <strong>{favorites.length}</strong></p>
-                  {favorites.map((item) => (
-                    <Card 
-                      key={`${item.id}-${forceUpdate}`}
-                      title={item.title}
-                      style={{ margin: '8px 0' }}
+                  {favorites.map((item, index) => (
+                    <div 
+                      key={item.id || index}
+                      style={{
+                        border: `1px solid ${theme.colors.border}`,
+                        borderRadius: '8px',
+                        padding: '12px',
+                        marginBottom: '8px',
+                        backgroundColor: theme.colors.surface
+                      }}
                     >
-                      <p style={{ fontSize: '12px', opacity: 0.7, margin: '0 0 8px 0' }}>
-                        {item.date}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginBottom: '8px' 
+                      }}>
+                        <span style={{ fontWeight: '600' }}>{item.title}</span>
+                        <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                          {item.date}
+                        </span>
+                      </div>
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '14px', 
+                        lineHeight: '1.4',
+                        color: theme.colors.text 
+                      }}>
+                        {item.content}
                       </p>
-                      <p style={{ margin: 0 }}>{item.content}</p>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               )}
-            </Card>
-          </div>
+            </div>
+          </Card>
         );
-      
+
       default:
         return (
-          <div key={`home-${forceUpdate}`}>
-            {/* Заголовок */}
-            <Card 
-              title="🧙‍♂️ Гномий Гороскоп" 
-              subtitle="Магические предсказания от древних гномов"
-              key={`header-${forceUpdate}`}
-            >
-              {!isOnline && (
-                <div style={{
-                  background: theme.colors.warning + '20',
-                  color: theme.colors.warning,
-                  padding: '8px 16px',
-                  borderRadius: '16px',
-                  fontSize: '12px',
-                  marginTop: '10px',
-                  display: 'inline-block',
-                  border: `1px solid ${theme.colors.warning}40`
-                }}>
-                  📵 Оффлайн режим
-                </div>
-              )}
-            </Card>
-
-            {/* Карточка профиля */}
-            <Card 
-              title={GNOME_PROFILES[selectedSign]?.name || 'Гном Мудрый'}
-              subtitle={GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
-              key={`profile-${forceUpdate}`}
-            >
+          <div>
+            <div style={{ 
+              textAlign: 'center', 
+              marginBottom: '24px',
+              padding: '20px 16px'
+            }}>
+              <h1 style={{ 
+                fontSize: '28px', 
+                margin: '0 0 8px 0',
+                color: theme.colors.text
+              }}>
+                🧙‍♂️ Астро Гном
+              </h1>
               <p style={{ 
-                fontSize: '16px',
-                fontWeight: '400',
-                lineHeight: '1.5',
-                marginBottom: '12px' 
+                fontSize: '16px', 
+                margin: 0, 
+                opacity: 0.8,
+                color: theme.colors.textSecondary
               }}>
                 {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
               </p>
-              <div style={{
-                background: theme.colors.primary + '20',
-                color: theme.colors.primary,
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                display: 'inline-block',
-                border: `1px solid ${theme.colors.primary}40`
-              }}>
-                {selectedSign} ({ZODIAC_SIGNS.find(s => s.sign === selectedSign)?.dates})
-              </div>
-            </Card>
+              
+              {/* 🚀 ИНДИКАТОР состояния актуальных данных на главной */}
+              {astrologyData.moon && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '8px 12px',
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  border: `1px solid ${theme.colors.border}`
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <span>{astrologyData.moon.emoji}</span>
+                    <span>{astrologyData.moon.phase}</span>
+                    <span style={{ opacity: 0.7 }}>
+                      ({astrologyData.moon.illumination}%)
+                    </span>
+                  </div>
+                  {astrologyData.lastUpdated && (
+                    <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
+                      Обновлено: {astrologyData.lastUpdated.toLocaleTimeString('ru-RU')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-            {/* Карусель знаков */}
-            <ZodiacCarousel
+            <ZodiacCarousel 
+              signs={ZODIAC_SIGNS}
               selectedSign={selectedSign}
-              onSignChange={handleSignSelect}
-              telegramApp={telegramApp}
-              key={`zodiac-${forceUpdate}`}
+              onSignSelect={handleSignSelect}
+              gnomeProfiles={GNOME_PROFILES}
             />
-
-            {/* Сетка кнопок */}
-            <ButtonGrid 
-              onButtonClick={handleButtonClick} 
-              key={`buttons-${forceUpdate}`}
-            />
+            
+            <ButtonGrid onButtonClick={handleButtonClick} />
           </div>
         );
     }
   };
 
-  console.log('🎨 App рендерится с темой:', currentTheme, 'forceUpdate:', forceUpdate);
-
   return (
-    <div style={{...theme.container, transition: 'all 0.5s ease'}} key={`app-${forceUpdate}`}>
-      <ThemeSelector key={`theme-selector-${forceUpdate}`} />
+    <div style={{
+      ...theme.container,
+      position: 'relative',
+      minHeight: '100vh',
+      paddingBottom: '20px'
+    }}>
+      <ThemeSelector />
       
-      {/* ТОЛЬКО эта кнопка назад внизу */}
-      <BackButton 
-        show={currentView !== 'home'}
-        onClick={handleBackToHome}
-      />
+      {currentView !== 'home' && (
+        <BackButton 
+          onClick={handleBackToHome}
+          style={{ 
+            position: 'fixed',
+            top: '20px',
+            left: '20px',
+            zIndex: 999
+          }}
+        />
+      )}
+      
+      {!isOnline && (
+        <div style={{
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          right: '0',
+          backgroundColor: theme.colors.danger,
+          color: 'white',
+          padding: '8px',
+          textAlign: 'center',
+          fontSize: '14px',
+          zIndex: 1001
+        }}>
+          🔌 Нет подключения к интернету
+        </div>
+      )}
 
-      {renderCurrentView()}
+      <div style={{
+        padding: '80px 16px 20px 16px',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
+        {renderCurrentView()}
+      </div>
     </div>
   );
 }
