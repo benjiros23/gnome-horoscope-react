@@ -1,47 +1,68 @@
-import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import Button from './Button';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import themes from '../styles/themes';
 
-const ThemeSelector = ({ style = {} }) => {
-  const { currentTheme, switchTheme, getAvailableThemes, theme } = useTheme();
+const ThemeContext = createContext();
 
-  const themeNames = {
-    glass: '💎 Стекло',
-    wooden: '🪵 Дерево',
-    dark: '🌙 Темная',
-    neon: '⚡ Неон'
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+export const ThemeProvider = ({ children }) => {
+  const [currentTheme, setCurrentTheme] = useState('glass');
+
+  // Загружаем сохраненную тему
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('gnome-theme');
+    console.log('🎨 Загружаем сохраненную тему:', savedTheme);
+    if (savedTheme && themes[savedTheme]) {
+      setCurrentTheme(savedTheme);
+      console.log('✅ Тема установлена:', savedTheme);
+    }
+  }, []);
+
+  // Сохраняем тему при изменении
+  useEffect(() => {
+    localStorage.setItem('gnome-theme', currentTheme);
+    console.log('💾 Тема сохранена:', currentTheme);
+  }, [currentTheme]);
+
+  const switchTheme = (themeName) => {
+    if (themes[themeName]) {
+      console.log('🔄 Переключаем тему с', currentTheme, 'на', themeName);
+      setCurrentTheme(themeName);
+    } else {
+      console.error('❌ Тема не найдена:', themeName);
+    }
   };
 
-  const selectorStyle = {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    zIndex: 1000,
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-    ...style
+  const getTheme = () => {
+    const theme = themes[currentTheme];
+    if (!theme) {
+      console.error('❌ Не удалось найти тему:', currentTheme);
+      return themes.glass; // fallback
+    }
+    return theme;
   };
+
+  const value = {
+    currentTheme,
+    theme: getTheme(),
+    switchTheme,
+    availableThemes: Object.keys(themes),
+    themes
+  };
+
+  console.log('🎨 ThemeContext рендерится, текущая тема:', currentTheme);
 
   return (
-    <div style={selectorStyle}>
-      {getAvailableThemes().map((themeName) => (
-        <Button
-          key={themeName}
-          variant={currentTheme === themeName ? 'primary' : 'ghost'}
-          size="small"
-          onClick={() => switchTheme(themeName)}
-          style={{
-            fontSize: '12px',
-            padding: '6px 12px',
-            minWidth: 'auto'
-          }}
-        >
-          {themeNames[themeName] || themeName}
-        </Button>
-      ))}
-    </div>
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
   );
 };
 
-export default ThemeSelector;
+export default ThemeContext;
