@@ -17,6 +17,7 @@ import ButtonGrid from './components/ButtonGrid';
 // 🚀 НОВЫЕ ИМПОРТЫ для актуальных данных
 import { EnhancedMoonPhase } from './enhanced_moonPhase';
 import { useAstrologyData } from './hooks/useAstrologyData';
+import BentoGrid from './components/BentoGrid';
 
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
@@ -98,7 +99,6 @@ function AppContent() {
     const initSunCalc = () => {
       if (typeof window !== 'undefined' && window.SunCalc) {
         console.log('✅ SunCalc готов к использованию');
-        // Тестируем EnhancedMoonPhase
         const debugInfo = EnhancedMoonPhase.debugInfo();
         console.log('🌙 Enhanced MoonPhase status:', debugInfo);
       } else {
@@ -106,7 +106,6 @@ function AppContent() {
       }
     };
 
-    // Задержка для загрузки SunCalc скрипта
     setTimeout(initSunCalc, 1000);
   }, []);
 
@@ -279,7 +278,6 @@ function AppContent() {
       onAddToFavorites: handleAddToFavorites,
       telegramApp,
       key: `${currentView}-${forceUpdate}`,
-      // 🚀 ПЕРЕДАЕМ актуальные данные во все компоненты
       astrologyData,
       enhancedMoonPhase: EnhancedMoonPhase
     };
@@ -287,7 +285,7 @@ function AppContent() {
     switch (currentView) {
       case 'horoscope':
         return (
-          <Card title="🔮 Гороскоп" subtitle="Добавляйте интересные гороскопы и предсказания в избранное!">
+          <Card title="🔮 Гороскоп" subtitle="Ваш персональный гороскоп на сегодня">
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -296,7 +294,6 @@ function AppContent() {
               fontSize: '14px'
             }}>
               <span>Сохранено: <strong>{favorites.filter(f => f.type === 'horoscope').length}</strong></span>
-              {/* 🚀 ИНДИКАТОР актуальных данных */}
               {astrologyData.lastUpdated && (
                 <span style={{ fontSize: '12px', opacity: 0.7 }}>
                   Обновлено: {astrologyData.lastUpdated.toLocaleTimeString('ru-RU')}
@@ -330,7 +327,6 @@ function AppContent() {
               fontSize: '14px'
             }}>
               <span>Сохранено: <strong>{favorites.filter(f => f.type === 'moon').length}</strong></span>
-              {/* 🚀 СТАТУС актуальных лунных данных */}
               <div style={{ fontSize: '12px', opacity: 0.7 }}>
                 {astrologyData.loading ? (
                   <span>🔄 Обновление...</span>
@@ -340,7 +336,6 @@ function AppContent() {
               </div>
             </div>
 
-            {/* 🚀 ПЕРЕДАЕМ актуальные данные в MoonView */}
             <MoonView 
               {...viewProps}
               realTimeMoonData={astrologyData.moon}
@@ -442,61 +437,51 @@ function AppContent() {
       default:
         return (
           <div>
+            {/* Заголовок приложения с градиентом */}
             <div style={{ 
               textAlign: 'center', 
-              marginBottom: '24px',
+              marginBottom: '32px',
               padding: '20px 16px'
             }}>
               <h1 style={{ 
-                fontSize: '28px', 
-                margin: '0 0 8px 0',
-                color: theme.colors.text
+                fontSize: '32px', 
+                margin: '0 0 12px 0',
+                background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
               }}>
                 🧙‍♂️ Астро Гном
               </h1>
               <p style={{ 
-                fontSize: '16px', 
+                fontSize: '18px', 
                 margin: 0, 
                 opacity: 0.8,
                 color: theme.colors.textSecondary
               }}>
                 {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
               </p>
-              
-              {/* 🚀 ИНДИКАТОР состояния актуальных данных на главной */}
-              {astrologyData.moon && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '8px 12px',
-                  backgroundColor: theme.colors.surface,
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  border: `1px solid ${theme.colors.border}`
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <span>{astrologyData.moon.emoji}</span>
-                    <span>{astrologyData.moon.phase}</span>
-                    <span style={{ opacity: 0.7 }}>
-                      ({astrologyData.moon.illumination}%)
-                    </span>
-                  </div>
-                  {astrologyData.lastUpdated && (
-                    <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
-                      Обновлено: {astrologyData.lastUpdated.toLocaleTimeString('ru-RU')}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
-            <ZodiacCarousel 
-              signs={ZODIAC_SIGNS}
-              selectedSign={selectedSign}
-              onSignSelect={handleSignSelect}
-              gnomeProfiles={GNOME_PROFILES}
-            />
+            {/* Селектор знака зодиака (компактный) */}
+            <div style={{ marginBottom: '24px' }}>
+              <ZodiacCarousel 
+                signs={ZODIAC_SIGNS}
+                selectedSign={selectedSign}
+                onSignSelect={handleSignSelect}
+                gnomeProfiles={GNOME_PROFILES}
+                compact={true}
+              />
+            </div>
             
-            <ButtonGrid onButtonClick={handleButtonClick} />
+            {/* 🚀 Bento-сетка вместо обычных кнопок */}
+            <BentoGrid 
+              astrologyData={astrologyData}
+              selectedSign={selectedSign}
+              gnomeProfiles={GNOME_PROFILES}
+              onButtonClick={handleButtonClick}
+              onSignSelect={handleSignSelect}
+            />
           </div>
         );
     }
@@ -542,7 +527,7 @@ function AppContent() {
 
       <div style={{
         padding: '80px 16px 20px 16px',
-        maxWidth: '600px',
+        maxWidth: '800px', // Увеличено для Bento-сетки
         margin: '0 auto'
       }}>
         {renderCurrentView()}
