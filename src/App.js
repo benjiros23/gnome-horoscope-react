@@ -44,11 +44,12 @@ const GNOME_PROFILES = {
 };
 
 function AppContent() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme(); // ← ДОБАВИЛИ currentTheme для принудительного обновления
   const [currentView, setCurrentView] = useState('home');
   const [selectedSign, setSelectedSign] = useState('Лев');
   const [telegramApp, setTelegramApp] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [forceUpdate, setForceUpdate] = useState(0); // ← Принудительное обновление
   
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -59,6 +60,12 @@ function AppContent() {
       return [];
     }
   });
+
+  // Принудительное обновление при смене темы
+  useEffect(() => {
+    console.log('🎨 Тема изменилась на:', currentTheme);
+    setForceUpdate(prev => prev + 1);
+  }, [currentTheme]);
 
   // Telegram WebApp инициализация
   useEffect(() => {
@@ -75,11 +82,13 @@ function AppContent() {
           tg.MainButton.show();
           tg.MainButton.onClick(() => setCurrentView('cards'));
         }
-      } catch (error) {}
+      } catch (error) {
+        console.log('Ошибка MainButton:', error);
+      }
       
       console.log('✅ Telegram WebApp инициализирован');
     }
-  }, [theme]);
+  }, [theme.colors.primary]);
 
   const silentTelegramAction = (action) => {
     try {
@@ -87,7 +96,9 @@ function AppContent() {
       if (tg && parseFloat(tg.version) >= 6.1) {
         action(tg);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log('Telegram action error:', error);
+    }
   };
 
   const safeHapticFeedback = (type) => {
@@ -131,6 +142,7 @@ function AppContent() {
   }, [favorites]);
 
   const handleButtonClick = (buttonId) => {
+    console.log('🔘 Нажата кнопка:', buttonId);
     setCurrentView(buttonId);
     safeHapticFeedback('selection');
   };
@@ -183,7 +195,7 @@ function AppContent() {
     const viewProps = {
       onAddToFavorites: handleAddToFavorites,
       telegramApp,
-      designTheme: theme.name
+      key: `${currentView}-${forceUpdate}` // ← Принудительное обновление компонентов
     };
 
     switch (currentView) {
@@ -217,7 +229,7 @@ function AppContent() {
       case 'favorites':
         return (
           <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-            <Card title="❤️ Избранное">
+            <Card title="❤️ Избранное" key={`favorites-${forceUpdate}`}>
               {favorites.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                   <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
@@ -229,7 +241,7 @@ function AppContent() {
                   <p>Сохранено: <strong>{favorites.length}</strong></p>
                   {favorites.map((item) => (
                     <Card 
-                      key={item.id}
+                      key={`${item.id}-${forceUpdate}`}
                       title={item.title}
                       style={{ margin: '8px 0' }}
                     >
@@ -247,9 +259,13 @@ function AppContent() {
       
       default:
         return (
-          <div>
+          <div key={`home-${forceUpdate}`}>
             {/* Заголовок */}
-            <Card title="🧙‍♂️ Гномий Гороскоп" subtitle="Магические предсказания от древних гномов">
+            <Card 
+              title="🧙‍♂️ Гномий Гороскоп" 
+              subtitle="Магические предсказания от древних гномов"
+              key={`header-${forceUpdate}`}
+            >
               {!isOnline && (
                 <div style={{
                   background: theme.colors.states.warning + '20',
@@ -270,6 +286,7 @@ function AppContent() {
             <Card 
               title={GNOME_PROFILES[selectedSign]?.name || 'Гном Мудрый'}
               subtitle={GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
+              key={`profile-${forceUpdate}`}
             >
               <p style={{ ...theme.typography.body, marginBottom: '12px' }}>
                 {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
@@ -289,17 +306,18 @@ function AppContent() {
             </Card>
 
             {/* Карусель знаков */}
-            {ZodiacCarousel && (
-              <ZodiacCarousel
-                selectedSign={selectedSign}
-                onSignChange={handleSignSelect}
-                telegramApp={telegramApp}
-                designTheme={theme.name}
-              />
-            )}
+            <ZodiacCarousel
+              selectedSign={selectedSign}
+              onSignChange={handleSignSelect}
+              telegramApp={telegramApp}
+              key={`zodiac-${forceUpdate}`}
+            />
 
             {/* Сетка кнопок */}
-            <ButtonGrid onButtonClick={handleButtonClick} />
+            <ButtonGrid 
+              onButtonClick={handleButtonClick} 
+              key={`buttons-${forceUpdate}`}
+            />
           </div>
         );
     }
@@ -308,10 +326,12 @@ function AppContent() {
   const showFallbackBackButton = currentView !== 'home' && 
     (!telegramApp || !telegramApp.BackButton || parseFloat(telegramApp.version) < 6.1);
 
+  console.log('🎨 App рендерится с темой:', currentTheme, 'forceUpdate:', forceUpdate);
+
   return (
-    <div style={theme.container}>
+    <div style={{...theme.container, transition: 'all 0.5s ease'}} key={`app-${forceUpdate}`}>
       {/* Переключатель тем */}
-      <ThemeSelector />
+      <ThemeSelector key={`theme-selector-${forceUpdate}`} />
 
       {showFallbackBackButton && (
         <Button
@@ -323,6 +343,7 @@ function AppContent() {
             left: '20px',
             zIndex: 1000
           }}
+          key={`back-button-${forceUpdate}`}
         >
           ← Назад
         </Button>
@@ -331,7 +352,7 @@ function AppContent() {
       {renderCurrentView()}
 
       {/* CSS анимации */}
-      <style>{`
+      <style key={`styles-${forceUpdate}`}>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
