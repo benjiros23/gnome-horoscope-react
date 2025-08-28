@@ -8,7 +8,7 @@ const FunctionTile = ({
   onClick,
   disabled = false,
   active = false,
-  size = 'normal' // 'small', 'normal', 'large'
+  size = 'normal'
 }) => {
   const { theme } = useTheme();
 
@@ -116,7 +116,6 @@ const FunctionTile = ({
     }
   };
 
-  // Стили для иконки
   const getIconStyle = () => ({
     fontSize: currentSize.iconSize,
     marginBottom: '8px',
@@ -132,15 +131,13 @@ const FunctionTile = ({
     transition: 'all 0.3s ease'
   });
 
-  // Стили для текста
   const getTitleStyle = () => ({
     fontSize: currentSize.fontSize,
     fontWeight: theme.name === 'wooden' ? '700' : '600',
     letterSpacing: theme.name === 'wooden' ? '0.5px' : '0.3px',
     textTransform: theme.name === 'wooden' ? 'uppercase' : 'none',
     marginBottom: subtitle ? '4px' : '0',
-    lineHeight: '1.2',
-    wordBreak: 'break-word'
+    lineHeight: '1.2'
   });
 
   const getSubtitleStyle = () => ({
@@ -149,8 +146,7 @@ const FunctionTile = ({
     opacity: 0.8,
     fontStyle: theme.name === 'wooden' ? 'italic' : 'normal',
     marginTop: '4px',
-    lineHeight: '1.1',
-    wordBreak: 'break-word'
+    lineHeight: '1.1'
   });
 
   // Обработчики событий
@@ -168,7 +164,6 @@ const FunctionTile = ({
       
       e.currentTarget.style.transform = hoverTransform;
       
-      // Применяем hover-эффекты в зависимости от темы
       switch (theme.name) {
         case 'wooden':
           e.currentTarget.style.boxShadow = `
@@ -185,7 +180,7 @@ const FunctionTile = ({
         case 'dark':
           e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(255, 255, 255, 0.1)';
           break;
-        default: // glass
+        default:
           e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.16), 0 4px 20px rgba(0, 0, 0, 0.12)';
           break;
       }
@@ -195,29 +190,11 @@ const FunctionTile = ({
   const handleMouseLeave = (e) => {
     if (!disabled && !active) {
       e.currentTarget.style.transform = 'translateY(0) scale(1)';
-      
-      // Восстанавливаем исходные стили
       const originalStyle = getTileStyle();
       e.currentTarget.style.boxShadow = originalStyle.boxShadow;
-      
       if (theme.name === 'neon') {
         e.currentTarget.style.border = originalStyle.border;
       }
-    }
-  };
-
-  const handleMouseDown = (e) => {
-    if (!disabled) {
-      e.currentTarget.style.transform = 'translateY(1px) scale(0.98)';
-    }
-  };
-
-  const handleMouseUp = (e) => {
-    if (!disabled && !active) {
-      const hoverTransform = theme.name === 'wooden' 
-        ? 'translateY(-4px) scale(1.05)' 
-        : 'translateY(-2px) scale(1.05)';
-      e.currentTarget.style.transform = hoverTransform;
     }
   };
 
@@ -227,17 +204,9 @@ const FunctionTile = ({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
-      onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
-          e.preventDefault();
-          handleClick();
-        }
-      }}
     >
       {/* Деревянная текстура только для wooden темы */}
       {theme.name === 'wooden' && !disabled && (
@@ -267,26 +236,9 @@ const FunctionTile = ({
         alignItems: 'center',
         width: '100%'
       }}>
-        {/* Иконка */}
-        {icon && (
-          <div style={getIconStyle()}>
-            {icon}
-          </div>
-        )}
-        
-        {/* Заголовок */}
-        {title && (
-          <div style={getTitleStyle()}>
-            {title}
-          </div>
-        )}
-        
-        {/* Подзаголовок */}
-        {subtitle && (
-          <div style={getSubtitleStyle()}>
-            {subtitle}
-          </div>
-        )}
+        {icon && <div style={getIconStyle()}>{icon}</div>}
+        {title && <div style={getTitleStyle()}>{title}</div>}
+        {subtitle && <div style={getSubtitleStyle()}>{subtitle}</div>}
       </div>
 
       {/* Декоративная подсветка для neon темы */}
