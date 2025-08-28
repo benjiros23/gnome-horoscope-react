@@ -376,21 +376,15 @@ function AppContent() {
   console.log('🎨 App рендерится с темой:', currentTheme, 'forceUpdate:', forceUpdate);
 
   return (
-    <div style={{
-      ...theme.container, 
-      transition: 'all 0.5s ease',
-      padding: '10px',
-      paddingTop: '60px',
-      boxSizing: 'border-box'
-    }} key={`app-${forceUpdate}`}>
-      
-      <ThemeSelector key={`theme-selector-${forceUpdate}`} />
-      
-      {/* Кнопка назад внизу экрана */}
-      <BackButton 
-        show={currentView !== 'home'}
-        onClick={handleBackToHome}
-      />
+   return (
+  <div style={{...theme.container, transition: 'all 0.5s ease'}} key={`app-${forceUpdate}`}>
+    <ThemeSelector key={`theme-selector-${forceUpdate}`} />
+    
+    {/* Кнопка назад внизу экрана */}
+    <BackButton 
+      show={currentView !== 'home'}
+      onClick={handleBackToHome}
+    />
 
       {/* Остальной контент */}
       {renderCurrentView()}
