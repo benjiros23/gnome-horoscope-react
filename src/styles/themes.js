@@ -1,5 +1,113 @@
-// src/styles/themes.js
+// Facebook тема
+const facebookTheme = {
+  name: 'facebook',
+  
+  colors: {
+    primary: '#1877F2',        // Facebook синий
+    secondary: '#42A5F5',      // Светло-синий
+    success: '#00C851',        // Зеленый
+    danger: '#FF3547',         // Красный
+    warning: '#FFB400',        // Желтый
+    info: '#33B5E5',          // Голубой
+    
+    background: '#F0F2F5',     // Facebook серый фон
+    surface: '#FFFFFF',        // Белые карточки
+    text: '#050505',           // Черный текст
+    textSecondary: '#65676B',  // Серый текст
+    border: '#CED0D4'          // Серая граница
+  },
+  
+  card: {
+    background: '#FFFFFF',
+    border: '1px solid #E4E6EA',
+    borderRadius: '12px',               // Facebook скругления
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1)',
+    padding: '16px',
+    margin: '8px 4px',                  // Уменьшенные отступы для мобильных
+    color: '#050505',
+    maxWidth: '100%',                   // Адаптивность
+    overflow: 'hidden'                  // Предотвращает выход за границы
+  },
+  
+  button: {
+    primary: {
+      background: '#1877F2',
+      color: '#FFFFFF',
+      border: 'none',
+      borderRadius: '8px',              // Facebook стиль кнопок
+      padding: '10px 16px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+    },
+    secondary: {
+      background: '#E4E6EA',
+      color: '#050505',
+      border: 'none',
+      borderRadius: '8px',
+      padding: '10px 16px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease'
+    },
+    ghost: {
+      background: 'transparent',
+      color: '#1877F2',
+      border: '1px solid #1877F2',
+      borderRadius: '8px',
+      padding: '10px 16px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease'
+    }
+  },
+  
+  container: {
+    background: '#F0F2F5',
+    minHeight: '100vh',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    color: '#050505',
+    padding: '0',                       // Убираем padding у контейнера
+    margin: '0'
+  },
+  
+  typography: {
+    title: {
+      fontSize: '20px',
+      fontWeight: '700',
+      lineHeight: '1.2',
+      marginBottom: '8px',
+      color: '#050505'
+    },
+    subtitle: {
+      fontSize: '16px',
+      fontWeight: '600',
+      lineHeight: '1.3',
+      marginBottom: '8px',
+      color: '#65676B'
+    },
+    body: {
+      fontSize: '14px',
+      fontWeight: '400',
+      lineHeight: '1.4',
+      marginBottom: '8px',
+      color: '#050505'
+    },
+    caption: {
+      fontSize: '12px',
+      fontWeight: '500',
+      lineHeight: '1.4',
+      opacity: 0.8,
+      color: '#65676B'
+    }
+  }
+};
 
+// Обновленная светлая тема с улучшенной адаптивностью
 const lightTheme = {
   name: 'light',
   
@@ -23,8 +131,10 @@ const lightTheme = {
     borderRadius: '8px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     padding: '16px',
-    margin: '8px',
-    color: '#212529'
+    margin: '8px 4px',                  // Адаптивные отступы
+    color: '#212529',
+    maxWidth: '100%',
+    overflow: 'hidden'
   },
   
   button: {
@@ -32,7 +142,7 @@ const lightTheme = {
       background: '#007bff',
       color: '#ffffff',
       border: '1px solid #007bff',
-      borderRadius: '4px',
+      borderRadius: '6px',
       padding: '8px 16px',
       fontSize: '14px',
       fontWeight: '500',
@@ -43,7 +153,7 @@ const lightTheme = {
       background: '#6c757d',
       color: '#ffffff',
       border: '1px solid #6c757d',
-      borderRadius: '4px',
+      borderRadius: '6px',
       padding: '8px 16px',
       fontSize: '14px',
       fontWeight: '500',
@@ -54,7 +164,7 @@ const lightTheme = {
       background: 'transparent',
       color: '#007bff',
       border: '1px solid #007bff',
-      borderRadius: '4px',
+      borderRadius: '6px',
       padding: '8px 16px',
       fontSize: '14px',
       fontWeight: '500',
@@ -67,44 +177,20 @@ const lightTheme = {
     background: '#f8f9fa',
     minHeight: '100vh',
     fontFamily: 'system-ui, -apple-system, sans-serif',
-    color: '#212529'
+    color: '#212529',
+    padding: '0',
+    margin: '0'
   },
   
-  // ← ДОБАВЬТЕ ЭТО:
   typography: {
-    title: {
-      fontSize: '24px',
-      fontWeight: '700',
-      lineHeight: '1.2',
-      marginBottom: '16px'
-    },
-    subtitle: {
-      fontSize: '18px',
-      fontWeight: '600',
-      lineHeight: '1.3',
-      marginBottom: '12px'
-    },
-    body: {              // ← ВОТ ЭТО СВОЙСТВО ОТСУТСТВОВАЛО!
-      fontSize: '16px',
-      fontWeight: '400',
-      lineHeight: '1.5',
-      marginBottom: '12px'
-    },
-    caption: {
-      fontSize: '14px',
-      fontWeight: '500',
-      lineHeight: '1.4',
-      opacity: 0.8
-    },
-    small: {
-      fontSize: '12px',
-      fontWeight: '400',
-      lineHeight: '1.4',
-      opacity: 0.7
-    }
+    title: { fontSize: '20px', fontWeight: '700', lineHeight: '1.2', marginBottom: '12px' },
+    subtitle: { fontSize: '16px', fontWeight: '600', lineHeight: '1.3', marginBottom: '8px' },
+    body: { fontSize: '14px', fontWeight: '400', lineHeight: '1.5', marginBottom: '8px' },
+    caption: { fontSize: '12px', fontWeight: '500', lineHeight: '1.4', opacity: 0.8 }
   }
 };
 
+// Темная тема с улучшениями
 const darkTheme = {
   name: 'dark',
   
@@ -128,8 +214,10 @@ const darkTheme = {
     borderRadius: '8px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     padding: '16px',
-    margin: '8px',
-    color: '#ffffff'
+    margin: '8px 4px',
+    color: '#ffffff',
+    maxWidth: '100%',
+    overflow: 'hidden'
   },
   
   button: {
@@ -137,7 +225,7 @@ const darkTheme = {
       background: '#0d6efd',
       color: '#ffffff',
       border: '1px solid #0d6efd',
-      borderRadius: '4px',
+      borderRadius: '6px',
       padding: '8px 16px',
       fontSize: '14px',
       fontWeight: '500',
@@ -148,7 +236,7 @@ const darkTheme = {
       background: '#6c757d',
       color: '#ffffff',
       border: '1px solid #6c757d',
-      borderRadius: '4px',
+      borderRadius: '6px',
       padding: '8px 16px',
       fontSize: '14px',
       fontWeight: '500',
@@ -159,7 +247,7 @@ const darkTheme = {
       background: 'transparent',
       color: '#0d6efd',
       border: '1px solid #0d6efd',
-      borderRadius: '4px',
+      borderRadius: '6px',
       padding: '8px 16px',
       fontSize: '14px',
       fontWeight: '500',
@@ -172,47 +260,26 @@ const darkTheme = {
     background: '#212529',
     minHeight: '100vh',
     fontFamily: 'system-ui, -apple-system, sans-serif',
-    color: '#ffffff'
+    color: '#ffffff',
+    padding: '0',
+    margin: '0'
   },
   
-  // ← ДОБАВЬТЕ ЭТО И ДЛЯ ТЕМНОЙ ТЕМЫ:
   typography: {
-    title: {
-      fontSize: '24px',
-      fontWeight: '700',
-      lineHeight: '1.2',
-      marginBottom: '16px'
-    },
-    subtitle: {
-      fontSize: '18px',
-      fontWeight: '600',
-      lineHeight: '1.3',
-      marginBottom: '12px'
-    },
-    body: {              // ← ВОТ ЭТО СВОЙСТВО ОТСУТСТВОВАЛО!
-      fontSize: '16px',
-      fontWeight: '400',
-      lineHeight: '1.5',
-      marginBottom: '12px'
-    },
-    caption: {
-      fontSize: '14px',
-      fontWeight: '500',
-      lineHeight: '1.4',
-      opacity: 0.8
-    },
-    small: {
-      fontSize: '12px',
-      fontWeight: '400',
-      lineHeight: '1.4',
-      opacity: 0.7
-    }
+    title: { fontSize: '20px', fontWeight: '700', lineHeight: '1.2', marginBottom: '12px' },
+    subtitle: { fontSize: '16px', fontWeight: '600', lineHeight: '1.3', marginBottom: '8px' },
+    body: { fontSize: '14px', fontWeight: '400', lineHeight: '1.5', marginBottom: '8px' },
+    caption: { fontSize: '12px', fontWeight: '500', lineHeight: '1.4', opacity: 0.8 }
   }
 };
 
+// Экспорт всех тем
 const themes = {
   light: lightTheme,
-  dark: darkTheme
+  dark: darkTheme,
+  facebook: facebookTheme  // ← Новая Facebook тема!
 };
+
+console.log('🎨 Темы загружены:', Object.keys(themes));
 
 export default themes;
