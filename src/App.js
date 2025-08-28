@@ -44,12 +44,12 @@ const GNOME_PROFILES = {
 };
 
 function AppContent() {
-  const { theme, currentTheme } = useTheme(); // ← ДОБАВИЛИ currentTheme для принудительного обновления
+  const { theme, currentTheme } = useTheme();
   const [currentView, setCurrentView] = useState('home');
   const [selectedSign, setSelectedSign] = useState('Лев');
   const [telegramApp, setTelegramApp] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [forceUpdate, setForceUpdate] = useState(0); // ← Принудительное обновление
+  const [forceUpdate, setForceUpdate] = useState(0);
   
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -195,7 +195,7 @@ function AppContent() {
     const viewProps = {
       onAddToFavorites: handleAddToFavorites,
       telegramApp,
-      key: `${currentView}-${forceUpdate}` // ← Принудительное обновление компонентов
+      key: `${currentView}-${forceUpdate}`
     };
 
     switch (currentView) {
@@ -268,14 +268,14 @@ function AppContent() {
             >
               {!isOnline && (
                 <div style={{
-                  background: theme.colors.states.warning + '20',
-                  color: theme.colors.states.warning,
+                  background: theme.colors.warning + '20',
+                  color: theme.colors.warning,
                   padding: '8px 16px',
                   borderRadius: '16px',
                   fontSize: '12px',
                   marginTop: '10px',
                   display: 'inline-block',
-                  border: `1px solid ${theme.colors.states.warning}40`
+                  border: `1px solid ${theme.colors.warning}40`
                 }}>
                   📵 Оффлайн режим
                 </div>
@@ -288,12 +288,17 @@ function AppContent() {
               subtitle={GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
               key={`profile-${forceUpdate}`}
             >
-              <p style={{ ...theme.typography.body, marginBottom: '12px' }}>
+              <p style={{ 
+                fontSize: '16px',
+                fontWeight: '400',
+                lineHeight: '1.5',
+                marginBottom: '12px' 
+              }}>
                 {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
               </p>
               <div style={{
                 background: theme.colors.primary + '20',
-                color: theme.name === 'wooden' ? theme.colors.primary : theme.colors.primary,
+                color: theme.colors.primary,
                 padding: '8px 16px',
                 borderRadius: '20px',
                 fontSize: '14px',
@@ -350,37 +355,6 @@ function AppContent() {
       )}
       
       {renderCurrentView()}
-
-      {/* CSS анимации */}
-      <style key={`styles-${forceUpdate}`}>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.05); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        ${theme.name === 'wooden' ? `
-          @keyframes wobble {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(1deg); }
-          }
-          @keyframes carve {
-            0% { transform: scale(0.8) rotate(-5deg); opacity: 0; }
-            50% { transform: scale(1.1) rotate(2deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-          }
-        ` : ''}
-      `}</style>
     </div>
   );
 }
