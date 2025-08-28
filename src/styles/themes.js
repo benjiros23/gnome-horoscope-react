@@ -1,8 +1,8 @@
-// Простые черно-белые темы
+// src/styles/themes.js
+
 const lightTheme = {
   name: 'light',
   
-  // Цвета
   colors: {
     primary: '#007bff',
     secondary: '#6c757d',
@@ -10,7 +10,6 @@ const lightTheme = {
     danger: '#dc3545',
     warning: '#ffc107',
     info: '#17a2b8',
-    
     background: '#ffffff',
     surface: '#f8f9fa',
     text: '#212529',
@@ -18,7 +17,6 @@ const lightTheme = {
     border: '#dee2e6'
   },
   
-  // Карточки
   card: {
     background: '#ffffff',
     border: '1px solid #dee2e6',
@@ -29,7 +27,6 @@ const lightTheme = {
     color: '#212529'
   },
   
-  // Кнопки
   button: {
     primary: {
       background: '#007bff',
@@ -66,19 +63,51 @@ const lightTheme = {
     }
   },
   
-  // Контейнер
   container: {
     background: '#f8f9fa',
     minHeight: '100vh',
     fontFamily: 'system-ui, -apple-system, sans-serif',
     color: '#212529'
+  },
+  
+  // ← ДОБАВЬТЕ ЭТО:
+  typography: {
+    title: {
+      fontSize: '24px',
+      fontWeight: '700',
+      lineHeight: '1.2',
+      marginBottom: '16px'
+    },
+    subtitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      lineHeight: '1.3',
+      marginBottom: '12px'
+    },
+    body: {              // ← ВОТ ЭТО СВОЙСТВО ОТСУТСТВОВАЛО!
+      fontSize: '16px',
+      fontWeight: '400',
+      lineHeight: '1.5',
+      marginBottom: '12px'
+    },
+    caption: {
+      fontSize: '14px',
+      fontWeight: '500',
+      lineHeight: '1.4',
+      opacity: 0.8
+    },
+    small: {
+      fontSize: '12px',
+      fontWeight: '400',
+      lineHeight: '1.4',
+      opacity: 0.7
+    }
   }
 };
 
 const darkTheme = {
   name: 'dark',
   
-  // Цвета
   colors: {
     primary: '#0d6efd',
     secondary: '#6c757d',
@@ -86,7 +115,6 @@ const darkTheme = {
     danger: '#dc3545',
     warning: '#ffc107',
     info: '#0dcaf0',
-    
     background: '#212529',
     surface: '#343a40',
     text: '#ffffff',
@@ -94,7 +122,6 @@ const darkTheme = {
     border: '#495057'
   },
   
-  // Карточки
   card: {
     background: '#343a40',
     border: '1px solid #495057',
@@ -105,7 +132,6 @@ const darkTheme = {
     color: '#ffffff'
   },
   
-  // Кнопки
   button: {
     primary: {
       background: '#0d6efd',
@@ -142,16 +168,48 @@ const darkTheme = {
     }
   },
   
-  // Контейнер
   container: {
     background: '#212529',
     minHeight: '100vh',
     fontFamily: 'system-ui, -apple-system, sans-serif',
     color: '#ffffff'
+  },
+  
+  // ← ДОБАВЬТЕ ЭТО И ДЛЯ ТЕМНОЙ ТЕМЫ:
+  typography: {
+    title: {
+      fontSize: '24px',
+      fontWeight: '700',
+      lineHeight: '1.2',
+      marginBottom: '16px'
+    },
+    subtitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      lineHeight: '1.3',
+      marginBottom: '12px'
+    },
+    body: {              // ← ВОТ ЭТО СВОЙСТВО ОТСУТСТВОВАЛО!
+      fontSize: '16px',
+      fontWeight: '400',
+      lineHeight: '1.5',
+      marginBottom: '12px'
+    },
+    caption: {
+      fontSize: '14px',
+      fontWeight: '500',
+      lineHeight: '1.4',
+      opacity: 0.8
+    },
+    small: {
+      fontSize: '12px',
+      fontWeight: '400',
+      lineHeight: '1.4',
+      opacity: 0.7
+    }
   }
 };
 
-// Экспорт только двух тем
 const themes = {
   light: lightTheme,
   dark: darkTheme
