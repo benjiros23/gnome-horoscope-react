@@ -8,6 +8,8 @@ import AstroEventsView from './components/AstroEventsView';
 import DayCardView from './components/DayCardView';
 import MercuryView from './components/MercuryView';
 import ButtonGrid from './components/ButtonGrid';
+import GlassCard from './components/GlassCard';
+import WoodenCard from './components/WoodenCard';
 import './App.css';
 
 const ZODIAC_SIGNS = [
@@ -45,6 +47,7 @@ function App() {
   const [selectedSign, setSelectedSign] = useState('Лев');
   const [telegramApp, setTelegramApp] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [designTheme, setDesignTheme] = useState('glass'); // 'glass' или 'wooden'
   
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -56,7 +59,7 @@ function App() {
     }
   });
 
-  // БЕЗОПАСНЫЕ функции Telegram (БЕЗ ОШИБОК)
+  // Безопасные функции Telegram
   const silentTelegramAction = (action) => {
     try {
       const tg = window.Telegram?.WebApp;
@@ -101,7 +104,7 @@ function App() {
     }
   }, []);
 
-  // BackButton БЕЗ ОШИБОК
+  // BackButton
   useEffect(() => {
     silentTelegramAction((tg) => {
       if (currentView !== 'home') {
@@ -202,10 +205,15 @@ function App() {
     }
   };
 
+  // Выбор компонента карточки
+  const Card = designTheme === 'wooden' ? WoodenCard : GlassCard;
+
   const styles = {
     app: {
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #F1F8E9 0%, #E8F5E8 100%)',
+      background: designTheme === 'wooden' 
+        ? 'linear-gradient(135deg, #8b4513 0%, #d2691e 50%, #cd853f 100%)'
+        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       padding: '0',
       fontFamily: 'system-ui, sans-serif'
     },
@@ -213,41 +221,33 @@ function App() {
       position: 'fixed',
       top: '20px',
       left: '20px',
-      background: 'linear-gradient(135deg, #8BC34A, #FFC107)',
+      background: designTheme === 'wooden'
+        ? 'linear-gradient(135deg, #8b4513, #a0522d)'
+        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1))',
       color: 'white',
-      border: 'none',
+      border: designTheme === 'wooden' ? '2px solid #654321' : '1px solid rgba(255, 255, 255, 0.3)',
       borderRadius: '12px',
       padding: '12px 16px',
       cursor: 'pointer',
       fontSize: '14px',
       fontWeight: '600',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      zIndex: 1000
+      boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+      zIndex: 1000,
+      backdropFilter: designTheme === 'wooden' ? 'none' : 'blur(10px)'
     },
-    header: {
-      textAlign: 'center',
-      padding: '20px',
-      background: 'rgba(139, 195, 74, 0.1)',
-      marginBottom: '20px'
-    },
-    title: {
-      color: '#8BC34A',
-      fontSize: '28px',
-      fontWeight: 'bold',
-      marginBottom: '8px'
-    },
-    subtitle: {
-      color: '#666',
-      fontStyle: 'italic'
-    },
-    offlineBadge: {
-      background: '#ff9800',
+    themeToggle: {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '50px',
+      padding: '8px 16px',
       color: 'white',
-      padding: '4px 12px',
-      borderRadius: '16px',
       fontSize: '12px',
-      marginTop: '10px',
-      display: 'inline-block'
+      cursor: 'pointer',
+      backdropFilter: 'blur(10px)',
+      zIndex: 1000
     }
   };
 
@@ -314,59 +314,48 @@ function App() {
       case 'favorites':
         return (
           <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-            <h3 style={{ color: '#8BC34A', textAlign: 'center', marginBottom: '20px' }}>
-              ❤️ Избранное
-            </h3>
-            
-            {favorites.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-                <h4>Здесь пока пусто</h4>
-                <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
-              </div>
-            ) : (
-              <>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  marginBottom: '20px' 
-                }}>
-                  <p>Сохранено: <strong>{favorites.length}</strong></p>
-                  <button 
-                    onClick={handleClearFavorites}
-                    style={{
-                      background: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🗑️ Очистить
-                  </button>
+            <Card title="❤️ Избранное">
+              {favorites.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+                  <h4>Здесь пока пусто</h4>
+                  <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
                 </div>
-                
-                <div>
-                  {favorites.map((item) => (
-                    <div 
-                      key={item.id} 
+              ) : (
+                <>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: '20px' 
+                  }}>
+                    <p>Сохранено: <strong>{favorites.length}</strong></p>
+                    <button 
+                      onClick={handleClearFavorites}
                       style={{
-                        background: 'white',
-                        padding: '16px',
-                        borderRadius: '12px',
-                        marginBottom: '12px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
                       }}
                     >
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'flex-start',
-                        marginBottom: '8px'
-                      }}>
-                        <h5 style={{ margin: 0, color: '#333' }}>{item.title}</h5>
+                      🗑️ Очистить
+                    </button>
+                  </div>
+                  
+                  <div>
+                    {favorites.map((item) => (
+                      <Card 
+                        key={item.id}
+                        title={item.title}
+                        style={{ margin: '8px 0' }}
+                      >
+                        <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px 0' }}>
+                          {item.date}
+                        </p>
+                        <p style={{ margin: 0 }}>{item.content}</p>
                         <button 
                           onClick={() => handleRemoveFromFavorites(item.id)}
                           style={{
@@ -374,75 +363,75 @@ function App() {
                             border: 'none',
                             fontSize: '18px',
                             cursor: 'pointer',
-                            color: '#dc3545'
+                            color: '#dc3545',
+                            float: 'right'
                           }}
                         >
                           ×
                         </button>
-                      </div>
-                      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px 0' }}>
-                        {item.date}
-                      </p>
-                      <p style={{ margin: 0, color: '#333' }}>{item.content}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </Card>
           </div>
         );
       
       case 'advice':
         return (
-          <div style={{ padding: '20px', textAlign: 'center' }}>
-            <h3 style={{ color: '#8BC34A' }}>🚧 Совет дня</h3>
-            <p>Этот раздел находится в разработке...</p>
-            <p>📱 Подключение к API готово</p>
-            <p>🔗 Скоро будет доступен</p>
+          <div style={{ padding: '20px' }}>
+            <Card title="🚧 Совет дня">
+              <p>Этот раздел находится в разработке...</p>
+              <p>📱 Подключение к API готово</p>
+              <p>🔗 Скоро будет доступен</p>
+            </Card>
           </div>
         );
       
       default:
         return (
           <div>
-            <div style={styles.header}>
-              <h1 style={styles.title}>🧙‍♂️ Гномий Гороскоп</h1>
-              <p style={styles.subtitle}>Магические предсказания от древних гномов</p>
+            {/* Заголовок */}
+            <Card title="🧙‍♂️ Гномий Гороскоп" subtitle="Магические предсказания от древних гномов">
               {!isOnline && (
-                <div style={styles.offlineBadge}>
+                <div style={{
+                  background: '#ff9800',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  marginTop: '10px',
+                  display: 'inline-block'
+                }}>
                   📵 Оффлайн режим
                 </div>
               )}
-            </div>
+            </Card>
 
-            <div style={{
-              background: 'white',
-              margin: '20px',
-              padding: '20px',
-              borderRadius: '16px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              textAlign: 'center'
-            }}>
-              <h2 style={{ color: '#8BC34A', marginBottom: '8px' }}>
-                {GNOME_PROFILES[selectedSign]?.name || 'Гном Мудрый'}
-              </h2>
-              <p style={{ color: '#666', fontSize: '14px', marginBottom: '8px' }}>
-                {GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
-              </p>
-              <p style={{ color: '#333', marginBottom: '12px' }}>
+            {/* Карточка профиля */}
+            <Card 
+              title={GNOME_PROFILES[selectedSign]?.name || 'Гnom Мудрый'}
+              subtitle={GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
+            >
+              <p style={{ marginBottom: '12px' }}>
                 {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
               </p>
-              <span style={{
-                background: 'linear-gradient(135deg, #8BC34A, #FFC107)',
-                color: 'white',
-                padding: '4px 12px',
-                borderRadius: '16px',
-                fontSize: '12px'
+              <div style={{
+                background: 'rgba(139, 195, 74, 0.2)',
+                color: '#2e7d0f',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                display: 'inline-block',
+                border: '1px solid rgba(139, 195, 74, 0.3)'
               }}>
                 {selectedSign} ({ZODIAC_SIGNS.find(s => s.sign === selectedSign)?.dates})
-              </span>
-            </div>
+              </div>
+            </Card>
 
+            {/* Карусель знаков */}
             {ZodiacCarousel && (
               <ZodiacCarousel
                 selectedSign={selectedSign}
@@ -451,6 +440,7 @@ function App() {
               />
             )}
 
+            {/* Сетка кнопок */}
             <ButtonGrid onButtonClick={handleButtonClick} />
           </div>
         );
@@ -462,6 +452,14 @@ function App() {
 
   return (
     <div style={styles.app}>
+      {/* Переключатель темы */}
+      <button 
+        style={styles.themeToggle}
+        onClick={() => setDesignTheme(designTheme === 'glass' ? 'wooden' : 'glass')}
+      >
+        {designTheme === 'glass' ? '🪵 Дерево' : '💎 Стекло'}
+      </button>
+
       {showFallbackBackButton && (
         <button style={styles.backButton} onClick={handleBackToHome}>
           ← Назад в главное меню
