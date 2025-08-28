@@ -26,47 +26,59 @@ const ThemeSelector = ({ style = {} }) => {
     transition: 'all 0.2s ease',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px'
+    gap: '4px',
+    boxShadow: isActive ? `0 2px 8px ${theme.colors.primary}40` : 'none'
   });
 
   const { theme } = useTheme();
+
+  const handleThemeSwitch = (themeName) => {
+    console.log('🎨 Переключаем тему на:', themeName);
+    switchTheme(themeName);
+  };
 
   return (
     <div style={containerStyle}>
       <button
         style={buttonStyle(currentTheme === 'light', theme)}
-        onClick={() => switchTheme('light')}
+        onClick={() => handleThemeSwitch('light')}
         title="Светлая тема"
         onMouseEnter={(e) => {
           if (currentTheme !== 'light') {
             e.target.style.background = theme.colors.surface;
+            e.target.style.transform = 'scale(1.05)';
           }
         }}
         onMouseLeave={(e) => {
           if (currentTheme !== 'light') {
             e.target.style.background = theme.card.background;
+            e.target.style.transform = 'scale(1)';
           }
         }}
       >
-        ☀️ Светлая
+        <span>☀️</span>
+        <span>Светлая</span>
       </button>
       
       <button
         style={buttonStyle(currentTheme === 'dark', theme)}
-        onClick={() => switchTheme('dark')}
+        onClick={() => handleThemeSwitch('dark')}
         title="Темная тема"
         onMouseEnter={(e) => {
           if (currentTheme !== 'dark') {
             e.target.style.background = theme.colors.surface;
+            e.target.style.transform = 'scale(1.05)';
           }
         }}
         onMouseLeave={(e) => {
           if (currentTheme !== 'dark') {
             e.target.style.background = theme.card.background;
+            e.target.style.transform = 'scale(1)';
           }
         }}
       >
-        🌙 Темная
+        <span>🌙</span>
+        <span>Темная</span>
       </button>
     </div>
   );
