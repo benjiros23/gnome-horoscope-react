@@ -3,6 +3,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import ThemeSelector from './components/UI/ThemeSelector';
 import Card from './components/UI/Card';
 import Button from './components/UI/Button';
+import BackButton from './components/UI/BackButton';
 import HoroscopeView from './components/HoroscopeView';
 import ZodiacCarousel from './components/ZodiacCarousel';
 import MoonView from './components/MoonView';
@@ -45,12 +46,31 @@ const GNOME_PROFILES = {
 
 function AppContent() {
   const { theme, currentTheme } = useTheme();
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedSign, setSelectedSign] = useState('Лев');
+  
+  // Восстанавливаем сохраненное состояние
+  const [currentView, setCurrentView] = useState(() => {
+    try {
+      const savedView = localStorage.getItem('gnome-current-view');
+      return savedView || 'home';
+    } catch (error) {
+      console.error('Ошибка загрузки сохраненного view:', error);
+      return 'home';
+    }
+  });
+  
+  const [selectedSign, setSelectedSign] = useState(() => {
+    try {
+      const savedSign = localStorage.getItem('gnome-selected-sign');
+      return savedSign || 'Лев';
+    } catch (error) {
+      console.error('Ошибка загрузки сохраненного знака:', error);
+      return 'Лев';
+    }
+  });
+  
   const [telegramApp, setTelegramApp] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [forceUpdate, setForceUpdate] = useState(0);
-  
   const [favorites, setFavorites] = useState(() => {
     try {
       const saved = localStorage.getItem('gnome-favorites');
@@ -60,6 +80,25 @@ function AppContent() {
       return [];
     }
   });
+
+  // Сохраняем состояние при изменении
+  useEffect(() => {
+    try {
+      localStorage.setItem('gnome-current-view', currentView);
+      console.log('💾 Сохранен view:', currentView);
+    } catch (error) {
+      console.error('Ошибка сохранения view:', error);
+    }
+  }, [currentView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('gnome-selected-sign', selectedSign);
+      console.log('💾 Сохранен знак:', selectedSign);
+    } catch (error) {
+      console.error('Ошибка сохранения знака:', error);
+    }
+  }, [selectedSign]);
 
   // Принудительное обновление при смене темы
   useEffect(() => {
@@ -149,6 +188,12 @@ function AppContent() {
 
   const handleBackToHome = () => {
     setCurrentView('home');
+    // При возврате на главную, очищаем сохранение
+    try {
+      localStorage.setItem('gnome-current-view', 'home');
+    } catch (error) {
+      console.error('Ошибка сохранения home view:', error);
+    }
   };
 
   const handleSignSelect = (sign) => {
@@ -328,40 +373,26 @@ function AppContent() {
     }
   };
 
-  const showFallbackBackButton = currentView !== 'home' && 
-    (!telegramApp || !telegramApp.BackButton || parseFloat(telegramApp.version) < 6.1);
-
   console.log('🎨 App рендерится с темой:', currentTheme, 'forceUpdate:', forceUpdate);
 
   return (
-   <div style={{
-    ...theme.container, 
-    transition: 'all 0.5s ease',
-    padding: '10px',                    // Добавляем общий padding
-    paddingTop: '60px',                 // Отступ сверху для ThemeSelector
-    boxSizing: 'border-box'             // Правильный box model
-  }} key={`app-${forceUpdate}`}>
-    
-    {/* Переключатель тем */}
-    <ThemeSelector key={`theme-selector-${forceUpdate}`} />
-    
-
-      {showFallbackBackButton && (
-        <Button
-          variant="ghost"
-          onClick={handleBackToHome}
-          style={{
-            position: 'fixed',
-            top: '70px',
-            left: '20px',
-            zIndex: 1000
-          }}
-          key={`back-button-${forceUpdate}`}
-        >
-          ← Назад
-        </Button>
-      )}
+    <div style={{
+      ...theme.container, 
+      transition: 'all 0.5s ease',
+      padding: '10px',
+      paddingTop: '60px',
+      boxSizing: 'border-box'
+    }} key={`app-${forceUpdate}`}>
       
+      <ThemeSelector key={`theme-selector-${forceUpdate}`} />
+      
+      {/* Кнопка назад внизу экрана */}
+      <BackButton 
+        show={currentView !== 'home'}
+        onClick={handleBackToHome}
+      />
+
+      {/* Остальной контент */}
       {renderCurrentView()}
     </div>
   );
