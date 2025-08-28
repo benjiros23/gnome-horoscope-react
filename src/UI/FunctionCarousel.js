@@ -12,6 +12,7 @@ const FunctionCarousel = ({ items, onItemClick }) => {
 
   const maxIndex = Math.max(0, items.length - itemsPerView);
 
+  // Touch события для мобильных
   const handleTouchStart = (e) => {
     setIsDragging(true);
     setStartX(e.touches[0].clientX);
@@ -38,6 +39,7 @@ const FunctionCarousel = ({ items, onItemClick }) => {
     setIsDragging(false);
   };
 
+  // Mouse события для десктопа
   const handleMouseDown = (e) => {
     setIsDragging(true);
     setStartX(e.clientX);
@@ -80,43 +82,41 @@ const FunctionCarousel = ({ items, onItemClick }) => {
     setCurrentIndex(prev => Math.max(0, prev - 1));
   };
 
-  const getContainerStyle = () => {
-    const baseStyle = {
+  // Стили на основе темы
+  const getStyles = () => ({
+    container: {
       position: 'relative',
       width: '100%',
       maxWidth: '400px',
       margin: '0 auto',
       padding: '20px 0'
-    };
-
-    return baseStyle;
-  };
-
-  const getCarouselStyle = () => {
-    const baseStyle = {
+    },
+    
+    carousel: {
       position: 'relative',
       overflow: 'hidden',
       borderRadius: '24px',
       padding: '20px',
       ...theme.card,
       margin: '0'
-    };
-
-    return baseStyle;
-  };
-
-  const getTrackStyle = () => {
-    return {
+    },
+    
+    track: {
       display: 'flex',
       transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)`,
       transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       cursor: isDragging ? 'grabbing' : 'grab',
       userSelect: 'none'
-    };
-  };
-
-  const getNavButtonStyle = (position) => {
-    const baseStyle = {
+    },
+    
+    item: {
+      flex: `0 0 ${100 / itemsPerView}%`,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    
+    navButton: {
       position: 'absolute',
       top: '50%',
       transform: 'translateY(-50%)',
@@ -134,64 +134,44 @@ const FunctionCarousel = ({ items, onItemClick }) => {
       ...theme.button.primary,
       padding: '0',
       minWidth: 'auto'
-    };
-
-    return {
-      ...baseStyle,
-      [position]: '-20px'
-    };
-  };
-
-  const getIndicatorsStyle = () => {
-    return {
+    },
+    
+    indicators: {
       display: 'flex',
       justifyContent: 'center',
       gap: '8px',
       marginTop: '16px'
-    };
-  };
-
-  const getIndicatorStyle = (isActive) => {
-    const baseStyle = {
+    },
+    
+    indicator: (isActive) => ({
       width: '12px',
       height: '12px',
       borderRadius: '50%',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
-      border: `2px solid ${theme.colors.primary}`
-    };
-
-    if (isActive) {
-      return {
-        ...baseStyle,
-        background: theme.colors.primary,
-        boxShadow: `0 2px 8px ${theme.colors.primary}40`
-      };
-    }
-
-    return {
-      ...baseStyle,
-      background: theme.name === 'wooden' 
-        ? 'rgba(139, 69, 19, 0.3)' 
-        : 'rgba(139, 195, 74, 0.3)'
-    };
-  };
-
-  const getTitleStyle = () => {
-    return {
+      border: `2px solid ${theme.colors.primary}`,
+      background: isActive 
+        ? theme.colors.primary
+        : (theme.name === 'wooden' ? 'rgba(139, 69, 19, 0.3)' : 'rgba(139, 195, 74, 0.3)'),
+      boxShadow: isActive ? `0 2px 8px ${theme.colors.primary}40` : 'none'
+    }),
+    
+    title: {
       textAlign: 'center',
       marginBottom: '16px',
       ...theme.typography.subtitle,
       color: theme.name === 'wooden' ? '#8b4513' : theme.colors.text.primary
-    };
-  };
+    }
+  });
+
+  const styles = getStyles();
 
   return (
-    <div style={getContainerStyle()}>
-      <div style={getTitleStyle()}>🎮 Магические функции</div>
+    <div style={styles.container}>
+      <div style={styles.title}>🎮 Магические функции</div>
       
-      <div style={getCarouselStyle()}>
-        {/* Деревянная текстура для wooden темы */}
+      <div style={styles.carousel}>
+        {/* Текстура для wooden темы */}
         {theme.name === 'wooden' && (
           <div style={{
             position: 'absolute',
@@ -203,7 +183,7 @@ const FunctionCarousel = ({ items, onItemClick }) => {
         {/* Кнопка "Назад" */}
         {currentIndex > 0 && (
           <button
-            style={getNavButtonStyle('left')}
+            style={{...styles.navButton, left: '-20px'}}
             onClick={prevSlide}
             onMouseEnter={(e) => {
               e.target.style.transform = 'translateY(-50%) scale(1.1)';
@@ -221,7 +201,7 @@ const FunctionCarousel = ({ items, onItemClick }) => {
         {/* Кнопка "Вперед" */}
         {currentIndex < maxIndex && (
           <button
-            style={getNavButtonStyle('right')}
+            style={{...styles.navButton, right: '-20px'}}
             onClick={nextSlide}
             onMouseEnter={(e) => {
               e.target.style.transform = 'translateY(-50%) scale(1.1)';
@@ -239,7 +219,7 @@ const FunctionCarousel = ({ items, onItemClick }) => {
         {/* Трек с элементами */}
         <div
           ref={carouselRef}
-          style={getTrackStyle()}
+          style={styles.track}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -249,7 +229,7 @@ const FunctionCarousel = ({ items, onItemClick }) => {
           onMouseLeave={handleMouseLeave}
         >
           {items.map((item, index) => (
-            <div key={index} style={{ flex: `0 0 ${100 / itemsPerView}%`, display: 'flex', justifyContent: 'center' }}>
+            <div key={index} style={styles.item}>
               <FunctionTile
                 icon={item.icon}
                 title={item.title}
@@ -264,11 +244,11 @@ const FunctionCarousel = ({ items, onItemClick }) => {
 
       {/* Индикаторы */}
       {maxIndex > 0 && (
-        <div style={getIndicatorsStyle()}>
+        <div style={styles.indicators}>
           {Array.from({ length: maxIndex + 1 }, (_, index) => (
             <div
               key={index}
-              style={getIndicatorStyle(index === currentIndex)}
+              style={styles.indicator(index === currentIndex)}
               onClick={() => goToSlide(index)}
             />
           ))}
