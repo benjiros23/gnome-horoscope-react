@@ -6,10 +6,9 @@ import MoonView from './components/MoonView';
 import CompatibilityView from './components/CompatibilityView';
 import NumerologyView from './components/NumerologyView';
 import AstroEventsView from './components/AstroEventsView';
-// Недостающие компоненты закомментированы
 import DayCardView from './components/DayCardView';
-// import AdviceView from './components/AdviceView';
 import MercuryView from './components/MercuryView';
+import ButtonGrid from './components/ButtonGrid';
 import './App.css';
 
 const ZODIAC_SIGNS = [
@@ -43,9 +42,11 @@ const GNOME_PROFILES = {
 };
 
 function App() {
-  // Основное состояние приложения
+  // ВСЕ ХУКИ В НАЧАЛЕ КОМПОНЕНТА
+  const [currentView, setCurrentView] = useState('home');
   const [selectedSign, setSelectedSign] = useState('Лев');
-  const [currentScreen, setCurrentScreen] = useState('main');
+  const [telegramApp, setTelegramApp] = useState(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   // Состояние избранного
   const [favorites, setFavorites] = useState(() => {
@@ -57,12 +58,43 @@ function App() {
       return [];
     }
   });
-  
-  // Telegram WebApp интеграция
-  const [telegramApp, setTelegramApp] = useState(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
-  // Инициализация Telegram WebApp
+
+  // БЕЗОПАСНЫЕ функции для Telegram WebApp (без ошибок в консоли)
+  const safeHapticFeedback = (type = 'impact') => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      if (tg?.HapticFeedback && parseFloat(tg.version) >= 6.1) {
+        if (type === 'impact') {
+          tg.HapticFeedback.impactOccurred('light');
+        } else if (type === 'selection') {
+          tg.HapticFeedback.selectionChanged();
+        }
+      }
+      // НЕ логируем ошибки в консоль - просто игнорируем
+    } catch (error) {
+      // Тихо игнорируем ошибки
+    }
+  };
+
+  const safeBackButton = (show = true, callback = null) => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      if (tg?.BackButton && parseFloat(tg.version) >= 6.1) {
+        if (show) {
+          tg.BackButton.show();
+          if (callback) tg.BackButton.onClick(callback);
+        } else {
+          tg.BackButton.hide();
+        }
+        return true;
+      }
+    } catch (error) {
+      // Тихо игнорируем ошибки
+    }
+    return false;
+  };
+
+  // Telegram WebApp инициализация БЕЗ ОШИБОК
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     if (tg) {
@@ -70,42 +102,35 @@ function App() {
       tg.ready();
       tg.expand();
       
-      // Настройка главной кнопки
-      tg.MainButton.setText('🃏 Получить карту дня');
-      tg.MainButton.color = '#8BC34A';
-      tg.MainButton.show();
-      
-      // Обработчик главной кнопки
-      tg.MainButton.onClick(() => {
-        setCurrentScreen('day-card');
-      });
-      
-      console.log('✅ Telegram WebApp инициализирован');
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Работаем в браузере (демо-режим)');
-      }
-    }
-  }, []);
-  
-  // Обновляем состояние Back Button
-  useEffect(() => {
-    if (telegramApp?.BackButton) {
+      // Только базовые функции без ошибок
       try {
-        if (currentScreen !== 'main') {
-          telegramApp.BackButton.show();
-          telegramApp.BackButton.onClick(() => {
-            setCurrentScreen('main');
-          });
-        } else {
-          telegramApp.BackButton.hide();
+        if (tg.MainButton) {
+          tg.MainButton.setText('🃏 Получить карту дня');
+          tg.MainButton.color = '#8BC34A';
+          tg.MainButton.show();
+          tg.MainButton.onClick(() => setCurrentView('cards'));
         }
       } catch (error) {
-        console.log('BackButton недоступен:', error.message);
+        // Игнорируем ошибки
       }
+      
+      console.log('✅ Telegram WebApp инициализирован (версия:', tg.version + ')');
     }
-  }, [currentScreen, telegramApp]);
-  
+  }, []);
+
+  // BackButton БЕЗ ОШИБОК В КОНСОЛИ
+  useEffect(() => {
+    const backButtonWorked = safeBackButton(
+      currentView !== 'home', 
+      () => setCurrentView('home')
+    );
+    
+    // Показываем обычную кнопку только если BackButton не работает
+    if (!backButtonWorked && currentView !== 'home') {
+      // Фоллбэк кнопка будет показана в JSX
+    }
+  }, [currentView]);
+
   // Отслеживание статуса сети
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -117,8 +142,8 @@ function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-  
-  // Сохранение избранного в localStorage
+
+  // Сохранение избранного
   useEffect(() => {
     try {
       localStorage.setItem('gnome-favorites', JSON.stringify(favorites));
@@ -126,36 +151,24 @@ function App() {
       console.error('Ошибка сохранения избранного:', error);
     }
   }, [favorites]);
-  
-  // Утилиты
-  const hapticFeedback = (type = 'impact', style = 'medium') => {
-    if (telegramApp?.HapticFeedback) {
-      try {
-        if (type === 'impact') {
-          telegramApp.HapticFeedback.impactOccurred(style);
-        } else if (type === 'selection') {
-          telegramApp.HapticFeedback.selectionChanged();
-        }
-      } catch (error) {
-        console.log('Haptic feedback недоступен:', error.message);
-      }
-    }
+
+  // ОБРАБОТЧИКИ БЕЗ HAPTIC FEEDBACK ОШИБОК
+  const handleButtonClick = (buttonId) => {
+    console.log('Выбрана функция:', buttonId);
+    setCurrentView(buttonId);
+    safeHapticFeedback('selection'); // Тихо, без ошибок
   };
-  
-  const showToast = (message) => {
-    if (telegramApp) {
-      telegramApp.showAlert(message);
-    } else {
-      alert(message);
-    }
+
+  const handleBackToHome = () => {
+    setCurrentView('home');
   };
-  
+
   const handleSignSelect = (sign) => {
     setSelectedSign(sign);
-    hapticFeedback('selection');
+    safeHapticFeedback('impact'); // Тихо, без ошибок
     console.log(`Выбран знак: ${sign}`);
   };
-  
+
   const handleAddToFavorites = (item) => {
     try {
       const exists = favorites.some(fav => 
@@ -165,7 +178,11 @@ function App() {
       );
       
       if (exists) {
-        showToast('Этот элемент уже в избранном!');
+        if (telegramApp) {
+          telegramApp.showAlert('Этот элемент уже в избранном!');
+        } else {
+          alert('Этот элемент уже в избранном!');
+        }
         return;
       }
       
@@ -175,33 +192,28 @@ function App() {
         addedAt: new Date().toISOString()
       };
       
-      setFavorites(prev => [newItem, ...prev]);
+      setFavorites(prev => {
+        const updated = [newItem, ...prev];
+        return updated.length > 50 ? updated.slice(0, 50) : updated;
+      });
       
-      if (favorites.length >= 50) {
-        setFavorites(prev => prev.slice(0, 50));
-      }
-      
-      hapticFeedback('impact', 'light');
+      safeHapticFeedback('impact'); // Тихо, без ошибок
       console.log('✅ Добавлено в избранное:', newItem);
       
     } catch (error) {
       console.error('Ошибка добавления в избранное:', error);
-      showToast('Ошибка при добавлении в избранное');
     }
   };
-  
+
   const handleRemoveFromFavorites = (itemId) => {
     setFavorites(prev => prev.filter(item => item.id !== itemId));
-    hapticFeedback('impact', 'light');
-    showToast('Удалено из избранного');
   };
-  
+
   const handleClearFavorites = () => {
     if (telegramApp) {
       telegramApp.showConfirm('Удалить все избранные элементы?', (confirmed) => {
         if (confirmed) {
           setFavorites([]);
-          hapticFeedback('notification', 'warning');
         }
       });
     } else {
@@ -210,264 +222,281 @@ function App() {
       }
     }
   };
-  
-  const handleBack = () => {
-    setCurrentScreen('main');
-    hapticFeedback('impact', 'light');
+
+  // СТИЛИ
+  const styles = {
+    app: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #F1F8E9 0%, #E8F5E8 100%)',
+      padding: '0',
+      fontFamily: 'system-ui, sans-serif'
+    },
+    backButton: {
+      position: 'fixed',
+      top: '20px',
+      left: '20px',
+      background: 'linear-gradient(135deg, #8BC34A, #FFC107)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '12px',
+      padding: '12px 16px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: '600',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+      zIndex: 1000
+    },
+    header: {
+      textAlign: 'center',
+      padding: '20px',
+      background: 'rgba(139, 195, 74, 0.1)',
+      marginBottom: '20px'
+    },
+    title: {
+      color: '#8BC34A',
+      fontSize: '28px',
+      fontWeight: 'bold',
+      marginBottom: '8px'
+    },
+    subtitle: {
+      color: '#666',
+      fontStyle: 'italic'
+    },
+    offlineBadge: {
+      background: '#ff9800',
+      color: 'white',
+      padding: '4px 12px',
+      borderRadius: '16px',
+      fontSize: '12px',
+      marginTop: '10px',
+      display: 'inline-block'
+    }
   };
-  
-  // Получить текущий профиль гнома
-  const currentProfile = GNOME_PROFILES[selectedSign] || GNOME_PROFILES['Лев'];
-  const currentSignData = ZODIAC_SIGNS.find(s => s.sign === selectedSign) || ZODIAC_SIGNS[4];
-  
-  return (
-    <div className="app-container">
-      {/* Заголовок */}
-      <div className="header">
-        <h1>🧙‍♂️ Гномий Гороскоп</h1>
-        <p>Магические предсказания от древних гномов</p>
-        {!isOnline && (
-          <div className="offline-badge">
-            📵 Оффлайн режим
-          </div>
-        )}
-      </div>
-      
-      {/* Основной экран */}
-      {currentScreen === 'main' && (
-        <div className="main-screen content-enter">
-          {/* Карточка профиля */}
-          <div className="card profile-card">
-            <h2>{currentProfile.name}</h2>
-            <p className="gnome-title">{currentProfile.title}</p>
-            <p>{currentProfile.desc}</p>
-            <span className="selected-sign">
-              {selectedSign} ({currentSignData.dates})
-            </span>
-          </div>
-          
-          {/* Карусель знаков зодиака */}
-          <ZodiacCarousel
+
+  // РЕНДЕР ТЕКУЩЕГО ЭКРАНА
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'horoscope':
+        return (
+          <HoroscopeView
             selectedSign={selectedSign}
-            onSignChange={handleSignSelect}
+            onSignSelect={handleSignSelect}
+            onAddToFavorites={handleAddToFavorites}
             telegramApp={telegramApp}
           />
-          
-          {/* Меню кнопок */}
-          <div className="menu-buttons">
-            <button className="menu-btn" onClick={() => setCurrentScreen('horoscope')}>
-              <div className="btn-icon">🔮</div>
-              <div className="btn-content">
-                <h3>Гороскоп дня</h3>
-                <p>Узнайте что готовят звезды</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('moon')}>
-              <div className="btn-icon">🌙</div>
-              <div className="btn-content">
-                <h3>Лунный календарь</h3>
-                <p>Фазы и влияние луны</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('numerology')}>
-              <div className="btn-icon">🔢</div>
-              <div className="btn-content">
-                <h3>Нумерология</h3>
-                <p>Число судьбы и характер</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('compatibility')}>
-              <div className="btn-icon">👫</div>
-              <div className="btn-content">
-                <h3>Совместимость</h3>
-                <p>Узнайте совместимость</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('events')}>
-              <div className="btn-icon">🌌</div>
-              <div className="btn-content">
-                <h3>Астрособытия</h3>
-                <p>Небесные явления</p>
-              </div>
-            </button>
-            
-            {/* Кнопки для экранов в разработке */}
-            <button className="menu-btn" onClick={() => setCurrentScreen('day-card')}>
-              <div className="btn-icon">🃏</div>
-              <div className="btn-content">
-                <h3>Карта дня</h3>
-                <p>Мудрость древних гномов</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('advice')}>
-              <div className="btn-icon">💡</div>
-              <div className="btn-content">
-                <h3>Совет дня</h3>
-                <p>Личная рекомендация</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('mercury')}>
-              <div className="btn-icon">🪐</div>
-              <div className="btn-content">
-                <h3>Статус Меркурия</h3>
-                <p>Влияние на неделю</p>
-              </div>
-            </button>
-            
-            <button className="menu-btn" onClick={() => setCurrentScreen('favorites')}>
-              <div className="btn-icon">❤️</div>
-              <div className="btn-content">
-                <h3>Избранное</h3>
-                <p>Сохранённые предсказания ({favorites.length})</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
+        );
       
-      {/* СУЩЕСТВУЮЩИЕ экраны */}
-      {currentScreen === 'horoscope' && (
-        <HoroscopeView
-          selectedSign={selectedSign}
-          onBack={handleBack}
-          onAddToFavorites={handleAddToFavorites}
-          telegramApp={telegramApp}
-        />
-      )}
+      case 'moon':
+        return (
+          <MoonView
+            onAddToFavorites={handleAddToFavorites}
+            telegramApp={telegramApp}
+          />
+        );
       
-      {currentScreen === 'moon' && (
-        <MoonView
-          onBack={handleBack}
-          onAddToFavorites={handleAddToFavorites}
-          telegramApp={telegramApp}
-        />
-      )}
+      case 'numerology':
+        return (
+          <NumerologyView
+            onAddToFavorites={handleAddToFavorites}
+            telegramApp={telegramApp}
+          />
+        );
       
-      {currentScreen === 'numerology' && (
-        <NumerologyView
-          onBack={handleBack}
-          onAddToFavorites={handleAddToFavorites}
-          telegramApp={telegramApp}
-        />
-      )}
+      case 'compatibility':
+        return (
+          <CompatibilityView
+            onAddToFavorites={handleAddToFavorites}
+            telegramApp={telegramApp}
+          />
+        );
       
-      {currentScreen === 'compatibility' && (
-        <CompatibilityView
-          onBack={handleBack}
-          onAddToFavorites={handleAddToFavorites}
-          telegramApp={telegramApp}
-        />
-      )}
-
-{currentScreen === 'day-card' && (
-  <DayCardView
-    onBack={handleBack}
-    onAddToFavorites={handleAddToFavorites}
-    telegramApp={telegramApp}
-  />
-)}
-
-
-      {currentScreen === 'events' && (
-        <AstroEventsView
-          onBack={handleBack}
-          onAddToFavorites={handleAddToFavorites}
-          telegramApp={telegramApp}
-        />
-      )}
-{currentScreen === 'mercury' && (
-  <MercuryView
-    onBack={handleBack}
-    onAddToFavorites={handleAddToFavorites}
-    telegramApp={telegramApp}
-  />
-)}
+      case 'cards':
+        return (
+          <DayCardView
+            onAddToFavorites={handleAddToFavorites}
+            telegramApp={telegramApp}
+          />
+        );
       
-      {/* Экран избранного */}
-      {currentScreen === 'favorites' && (
-        <div className="favorites-screen content-enter">
-          <div className="card">
-            <h3 className="content-title">❤️ Избранное</h3>
+      case 'events':
+        return (
+          <AstroEventsView
+            onAddToFavorites={handleAddToFavorites}
+            telegramApp={telegramApp}
+          />
+        );
+      
+      case 'mercury':
+        return (
+          <MercuryView
+            onAddToFavorites={handleAddToFavorites}
+            telegramApp={telegramApp}
+          />
+        );
+      
+      case 'favorites':
+        return (
+          <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+            <h3 style={{ color: '#8BC34A', textAlign: 'center', marginBottom: '20px' }}>
+              ❤️ Избранное
+            </h3>
             
             {favorites.length === 0 ? (
-              <div className="empty-favorites">
-                <div className="empty-icon">📝</div>
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
                 <h4>Здесь пока пусто</h4>
-                <p>Добавляйте интересные гороскопы, карты и предсказания в избранное!</p>
-                <small>Используйте кнопку "❤️ В избранное" при просмотре предсказаний</small>
+                <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
               </div>
             ) : (
               <>
-                <div className="favorites-header">
-                  <p>У вас сохранено предсказаний: <strong>{favorites.length}</strong></p>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  marginBottom: '20px' 
+                }}>
+                  <p>Сохранено: <strong>{favorites.length}</strong></p>
                   <button 
-                    className="btn-danger" 
                     onClick={handleClearFavorites}
-                    title="Очистить все"
+                    style={{
+                      background: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
                   >
                     🗑️ Очистить
                   </button>
                 </div>
                 
-                <div className="favorites-list">
+                <div>
                   {favorites.map((item) => (
-                    <div key={item.id} className="favorite-item">
-                      <div className="favorite-header">
-                        <h5>{item.title}</h5>
+                    <div 
+                      key={item.id} 
+                      style={{
+                        background: 'white',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        marginBottom: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start',
+                        marginBottom: '8px'
+                      }}>
+                        <h5 style={{ margin: 0, color: '#333' }}>{item.title}</h5>
                         <button 
-                          className="remove-btn"
                           onClick={() => handleRemoveFromFavorites(item.id)}
-                          title="Удалить"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '18px',
+                            cursor: 'pointer',
+                            color: '#dc3545'
+                          }}
                         >
                           ×
                         </button>
                       </div>
-                      <p className="favorite-date">{item.date}</p>
-                      <p className="favorite-content">{item.content}</p>
-                      {item.source && (
-                        <span className={`source-badge ${item.source}`}>
-                          {item.source === 'internet' ? '🌐' : '📱'} {item.source}
-                        </span>
-                      )}
+                      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px 0' }}>
+                        {item.date}
+                      </p>
+                      <p style={{ margin: 0, color: '#333' }}>{item.content}</p>
                     </div>
                   ))}
                 </div>
               </>
             )}
-            
-            <div className="action-buttons">
-              <button className="btn-secondary" onClick={handleBack}>
-                ← Назад
-              </button>
-            </div>
           </div>
-        </div>
+        );
+      
+      case 'advice':
+        return (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <h3 style={{ color: '#8BC34A' }}>🚧 Совет дня</h3>
+            <p>Этот раздел находится в разработке...</p>
+            <p>📱 Подключение к API готово</p>
+            <p>🔗 Скоро будет доступен</p>
+          </div>
+        );
+      
+      default:
+        return (
+          <div>
+            {/* Заголовок */}
+            <div style={styles.header}>
+              <h1 style={styles.title}>🧙‍♂️ Гномий Гороскоп</h1>
+              <p style={styles.subtitle}>Магические предсказания от древних гномов</p>
+              {!isOnline && (
+                <div style={styles.offlineBadge}>
+                  📵 Оффлайн режим
+                </div>
+              )}
+            </div>
+
+            {/* Карточка профиля */}
+            <div style={{
+              background: 'white',
+              margin: '20px',
+              padding: '20px',
+              borderRadius: '16px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              textAlign: 'center'
+            }}>
+              <h2 style={{ color: '#8BC34A', marginBottom: '8px' }}>
+                {GNOME_PROFILES[selectedSign]?.name || 'Гном Мудрый'}
+              </h2>
+              <p style={{ color: '#666', fontSize: '14px', marginBottom: '8px' }}>
+                {GNOME_PROFILES[selectedSign]?.title || 'Мастер предсказаний'}
+              </p>
+              <p style={{ color: '#333', marginBottom: '12px' }}>
+                {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
+              </p>
+              <span style={{
+                background: 'linear-gradient(135deg, #8BC34A, #FFC107)',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '16px',
+                fontSize: '12px'
+              }}>
+                {selectedSign} ({ZODIAC_SIGNS.find(s => s.sign === selectedSign)?.dates})
+              </span>
+            </div>
+
+            {/* Карусель знаков */}
+            {ZodiacCarousel && (
+              <ZodiacCarousel
+                selectedSign={selectedSign}
+                onSignChange={handleSignSelect}
+                telegramApp={telegramApp}
+              />
+            )}
+
+            {/* Сетка кнопок */}
+            <ButtonGrid onButtonClick={handleButtonClick} />
+          </div>
+        );
+    }
+  };
+
+  // Показываем fallback кнопку "Назад" только если Telegram BackButton не работает
+  const showFallbackBackButton = currentView !== 'home' && 
+    (!telegramApp || !telegramApp.BackButton || parseFloat(telegramApp.version) < 6.1);
+
+  return (
+    <div style={styles.app}>
+      {showFallbackBackButton && (
+        <button style={styles.backButton} onClick={handleBackToHome}>
+          ← Назад в главное меню
+        </button>
       )}
       
-      {/* Заглушки для экранов в разработке */}
-      {['advice'].includes(currentScreen) && (
-        <div className="card content-enter">
-          <h3>🚧 Экран: {currentScreen}</h3>
-          <p>Этот раздел находится в разработке...</p>
-          <div className="placeholder-info">
-            <p>📱 <strong>{currentScreen}</strong> будет доступен в следующем обновлении</p>
-            <p>🔗 Подключение к серверному API: готово</p>
-            <p>⚡ Telegram WebApp: активно</p>
-            <p>🎯 Сервер готов: все endpoints работают</p>
-          </div>
-          <div style={{ marginTop: '24px' }}>
-            <button className="btn-secondary" onClick={handleBack}>
-              ← Назад в главное меню
-            </button>
-          </div>
-        </div>
-      )}
+      {renderCurrentView()}
     </div>
   );
 }
