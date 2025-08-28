@@ -14,37 +14,49 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState('glass');
 
-  // Загружаем сохраненную тему из localStorage
+  // Загружаем сохраненную тему
   useEffect(() => {
     const savedTheme = localStorage.getItem('gnome-theme');
+    console.log('🎨 Загружаем сохраненную тему:', savedTheme);
     if (savedTheme && themes[savedTheme]) {
       setCurrentTheme(savedTheme);
+      console.log('✅ Тема установлена:', savedTheme);
     }
   }, []);
 
-  // Сохраняем тему в localStorage при изменении
+  // Сохраняем тему при изменении
   useEffect(() => {
     localStorage.setItem('gnome-theme', currentTheme);
+    console.log('💾 Тема сохранена:', currentTheme);
   }, [currentTheme]);
 
   const switchTheme = (themeName) => {
     if (themes[themeName]) {
+      console.log('🔄 Переключаем тему с', currentTheme, 'на', themeName);
       setCurrentTheme(themeName);
-      console.log(`🎨 Тема изменена на: ${themeName}`);
+    } else {
+      console.error('❌ Тема не найдена:', themeName);
     }
   };
 
-  const getTheme = () => themes[currentTheme];
-  
-  const getAvailableThemes = () => Object.keys(themes);
+  const getTheme = () => {
+    const theme = themes[currentTheme];
+    if (!theme) {
+      console.error('❌ Не удалось найти тему:', currentTheme);
+      return themes.glass; // fallback
+    }
+    return theme;
+  };
 
   const value = {
     currentTheme,
     theme: getTheme(),
     switchTheme,
-    getAvailableThemes,
+    availableThemes: Object.keys(themes),
     themes
   };
+
+  console.log('🎨 ThemeContext рендерится, текущая тема:', currentTheme);
 
   return (
     <ThemeContext.Provider value={value}>
