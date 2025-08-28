@@ -334,9 +334,17 @@ function AppContent() {
   console.log('🎨 App рендерится с темой:', currentTheme, 'forceUpdate:', forceUpdate);
 
   return (
-    <div style={{...theme.container, transition: 'all 0.5s ease'}} key={`app-${forceUpdate}`}>
-      {/* Переключатель тем */}
-      <ThemeSelector key={`theme-selector-${forceUpdate}`} />
+   <div style={{
+    ...theme.container, 
+    transition: 'all 0.5s ease',
+    padding: '10px',                    // Добавляем общий padding
+    paddingTop: '60px',                 // Отступ сверху для ThemeSelector
+    boxSizing: 'border-box'             // Правильный box model
+  }} key={`app-${forceUpdate}`}>
+    
+    {/* Переключатель тем */}
+    <ThemeSelector key={`theme-selector-${forceUpdate}`} />
+    
 
       {showFallbackBackButton && (
         <Button
