@@ -1,164 +1,182 @@
 import React, { useState } from 'react';
+import WoodenCarousel from './WoodenCarousel';
+import WoodenTile from './WoodenTile';
 
 const ButtonGrid = ({ onButtonClick }) => {
-  const [activeButton, setActiveButton] = useState(null);
+  const [viewMode, setViewMode] = useState('carousel'); // 'carousel' или 'grid'
 
-  // Ваша пиксель-арт палитра
-  const palette = {
-    sage: '#b6bb9b',      // Шалфей
-    brown: '#8a6c4c',     // Коричневый
-    forest: '#62862a',    // Лесной
-    olive: '#8e8e15',     // Оливковый
-    amber: '#a96a14'      // Янтарный
-  };
-
-  const buttons = [
-    { 
-      id: 'horoscope', 
-      icon: '★', 
-      title: 'Гороскоп', 
-      color: palette.amber
+  // Функции приложения
+  const functions = [
+    {
+      id: 'horoscope',
+      icon: '🔮',
+      title: 'Гороскоп',
+      subtitle: 'На сегодня'
     },
-    { 
-      id: 'cards', 
-      icon: '♠', 
-      title: 'Карты', 
-      color: palette.olive
+    {
+      id: 'moon',
+      icon: '🌙',
+      title: 'Луна',
+      subtitle: 'Календарь'
     },
-    { 
-      id: 'numerology', 
-      icon: '#', 
-      title: 'Числа', 
-      color: palette.forest
+    {
+      id: 'cards',
+      icon: '🃏',
+      title: 'Карты',
+      subtitle: 'Дня'
     },
-    { 
-      id: 'compatibility', 
-      icon: '♥', 
-      title: 'Любовь', 
-      color: palette.brown
+    {
+      id: 'events',
+      icon: '🌌',
+      title: 'События',
+      subtitle: 'Астро'
     },
-    { 
-      id: 'moon', 
-      icon: '○', 
-      title: 'Луна', 
-      color: palette.sage
+    {
+      id: 'numerology',
+      icon: '🔢',
+      title: 'Число',
+      subtitle: 'Судьбы'
     },
-    { 
-      id: 'events', 
-      icon: '✦', 
-      title: 'События', 
-      color: palette.amber
+    {
+      id: 'compatibility',
+      icon: '💕',
+      title: 'Любовь',
+      subtitle: 'Совместимость'
     },
-    { 
-      id: 'mercury', 
-      icon: '◉', 
-      title: 'Меркурий', 
-      color: palette.brown
+    {
+      id: 'mercury',
+      icon: '🪐',
+      title: 'Меркурий',
+      subtitle: 'Ретроград'
     },
-    { 
-      id: 'favorites', 
-      icon: '♦', 
-      title: 'Избранное', 
-      color: palette.forest
+    {
+      id: 'favorites',
+      icon: '⭐',
+      title: 'Избранное',
+      subtitle: 'Сохраненное'
     }
   ];
 
-  const handleButtonClick = (button) => {
-    setActiveButton(button.id);
+  const handleItemClick = (item) => {
     if (onButtonClick) {
-      onButtonClick(button.id);
+      onButtonClick(item.id);
     }
   };
 
-  const containerStyle = {
-    padding: '20px',
-    maxWidth: '400px',
-    margin: '0 auto'
-  };
-
-  const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '12px',
-    marginBottom: '20px'
-  };
-
-  const getButtonStyle = (button, isActive) => ({
-    backgroundColor: button.color,
-    border: isActive ? '3px solid #000000' : '2px solid #000000',
-    borderRadius: '8px',
-    padding: '16px 12px',
-    cursor: 'pointer',
-    transition: 'all 0.1s ease', // Быстрый переход для пиксельного эффекта
-    textAlign: 'center',
-    minHeight: '80px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontFamily: '"Courier New", monospace', // Моноширинный шрифт
-    fontWeight: 'bold',
-    color: '#000000',
-    fontSize: '14px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase',
-    boxShadow: isActive 
-      ? '4px 4px 0px #000000, inset 2px 2px 0px rgba(255,255,255,0.2)' 
-      : '2px 2px 0px #000000',
-    transform: isActive ? 'translate(-1px, -1px)' : 'translate(0, 0)',
-    // Убираем все градиенты - чистые пиксельные цвета
-    backgroundImage: 'none',
-    position: 'relative'
-  });
-
-  const iconStyle = {
-    fontSize: '20px',
-    marginBottom: '4px',
-    fontWeight: 'bold'
-  };
-
-  const titleStyle = {
-    fontSize: '10px',
-    fontWeight: 'bold',
-    textShadow: 'none'
+  const styles = {
+    container: {
+      padding: '20px',
+      maxWidth: '600px',
+      margin: '0 auto'
+    },
+    toggleContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      marginBottom: '20px',
+      gap: '10px'
+    },
+    toggleButton: {
+      background: 'linear-gradient(135deg, #8b4513, #a0522d)',
+      color: 'white',
+      border: '2px solid #654321',
+      borderRadius: '20px',
+      padding: '8px 16px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      fontFamily: '"Times New Roman", Georgia, serif',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
+    },
+    toggleButtonActive: {
+      boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3), 0 4px 12px rgba(139, 69, 19, 0.4)',
+      transform: 'scale(0.95)'
+    },
+    gridContainer: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+      gap: '16px',
+      justifyItems: 'center',
+      padding: '20px',
+      background: 'linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(160, 82, 45, 0.1))',
+      borderRadius: '20px',
+      border: '2px solid rgba(139, 69, 19, 0.3)',
+      boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.1)'
+    }
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={gridStyle}>
-        {buttons.map((button) => {
-          const isActive = activeButton === button.id;
-          
-          return (
-            <button
-              key={button.id}
-              onClick={() => handleButtonClick(button)}
-              style={getButtonStyle(button, isActive)}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.target.style.border = '3px solid #000000';
-                  e.target.style.transform = 'translate(-1px, -1px)';
-                  e.target.style.boxShadow = '3px 3px 0px #000000';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.target.style.border = '2px solid #000000';
-                  e.target.style.transform = 'translate(0, 0)';
-                  e.target.style.boxShadow = '2px 2px 0px #000000';
-                }
-              }}
-            >
-              <div style={iconStyle}>
-                {button.icon}
-              </div>
-              <div style={titleStyle}>
-                {button.title}
-              </div>
-            </button>
-          );
-        })}
+    <div style={styles.container}>
+      {/* Переключатель режимов */}
+      <div style={styles.toggleContainer}>
+        <button
+          style={{
+            ...styles.toggleButton,
+            ...(viewMode === 'carousel' ? styles.toggleButtonActive : {})
+          }}
+          onClick={() => setViewMode('carousel')}
+          onMouseEnter={(e) => {
+            if (viewMode !== 'carousel') {
+              e.target.style.transform = 'scale(1.05)';
+              e.target.style.boxShadow = '0 6px 16px rgba(139, 69, 19, 0.3)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (viewMode !== 'carousel') {
+              e.target.style.transform = 'scale(1)';
+              e.target.style.boxShadow = 'none';
+            }
+          }}
+        >
+          🎠 Карусель
+        </button>
+        
+        <button
+          style={{
+            ...styles.toggleButton,
+            ...(viewMode === 'grid' ? styles.toggleButtonActive : {})
+          }}
+          onClick={() => setViewMode('grid')}
+          onMouseEnter={(e) => {
+            if (viewMode !== 'grid') {
+              e.target.style.transform = 'scale(1.05)';
+              e.target.style.boxShadow = '0 6px 16px rgba(139, 69, 19, 0.3)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (viewMode !== 'grid') {
+              e.target.style.transform = 'scale(1)';
+              e.target.style.boxShadow = 'none';
+            }
+          }}
+        >
+          📱 Сетка
+        </button>
       </div>
+
+      {/* Отображение в зависимости от режима */}
+      {viewMode === 'carousel' ? (
+        <WoodenCarousel
+          items={functions}
+          onItemClick={handleItemClick}
+          variant="oak"
+        />
+      ) : (
+        <div style={styles.gridContainer}>
+          {functions.map((item) => (
+            <WoodenTile
+              key={item.id}
+              icon={item.icon}
+              title={item.title}
+              subtitle={item.subtitle}
+              variant="oak"
+              onClick={() => handleItemClick(item)}
+              size="normal"
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
