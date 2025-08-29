@@ -38,6 +38,8 @@
       "no-console": "off",
       "react-hooks/exhaustive-deps": "warn"
     }
+    npm install suncalc
+
   },
   "browserslist": {
     "production": [
