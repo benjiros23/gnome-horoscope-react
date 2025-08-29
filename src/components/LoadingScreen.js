@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
-const LoadingScreen = ({ 
-  onLoadingComplete, 
-  minLoadingTime = 3000,
-  showProgress = true 
-}) => {
-  const { theme } = useTheme();
-  const [progress, setProgress] = useState(0);
-  const [dots, setDots] = useState('');
+// В LoadingScreen.js измените screenStyle:
+const screenStyle = {
+  position: 'fixed',
+  top: 0, // Загрузка поверх всего, включая шапку
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background: `/* ваш градиент */`,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#FFFFFF',
+  fontFamily: 'serif',
+  zIndex: 9999, // Поверх шапки
+  overflow: 'hidden'
+};
+
 
   // Анимация прогресс-бара
   useEffect(() => {
