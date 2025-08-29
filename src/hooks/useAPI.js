@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { EnhancedMoonPhase } from './enhanced_moonPhase';
-import { loadMoonData, saveMoonData } from './enhanced_cache';
+import { EnhancedMoonPhase } from '../enhanced_moonPhase';
+import { loadMoonData, saveMoonData } from '../enhanced_cache';
 
 const BASE_URL = 'https://d-gnome-horoscope-miniapp-frontend.onrender.com';
 
@@ -128,14 +128,14 @@ const useAPI = () => {
       if (apiData && !apiData.raw) {
         // Преобразуем формат API к формату EnhancedMoonPhase
         const normalizedData = {
-          phase: apiData.phase || 'Неизвестная фаза',
-          emoji: apiData.emoji || '🌙',
-          illumination: apiData.illumination || 0,
-          age: apiData.age || 0,
-          lunarDay: apiData.lunarDay || 1,
-          isWaxing: apiData.isWaxing || false,
-          moonrise: apiData.moonrise || 'Нет данных',
-          moonset: apiData.moonset || 'Нет данных',
+          phase: apiData.current?.phase || 'Неизвестная фаза',
+          emoji: apiData.current?.emoji || '🌙',
+          illumination: apiData.current?.illumination || 0,
+          age: apiData.current?.age || 0,
+          lunarDay: apiData.current?.age ? Math.floor(apiData.current.age) + 1 : 1,
+          isWaxing: apiData.current?.age ? apiData.current.age < 14.7 : false,
+          moonrise: apiData.current?.moonrise || 'Нет данных',
+          moonset: apiData.current?.moonset || 'Нет данных',
           source: 'api'
         };
 
@@ -174,47 +174,6 @@ const useAPI = () => {
     }
   }, [makeRequest]);
 
-  // 🚀 НОВАЯ функция для получения актуальных лунных данных с расширенной информацией
-  const getEnhancedMoonData = useCallback(async (date = new Date(), city = 'moscow') => {
-    console.log('🌙✨ Запрос расширенных лунных данных');
-
-    try {
-      const moonResult = await getMoonData(date);
-      
-      if (moonResult.success && moonResult.data) {
-        // Добавляем дополнительную информацию
-        const enhancedResult = {
-          ...moonResult.data,
-          // Времена восхода/захода
-          times: EnhancedMoonPhase.getMoonTimes(date, city),
-          // Советы гномов
-          gnomeAdvice: EnhancedMoonPhase.getGnomeAdvice(moonResult.data.phase),
-          // Следующие фазы
-          nextFullMoon: EnhancedMoonPhase.findNextPhase('Полнолуние', date),
-          nextNewMoon: EnhancedMoonPhase.findNextPhase('Новолуние', date),
-          // Метаинформация
-          requestDate: date.toISOString(),
-          city,
-          source: moonResult.source
-        };
-
-        return {
-          success: true,
-          data: enhancedResult
-        };
-      }
-
-      return moonResult;
-
-    } catch (error) {
-      console.error('❌ Ошибка получения расширенных лунных данных:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }, [getMoonData]);
-
   const getHoroscope = useCallback(async (sign) => {
     return await makeRequest(`/api/horoscope?sign=${encodeURIComponent(sign)}`);
   }, [makeRequest]);
@@ -242,71 +201,11 @@ const useAPI = () => {
     return await makeRequest('/api/mercury');
   }, [makeRequest]);
 
-  // 🚀 НОВАЯ функция для тестирования всех источников данных
-  const testAllDataSources = useCallback(async () => {
-    console.log('🧪 Тестирование всех источников данных...');
-    
-    const results = {
-      enhancedMoonPhase: null,
-      serverAPI: null,
-      cache: null,
-      timestamp: new Date().toISOString()
-    };
-
-    try {
-      // Тест EnhancedMoonPhase
-      const enhancedData = EnhancedMoonPhase.calculatePhase(new Date());
-      results.enhancedMoonPhase = {
-        success: !!enhancedData,
-        data: enhancedData,
-        debugInfo: EnhancedMoonPhase.debugInfo()
-      };
-      console.log('✅ EnhancedMoonPhase тест пройден');
-    } catch (error) {
-      results.enhancedMoonPhase = {
-        success: false,
-        error: error.message
-      };
-      console.error('❌ EnhancedMoonPhase тест провален:', error);
-    }
-
-    try {
-      // Тест серверного API
-      const apiData = await makeRequest('/api/moon');
-      results.serverAPI = {
-        success: !apiData.raw,
-        data: apiData.raw ? null : apiData
-      };
-      console.log('✅ Server API тест пройден');
-    } catch (error) {
-      results.serverAPI = {
-        success: false,
-        error: error.message
-      };
-      console.error('❌ Server API тест провален:', error);
-    }
-
-    // Тест кеша
-    const cachedData = loadMoonData(new Date());
-    results.cache = {
-      success: !!cachedData,
-      data: cachedData
-    };
-
-    console.log('🧪 Результаты тестирования:', results);
-    return results;
-  }, [makeRequest]);
-
   return {
     loading,
     error,
     makeRequest,
-    // Обновленные методы
     getMoonData,
-    getEnhancedMoonData,
-    // Новые методы
-    testAllDataSources,
-    // Старые методы (совместимость)
     getHoroscope,
     getAstroEvents,
     getNumerology,
@@ -316,6 +215,6 @@ const useAPI = () => {
   };
 };
 
-// Экспорт
+// ИСПРАВЛЕННЫЙ ЭКСПОРТ - и default, и named
 export default useAPI;
 export { useAPI };
