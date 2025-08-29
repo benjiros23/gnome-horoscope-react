@@ -1,66 +1,60 @@
 // Обновленная версия moonPhase.js с интеграцией SunCalc для актуальных данных
 // Теперь поддерживает как статические данные, так и динамические расчеты
 
-// Импортируем SunCalc для динамических расчетов
-// npm install suncalc
-// import SunCalc from 'suncalc';
-
 // Сохраняем существующие статические данные
 const MOON_DATA_2025 = {
-// Август 2025
-'2025-08-01': { phase: 'Убывающая луна', emoji: '🌖', illumination: 45, age: 21.2, lunarDay: 22 },
-'2025-08-02': { phase: 'Убывающая луна', emoji: '🌖', illumination: 36, age: 22.2, lunarDay: 23 },
-'2025-08-03': { phase: 'Последняя четверть', emoji: '🌗', illumination: 27, age: 23.2, lunarDay: 24 },
-'2025-08-04': { phase: 'Старая луна', emoji: '🌘', illumination: 19, age: 24.2, lunarDay: 25 },
-'2025-08-05': { phase: 'Старая луна', emoji: '🌘', illumination: 12, age: 25.2, lunarDay: 26 },
-'2025-08-06': { phase: 'Старая луна', emoji: '🌘', illumination: 6, age: 26.2, lunarDay: 27 },
-'2025-08-07': { phase: 'Старая луна', emoji: '🌘', illumination: 2, age: 27.2, lunarDay: 28 },
-'2025-08-08': { phase: 'Новолуние', emoji: '🌑', illumination: 0, age: 28.2, lunarDay: 29 },
-'2025-08-09': { phase: 'Новолуние', emoji: '🌑', illumination: 0, age: 0.8, lunarDay: 1 },
-'2025-08-10': { phase: 'Молодая луна', emoji: '🌒', illumination: 1, age: 1.8, lunarDay: 2 },
-'2025-08-11': { phase: 'Молодая луна', emoji: '🌒', illumination: 3, age: 2.8, lunarDay: 3 },
+  // Август 2025
+  '2025-08-01': { phase: 'Убывающая луна', emoji: '🌖', illumination: 45, age: 21.2, lunarDay: 22 },
+  '2025-08-02': { phase: 'Убывающая луна', emoji: '🌖', illumination: 36, age: 22.2, lunarDay: 23 },
+  '2025-08-03': { phase: 'Последняя четверть', emoji: '🌗', illumination: 27, age: 23.2, lunarDay: 24 },
+  '2025-08-04': { phase: 'Старая луна', emoji: '🌘', illumination: 19, age: 24.2, lunarDay: 25 },
+  '2025-08-05': { phase: 'Старая луна', emoji: '🌘', illumination: 12, age: 25.2, lunarDay: 26 },
+  '2025-08-06': { phase: 'Старая луна', emoji: '🌘', illumination: 6, age: 26.2, lunarDay: 27 },
+  '2025-08-07': { phase: 'Старая луна', emoji: '🌘', illumination: 2, age: 27.2, lunarDay: 28 },
+  '2025-08-08': { phase: 'Новолуние', emoji: '🌑', illumination: 0, age: 28.2, lunarDay: 29 },
+  '2025-08-09': { phase: 'Новолуние', emoji: '🌑', illumination: 0, age: 0.8, lunarDay: 1 },
+  '2025-08-10': { phase: 'Молодая луна', emoji: '🌒', illumination: 1, age: 1.8, lunarDay: 2 },
+  '2025-08-11': { phase: 'Молодая луна', emoji: '🌒', illumination: 3, age: 2.8, lunarDay: 3 },
 
-// 🎯 АКТУАЛЬНЫЕ ДАННЫЕ НА СЕГОДНЯ
-'2025-08-23': { phase: 'Новолуние', emoji: '🌑', illumination: 0, age: 0.1, lunarDay: 1 },
-'2025-08-24': { phase: 'Молодая луна', emoji: '🌒', illumination: 2, age: 1.1, lunarDay: 2 },
-'2025-08-25': { phase: 'Молодая луна', emoji: '🌒', illumination: 5, age: 2.1, lunarDay: 3 },
-'2025-08-26': { phase: 'Молодая луна', emoji: '🌒', illumination: 9, age: 3.1, lunarDay: 4 },
-'2025-08-27': { phase: 'Молодая луна', emoji: '🌒', illumination: 15, age: 4.1, lunarDay: 5 },
-'2025-08-28': { phase: 'Молодая луна', emoji: '🌒', illumination: 21, age: 5.1, lunarDay: 6 }, // ← Сегодня
-'2025-08-29': { phase: 'Первая четверть', emoji: '🌓', illumination: 29, age: 6.1, lunarDay: 7 },
-'2025-08-30': { phase: 'Растущая луна', emoji: '🌔', illumination: 37, age: 7.1, lunarDay: 8 },
-'2025-08-31': { phase: 'Растущая луна', emoji: '🌔', illumination: 46, age: 8.1, lunarDay: 9 },
+  // 🎯 АКТУАЛЬНЫЕ ДАННЫЕ НА СЕГОДНЯ (29 августа 2025)
+  '2025-08-23': { phase: 'Новолуние', emoji: '🌑', illumination: 0, age: 0.1, lunarDay: 1 },
+  '2025-08-24': { phase: 'Молодая луна', emoji: '🌒', illumination: 2, age: 1.1, lunarDay: 2 },
+  '2025-08-25': { phase: 'Молодая луна', emoji: '🌒', illumination: 5, age: 2.1, lunarDay: 3 },
+  '2025-08-26': { phase: 'Молодая луна', emoji: '🌒', illumination: 9, age: 3.1, lunarDay: 4 },
+  '2025-08-27': { phase: 'Молодая луна', emoji: '🌒', illumination: 15, age: 4.1, lunarDay: 5 },
+  '2025-08-28': { phase: 'Молодая луна', emoji: '🌒', illumination: 21, age: 5.1, lunarDay: 6 },
+  '2025-08-29': { phase: 'Первая четверть', emoji: '🌓', illumination: 29, age: 6.1, lunarDay: 7 }, // ← Сегодня
+  '2025-08-30': { phase: 'Растущая луна', emoji: '🌔', illumination: 37, age: 7.1, lunarDay: 8 },
+  '2025-08-31': { phase: 'Растущая луна', emoji: '🌔', illumination: 46, age: 8.1, lunarDay: 9 },
 
-// Сентябрь 2025 (для следующих фаз)
-'2025-09-01': { phase: 'Растущая луна', emoji: '🌔', illumination: 55, age: 9.1, lunarDay: 10 },
-'2025-09-02': { phase: 'Растущая луна', emoji: '🌔', illumination: 64, age: 10.1, lunarDay: 11 },
-'2025-09-03': { phase: 'Растущая луна', emoji: '🌔', illumination: 73, age: 11.1, lunarDay: 12 },
-'2025-09-04': { phase: 'Растущая луна', emoji: '🌔', illumination: 81, age: 12.1, lunarDay: 13 },
-'2025-09-05': { phase: 'Растущая луна', emoji: '🌔', illumination: 88, age: 13.1, lunarDay: 14 },
-'2025-09-06': { phase: 'Растущая луна', emoji: '🌔', illumination: 94, age: 14.1, lunarDay: 15 },
-'2025-09-07': { phase: 'Полнолуние', emoji: '🌕', illumination: 99, age: 15.1, lunarDay: 16 },
-'2025-09-08': { phase: 'Полнолуние', emoji: '🌕', illumination: 100, age: 16.1, lunarDay: 17 },
+  // Сентябрь 2025 (для следующих фаз)
+  '2025-09-01': { phase: 'Растущая луна', emoji: '🌔', illumination: 55, age: 9.1, lunarDay: 10 },
+  '2025-09-02': { phase: 'Растущая луна', emoji: '🌔', illumination: 64, age: 10.1, lunarDay: 11 },
+  '2025-09-03': { phase: 'Растущая луна', emoji: '🌔', illumination: 73, age: 11.1, lunarDay: 12 },
+  '2025-09-04': { phase: 'Растущая луна', emoji: '🌔', illumination: 81, age: 12.1, lunarDay: 13 },
+  '2025-09-05': { phase: 'Растущая луна', emoji: '🌔', illumination: 88, age: 13.1, lunarDay: 14 },
+  '2025-09-06': { phase: 'Растущая луна', emoji: '🌔', illumination: 94, age: 14.1, lunarDay: 15 },
+  '2025-09-07': { phase: 'Полнолуние', emoji: '🌕', illumination: 99, age: 15.1, lunarDay: 16 },
+  '2025-09-08': { phase: 'Полнолуние', emoji: '🌕', illumination: 100, age: 16.1, lunarDay: 17 },
 };
 
 // Времена восхода/захода для разных городов
 const MOON_TIMES_2025 = {
-'2025-08-25': {
-  'default': { moonrise: '08:14', moonset: '20:41' },
-  'moscow': { moonrise: '08:14', moonset: '20:41' },
-  'spb': { moonrise: '08:02', moonset: '21:03' },
-  'ekaterinburg': { moonrise: '08:14', moonset: '20:41' }
-}
+  '2025-08-29': {
+    'default': { moonrise: '09:16', moonset: '21:43' },
+    'moscow': { moonrise: '09:16', moonset: '21:43' },
+    'spb': { moonrise: '09:04', moonset: '22:05' },
+    'ekaterinburg': { moonrise: '09:16', moonset: '21:43' }
+  }
 };
 
 // 🚀 НОВЫЙ КЛАСС с поддержкой SunCalc
 export class EnhancedMoonPhase {
-
-  // ===== ОСНОВНЫЕ МЕТОДЫ =====
-
+  
   // Главный метод для получения данных о луне
   static calculatePhase(date) {
     const dateString = date.toISOString().split('T')[0];
-
+    
     // 1. Сначала пробуем статические данные
     const staticData = MOON_DATA_2025[dateString];
     if (staticData) {
@@ -71,21 +65,21 @@ export class EnhancedMoonPhase {
         source: 'static'
       };
     }
-
+    
     // 2. Если нет статических данных, используем SunCalc
     console.log(`🧮 Рассчитываем данные для ${dateString} через SunCalc`);
     return this.calculateFromSunCalc(date);
   }
-
+  
   // Расчет через SunCalc
   static calculateFromSunCalc(date) {
     // Проверяем, доступен ли SunCalc
     if (typeof window !== 'undefined' && window.SunCalc) {
       const SunCalc = window.SunCalc;
-
+      
       const illumination = SunCalc.getMoonIllumination(date);
       const times = SunCalc.getMoonTimes(date, 55.7558, 37.6173); // Координаты Москвы
-
+      
       return {
         phase: this.getPhaseNameFromIllumination(illumination.phase),
         emoji: this.getEmojiFromPhase(illumination.phase),
@@ -109,15 +103,15 @@ export class EnhancedMoonPhase {
       return this.getFallbackData(date);
     }
   }
-
+  
   // Fallback метод при недоступности SunCalc
   static getFallbackData(date) {
     const dateString = date.toISOString().split('T')[0];
     const availableDates = Object.keys(MOON_DATA_2025).sort();
-
+    
     let closestDate = availableDates[0];
     let minDiff = Math.abs(new Date(dateString) - new Date(closestDate));
-
+    
     for (const availableDate of availableDates) {
       const diff = Math.abs(new Date(dateString) - new Date(availableDate));
       if (diff < minDiff) {
@@ -125,19 +119,18 @@ export class EnhancedMoonPhase {
         closestDate = availableDate;
       }
     }
-
+    
     const moonData = MOON_DATA_2025[closestDate];
     console.log(`⚠️ Используем ближайшую дату ${closestDate} для ${dateString}`);
-
+    
     return {
       ...moonData,
       isWaxing: moonData.age < 14.7,
       source: 'fallback'
     };
   }
-
-  // ===== УТИЛИТЫ ДЛЯ ОПРЕДЕЛЕНИЯ ФАЗЫ =====
-
+  
+  // Утилиты для определения фазы
   static getPhaseNameFromIllumination(phase) {
     if (phase < 0.03 || phase > 0.97) return 'Новолуние';
     if (phase < 0.22) return 'Молодая луна';
@@ -148,7 +141,7 @@ export class EnhancedMoonPhase {
     if (phase < 0.78) return 'Последняя четверть';
     return 'Старая луна';
   }
-
+  
   static getEmojiFromPhase(phase) {
     if (phase < 0.03 || phase > 0.97) return '🌑';
     if (phase < 0.22) return '🌒';
@@ -159,35 +152,34 @@ export class EnhancedMoonPhase {
     if (phase < 0.78) return '🌗';
     return '🌘';
   }
-
-  // ===== СОВМЕСТИМОСТЬ СО СТАРЫМ API =====
-
+  
+  // Совместимость со старым API
   static getLunarDay(date) {
     const moonData = this.calculatePhase(date);
     return moonData.lunarDay || Math.floor(moonData.age) + 1;
   }
-
+  
   static isWaxing(date) {
     const moonData = this.calculatePhase(date);
     return moonData.isWaxing;
   }
-
+  
   static getMoonTimes(date, city = 'default') {
     const dateString = date.toISOString().split('T')[0];
     const timesData = MOON_TIMES_2025[dateString];
-
+    
     if (timesData && timesData[city]) {
       return timesData[city];
     } else if (timesData && timesData.default) {
       return timesData.default;
     }
-
+    
     // Если нет статических данных, пробуем рассчитать через SunCalc
     if (typeof window !== 'undefined' && window.SunCalc) {
       const SunCalc = window.SunCalc;
       const coords = this.getCityCoordinates(city);
       const times = SunCalc.getMoonTimes(date, coords.lat, coords.lng);
-
+      
       return {
         moonrise: times.rise ? times.rise.toLocaleTimeString('ru-RU', {
           hour: '2-digit',
@@ -199,11 +191,11 @@ export class EnhancedMoonPhase {
         }) : 'Нет данных'
       };
     }
-
+    
     // Fallback времена
     return { moonrise: '08:00', moonset: '20:00' };
   }
-
+  
   static getCityCoordinates(city) {
     const coordinates = {
       'moscow': { lat: 55.7558, lng: 37.6173 },
@@ -211,17 +203,17 @@ export class EnhancedMoonPhase {
       'ekaterinburg': { lat: 56.8431, lng: 60.6454 },
       'default': { lat: 55.7558, lng: 37.6173 }
     };
-
+    
     return coordinates[city] || coordinates.default;
   }
-
+  
   static findNextPhase(targetPhase, fromDate = new Date(), maxDays = 35) {
     const startDate = fromDate.toISOString().split('T')[0];
     const availableDates = Object.keys(MOON_DATA_2025).sort();
-
+    
     // Находим даты после текущей
     const futureDates = availableDates.filter(date => date > startDate);
-
+    
     for (const dateString of futureDates) {
       const moonData = MOON_DATA_2025[dateString];
       if (moonData.phase === targetPhase) {
@@ -237,12 +229,11 @@ export class EnhancedMoonPhase {
         };
       }
     }
-
+    
     return { dateString: 'Скоро', daysUntil: 0 };
   }
-
-  // ===== СОВЕТЫ ГНОМОВ (без изменений) =====
-
+  
+  // Советы гномов (сохраняем без изменений)
   static getGnomeAdvice(phaseName) {
     const advice = {
       'Новолуние': {
@@ -270,7 +261,7 @@ export class EnhancedMoonPhase {
         title: 'Время накопления сил',
         text: 'Гном Мудрый собирает травы: продолжайте начатое, энергия на пике роста. Укрепляйте достигнутое.',
         activities: ['Развитие проектов', 'Укрепление отношений', 'Творчество', 'Саморазвитие'],
-        avoid: ['Излишества', 'Переутомление', 'Негативные эмоции'],  
+        avoid: ['Излишества', 'Переутомление', 'Негативные эмоции'],
         energy: 'Высокая, стабильная'
       },
       'Полнолуние': {
@@ -302,16 +293,15 @@ export class EnhancedMoonPhase {
         energy: 'Минимальная, восстанавливающая'
       }
     };
-
+    
     return advice[phaseName] || advice['Новолуние'];
   }
-
-  // ===== УТИЛИТЫ ДЛЯ ОТЛАДКИ =====
-
+  
+  // Утилиты для отладки
   static debugInfo() {
     const today = new Date();
     const data = this.calculatePhase(today);
-
+    
     return {
       currentDate: today.toISOString().split('T')[0],
       moonData: data,
@@ -326,21 +316,12 @@ export class MoonPhase extends EnhancedMoonPhase {
   // Все методы наследуются от EnhancedMoonPhase
 }
 
-// Экспорт по умолчанию для совместимости
 export default EnhancedMoonPhase;
 
 // Инструкции по установке SunCalc
 console.log(`
-🌙 ИНСТРУКЦИИ ПО УСТАНОВКЕ:
-1. Установите SunCalc: npm install suncalc
-2. Добавьте в ваш HTML или импортируйте:
-   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
-   или 
-   import SunCalc from 'suncalc';
-   window.SunCalc = SunCalc;
-
-3. Теперь EnhancedMoonPhase автоматически будет использовать:
-   - Статические данные (если есть)
-   - SunCalc расчеты (если доступен)
-   - Fallback к ближайшим данным
+🌙 ENHANCED MOON PHASE ГОТОВ:
+✅ Статические данные: ${Object.keys(MOON_DATA_2025).length} дат
+✅ SunCalc интеграция: ${typeof window !== 'undefined' && !!window.SunCalc ? 'Активна' : 'Ожидает подключения'}
+✅ Fallback система: Активна
 `);
