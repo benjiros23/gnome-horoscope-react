@@ -1,24 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
-// В LoadingScreen.js измените screenStyle:
-const screenStyle = {
-  position: 'fixed',
-  top: 0, // Загрузка поверх всего, включая шапку
-  left: 0,
-  right: 0,
-  bottom: 0,
-  background: `/* ваш градиент */`,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#FFFFFF',
-  fontFamily: 'serif',
-  zIndex: 9999, // Поверх шапки
-  overflow: 'hidden'
-};
-
+const LoadingScreen = ({ 
+  onLoadingComplete, 
+  minLoadingTime = 3000,
+  showProgress = true 
+}) => {
+  const { theme } = useTheme();
+  const [progress, setProgress] = useState(0);
+  const [dots, setDots] = useState('');
 
   // Анимация прогресс-бара
   useEffect(() => {
@@ -102,21 +92,18 @@ const screenStyle = {
     marginBottom: '30px'
   };
 
-  const circleStyle = {
+  // 🚀 ЗАМЕНИЛИ ЖЕЛТЫЙ КРУГ НА ВАШУ КАРТИНКУ
+  const circleImageStyle = {
     position: 'absolute',
     inset: 0,
-    background: `
-      radial-gradient(circle, rgba(244,197,66,0.3) 0%, rgba(244,197,66,0.1) 50%, transparent 70%),
-      conic-gradient(
-        #F4C542 0deg, #D4A843 30deg, #F4C542 60deg, #E8B84A 90deg,
-        #F4C542 120deg, #D4A843 150deg, #F4C542 180deg, #E8B84A 210deg,
-        #F4C542 240deg, #D4A843 270deg, #F4C542 300deg, #E8B84A 330deg, #F4C542 360deg
-      )
-    `,
+    width: '100%',
+    height: '100%',
     borderRadius: '50%',
+    objectFit: 'cover', // Обрезает картинку под круг
     border: '3px solid #F4C542',
     boxShadow: '0 0 30px rgba(244,197,66,0.5), inset 0 0 20px rgba(0,0,0,0.3)',
-    animation: 'rotate 20s linear infinite'
+    animation: 'rotate 20s linear infinite',
+    filter: 'brightness(0.9) contrast(1.1)', // Делаем картинку чуть темнее для эффекта
   };
 
   const gnomeImageStyle = {
@@ -128,7 +115,7 @@ const screenStyle = {
     height: '60%',
     objectFit: 'contain',
     filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.5))',
-    zIndex: 2
+    zIndex: 3 // Поверх круглой картинки
   };
 
   const moonStyle = {
@@ -221,9 +208,26 @@ const screenStyle = {
       <h1 style={headerStyle}>GNOME HOROSCOPE</h1>
       
       <div style={gnomeContainerStyle}>
-        <div style={circleStyle}></div>
+        {/* 🚀 ВМЕСТО ЖЕЛТОГО КРУГА - ВАША КАРТИНКА */}
         <img 
-          src="/assets/gnome-astrologer.png" // Замените на путь к вашему изображению гнома
+          src="/assets/circle-background.jpg" // 🚀 ЗАМЕНИТЕ НА ПУТЬ К ВАШЕЙ КРУГЛОЙ КАРТИНКЕ
+          alt="Magic Circle" 
+          style={circleImageStyle}
+          onError={(e) => {
+            // Fallback: показываем желтый круг если картинка не загрузилась
+            e.target.style.display = 'none';
+            const fallbackCircle = document.createElement('div');
+            fallbackCircle.style.cssText = `
+              position: absolute; inset: 0; border-radius: 50%; 
+              background: conic-gradient(#F4C542 0deg, #D4A843 30deg, #F4C542 60deg, #E8B84A 90deg, #F4C542 120deg, #D4A843 150deg, #F4C542 180deg, #E8B84A 210deg, #F4C542 240deg, #D4A843 270deg, #F4C542 300deg, #E8B84A 330deg, #F4C542 360deg);
+              border: 3px solid #F4C542; animation: rotate 20s linear infinite;
+            `;
+            e.target.parentNode.appendChild(fallbackCircle);
+          }}
+        />
+        
+        <img 
+          src="/assets/gnome-astrologer.png" // 🚀 ЗАМЕНИТЕ НА ПУТЬ К ИЗОБРАЖЕНИЮ ГНОМА
           alt="Cosmic Gnome" 
           style={gnomeImageStyle}
           onError={(e) => {
@@ -241,7 +245,7 @@ const screenStyle = {
           display: 'none',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 2
+          zIndex: 3
         }}>
           🧙‍♂️
         </div>
