@@ -5,7 +5,7 @@ import Card from './components/UI/Card';
 import Button from './components/UI/Button';
 import BackButton from './components/UI/BackButton';
 import HoroscopeView from './components/HoroscopeView';
-import ZodiacCarousel from './components/ZodiacCarousel';
+import ZodiacCardsSelector from './components/ZodiacCardsSelector'; // 🚀 ЗАМЕНИЛИ на новый компонент
 import MoonView from './components/MoonView';
 import CompatibilityView from './components/CompatibilityView';
 import NumerologyView from './components/NumerologyView';
@@ -13,11 +13,11 @@ import AstroEventsView from './components/AstroEventsView';
 import DayCardView from './components/DayCardView';
 import MercuryView from './components/MercuryView';
 import ButtonGrid from './components/ButtonGrid';
+import BentoGrid from './components/BentoGrid';
 
 // 🚀 НОВЫЕ ИМПОРТЫ для актуальных данных
 import { EnhancedMoonPhase } from './enhanced_moonPhase';
 import { useAstrologyData } from './hooks/useAstrologyData';
-import BentoGrid from './components/BentoGrid';
 
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
@@ -52,7 +52,7 @@ const GNOME_PROFILES = {
 function AppContent() {
   const { theme, currentTheme } = useTheme();
 
-  // 🚀 НОВЫЙ ХУК для актуальных астрологических данных
+  // 🚀 ХУК для актуальных астрологических данных
   const astrologyData = useAstrologyData({
     autoUpdate: true,
     updateInterval: 6 * 60 * 60 * 1000, // 6 часов
@@ -60,7 +60,7 @@ function AppContent() {
     enableHoroscope: false
   });
 
-  // Восстанавливаем сохраненное состояние
+  // Состояние приложения
   const [currentView, setCurrentView] = useState(() => {
     try {
       const savedView = localStorage.getItem('gnome-current-view');
@@ -105,11 +105,10 @@ function AppContent() {
         console.warn('⚠️ SunCalc не загружен. Добавьте скрипт в index.html');
       }
     };
-
     setTimeout(initSunCalc, 1000);
   }, []);
 
-  // Сохраняем состояние при изменении
+  // Эффекты для сохранения состояния
   useEffect(() => {
     try {
       localStorage.setItem('gnome-current-view', currentView);
@@ -128,13 +127,11 @@ function AppContent() {
     }
   }, [selectedSign]);
 
-  // Принудительное обновление при смене темы
   useEffect(() => {
     console.log('🎨 Тема изменилась на:', currentTheme);
     setForceUpdate(prev => prev + 1);
   }, [currentTheme]);
 
-  // 🚀 ЛОГИРОВАНИЕ состояния актуальных данных
   useEffect(() => {
     if (astrologyData.moon) {
       console.log('🌙 Актуальные лунные данные обновлены:', {
@@ -168,6 +165,7 @@ function AppContent() {
     }
   }, [theme.colors.primary]);
 
+  // Утилиты для Telegram
   const silentTelegramAction = (action) => {
     try {
       const tg = window.Telegram?.WebApp;
@@ -200,6 +198,7 @@ function AppContent() {
     });
   }, [currentView]);
 
+  // Обработчики сети
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -219,6 +218,7 @@ function AppContent() {
     }
   }, [favorites]);
 
+  // Обработчики событий
   const handleButtonClick = (buttonId) => {
     console.log('🔘 Нажата кнопка:', buttonId);
     setCurrentView(buttonId);
@@ -234,7 +234,9 @@ function AppContent() {
     }
   };
 
+  // 🚀 ОБНОВЛЕННЫЙ обработчик выбора знака для ZodiacCardsSelector
   const handleSignSelect = (sign) => {
+    console.log('🌟 Выбран знак:', sign);
     setSelectedSign(sign);
     safeHapticFeedback('impact');
   };
@@ -273,6 +275,7 @@ function AppContent() {
     }
   };
 
+  // 🚀 ОБНОВЛЕННЫЙ рендер с новым ZodiacCardsSelector
   const renderCurrentView = () => {
     const viewProps = {
       onAddToFavorites: handleAddToFavorites,
@@ -301,11 +304,11 @@ function AppContent() {
               )}
             </div>
 
-            <ZodiacCarousel 
-              signs={ZODIAC_SIGNS}
+            {/* 🚀 ЗАМЕНИЛИ ZodiacCarousel на ZodiacCardsSelector */}
+            <ZodiacCardsSelector 
               selectedSign={selectedSign}
               onSignSelect={handleSignSelect}
-              gnomeProfiles={GNOME_PROFILES}
+              showHero={true}
             />
             
             <HoroscopeView 
@@ -437,7 +440,7 @@ function AppContent() {
       default:
         return (
           <div>
-            {/* Заголовок приложения с градиентом */}
+            {/* Заголовок приложения */}
             <div style={{ 
               textAlign: 'center', 
               marginBottom: '32px',
@@ -463,18 +466,16 @@ function AppContent() {
               </p>
             </div>
 
-            {/* Селектор знака зодиака (компактный) */}
+            {/* 🚀 НОВЫЙ ZodiacCardsSelector на главной */}
             <div style={{ marginBottom: '24px' }}>
-              <ZodiacCarousel 
-                signs={ZODIAC_SIGNS}
+              <ZodiacCardsSelector 
                 selectedSign={selectedSign}
                 onSignSelect={handleSignSelect}
-                gnomeProfiles={GNOME_PROFILES}
-                compact={true}
+                showHero={true}
               />
             </div>
             
-            {/* 🚀 Bento-сетка вместо обычных кнопок */}
+            {/* Bento-сетка */}
             <BentoGrid 
               astrologyData={astrologyData}
               selectedSign={selectedSign}
@@ -527,7 +528,7 @@ function AppContent() {
 
       <div style={{
         padding: '80px 16px 20px 16px',
-        maxWidth: '800px', // Увеличено для Bento-сетки
+        maxWidth: '800px',
         margin: '0 auto'
       }}>
         {renderCurrentView()}
