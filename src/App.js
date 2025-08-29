@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import ThemeSelector from './components/UI/ThemeSelector';
+import Header from './components/Header'; // 🚀 НОВЫЙ ИМПОРТ ШАПКИ
 import Card from './components/UI/Card';
 import Button from './components/UI/Button';
 import BackButton from './components/UI/BackButton';
@@ -453,32 +454,6 @@ function AppContent() {
       default:
         return (
           <div>
-            {/* Заголовок приложения */}
-            <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '32px',
-              padding: '20px 16px'
-            }}>
-              <h1 style={{ 
-                fontSize: '32px', 
-                margin: '0 0 12px 0',
-                background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                🧙‍♂️ Астро Гном
-              </h1>
-              <p style={{ 
-                fontSize: '18px', 
-                margin: 0, 
-                opacity: 0.8,
-                color: theme.colors.textSecondary
-              }}>
-                {GNOME_PROFILES[selectedSign]?.desc || 'Древняя мудрость гномов'}
-              </p>
-            </div>
-
             {/* ZodiacCardsSelector на главной */}
             <div style={{ marginBottom: '24px' }}>
               <ZodiacCardsSelector 
@@ -508,6 +483,9 @@ function AppContent() {
       minHeight: '100vh',
       paddingBottom: '20px'
     }}>
+      {/* 🚀 ДОБАВИЛИ ШАПКУ */}
+      <Header />
+
       <ThemeSelector />
       
       {currentView !== 'home' && (
@@ -515,7 +493,7 @@ function AppContent() {
           onClick={handleBackToHome}
           style={{ 
             position: 'fixed',
-            top: '20px',
+            top: '90px', // 🚀 УВЕЛИЧИЛИ ОТСТУП ПОД ШАПКУ
             left: '20px',
             zIndex: 999
           }}
@@ -525,7 +503,7 @@ function AppContent() {
       {!isOnline && (
         <div style={{
           position: 'fixed',
-          top: '0',
+          top: '80px', // 🚀 СРАЗУ ПОД ШАПКОЙ
           left: '0',
           right: '0',
           backgroundColor: theme.colors.danger,
@@ -540,7 +518,7 @@ function AppContent() {
       )}
 
       <div style={{
-        padding: '80px 16px 20px 16px',
+        padding: '100px 16px 20px 16px', // 🚀 УВЕЛИЧИЛИ ВЕРХНИЙ ОТСТУП ПОД ШАПКУ
         maxWidth: '800px',
         margin: '0 auto'
       }}>
