@@ -1,112 +1,129 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
-const LoadingScreen = ({ 
-  onLoadingComplete, 
+const LoadingScreen = ({
+  onLoadingComplete,
   minLoadingTime = 3000,
-  showProgress = true 
+  showProgress = true,
+  // Кастомные изображения:
+  backgroundImage = '/assets/my-space-bg.jpg',  // Фон всей сцены (ВЫ МОЖЕТЕ ЗАМЕНИТЬ)
+  circleImage = '/assets/circle-background.png',// Круглая картинка под гномом
+  gnomeImage = '/assets/gnome-astrologer.png',  // Гном
+  headerImage = '/assets/header.png',           // Табличка «Gnome Horoscope»
 }) => {
   const { theme } = useTheme();
   const [progress, setProgress] = useState(0);
   const [dots, setDots] = useState('');
 
-  // Анимация прогресс-бара
+  // Прогресс
   useEffect(() => {
-    let progressInterval;
-    let startTime = Date.now();
-    
-    const updateProgress = () => {
-      const elapsed = Date.now() - startTime;
-      const newProgress = Math.min(100, (elapsed / minLoadingTime) * 100);
-      
-      setProgress(newProgress);
-      
-      if (newProgress >= 100) {
-        clearInterval(progressInterval);
-        setTimeout(() => onLoadingComplete?.(), 500);
+    const start = Date.now();
+    const id = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const p = Math.min(100, (elapsed / minLoadingTime) * 100);
+      setProgress(p);
+      if (p >= 100) {
+        clearInterval(id);
+        setTimeout(() => onLoadingComplete?.(), 400);
       }
-    };
-
-    progressInterval = setInterval(updateProgress, 50);
-    return () => clearInterval(progressInterval);
+    }, 50);
+    return () => clearInterval(id);
   }, [minLoadingTime, onLoadingComplete]);
 
-  // Анимация точек в тексте
+  // Точки
   useEffect(() => {
-    const dotsInterval = setInterval(() => {
-      setDots(prev => {
-        if (prev.length >= 3) return '';
-        return prev + '.';
-      });
-    }, 500);
-
-    return () => clearInterval(dotsInterval);
+    const id = setInterval(() => setDots((d) => (d.length >= 3 ? '' : d + '.')), 500);
+    return () => clearInterval(id);
   }, []);
 
-  // Стили экрана загрузки
+  // Фон: если указан backgroundImage — используем его, иначе градиент+звезды
+  const backgroundLayer =
+    backgroundImage
+      ? `url("${backgroundImage}") center/cover no-repeat, `
+      : '';
+
+  const starfield = `
+    url("data:image/svg+xml,${encodeURIComponent(`
+      <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'>
+        <circle cx='20' cy='20' r='1' fill='white' opacity='0.8'/>
+        <circle cx='80' cy='25' r='0.5' fill='white' opacity='0.6'/>
+        <circle cx='40' cy='60' r='0.8' fill='white' opacity='0.7'/>
+        <circle cx='90' cy='70' r='0.6' fill='white' opacity='0.5'/>
+        <circle cx='10' cy='80' r='1.2' fill='white' opacity='0.9'/>
+        <circle cx='70' cy='15' r='0.4' fill='white' opacity='0.4'/>
+        <circle cx='25' cy='85' r='0.7' fill='white' opacity='0.6'/>
+        <circle cx='60' cy='30' r='0.9' fill='white' opacity='0.8'/>
+      </svg>
+    `)}") repeat
+  `;
+
   const screenStyle = {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
     background: `
+      ${backgroundLayer}
       radial-gradient(ellipse at center top, #2D1B69 0%, #1A1A2E 50%, #0F0F1A 100%),
-      url("data:image/svg+xml,${encodeURIComponent(`
-        <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'>
-          <circle cx='20' cy='20' r='1' fill='white' opacity='0.8'/>
-          <circle cx='80' cy='25' r='0.5' fill='white' opacity='0.6'/>
-          <circle cx='40' cy='60' r='0.8' fill='white' opacity='0.7'/>
-          <circle cx='90' cy='70' r='0.6' fill='white' opacity='0.5'/>
-          <circle cx='10' cy='80' r='1.2' fill='white' opacity='0.9'/>
-          <circle cx='70' cy='15' r='0.4' fill='white' opacity='0.4'/>
-          <circle cx='25' cy='85' r='0.7' fill='white' opacity='0.6'/>
-          <circle cx='60' cy='30' r='0.9' fill='white' opacity='0.8'/>
-        </svg>
-      `)}")
+      ${starfield}
     `,
+    backgroundBlendMode: backgroundImage ? 'normal, multiply, screen' : 'normal, normal, screen',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    color: '#fff',
+    zIndex: 9999,
+    overflow: 'hidden',
+  };
+
+  const headerWrap = {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    paddingTop: 12,
+    marginBottom: 12,
+  };
+
+  const headerImg = {
+    width: 'min(92vw, 820px)',
+    height: 'auto',
+    objectFit: 'contain',
+    filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.5))',
+    pointerEvents: 'none',
+    userSelect: 'none',
+  };
+
+  const stage = {
+    flex: '1 1 auto',
+    width: '100%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#FFFFFF',
-    fontFamily: 'serif',
-    zIndex: 9999,
-    overflow: 'hidden'
+    padding: '12px 16px 24px',
+    gap: 16,
   };
 
-  const headerStyle = {
-    fontSize: 'clamp(24px, 5vw, 36px)',
-    fontWeight: 'bold',
-    color: '#F4C542',
-    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-    marginBottom: '20px',
-    letterSpacing: '2px',
-    textAlign: 'center'
-  };
-
-  const gnomeContainerStyle = {
+  const arena = {
     position: 'relative',
-    width: 'clamp(250px, 40vw, 350px)',
-    height: 'clamp(250px, 40vw, 350px)',
-    marginBottom: '30px'
+    width: 'clamp(240px, 40vw, 360px)',
+    height: 'clamp(240px, 40vw, 360px)',
+    marginBottom: 12,
   };
 
-  // 🚀 ЗАМЕНИЛИ ЖЕЛТЫЙ КРУГ НА ВАШУ КАРТИНКУ
-  const circleImageStyle = {
+  const circleImg = {
     position: 'absolute',
     inset: 0,
     width: '100%',
     height: '100%',
     borderRadius: '50%',
-    objectFit: 'cover', // Обрезает картинку под круг
+    objectFit: 'cover',
     border: '3px solid #F4C542',
     boxShadow: '0 0 30px rgba(244,197,66,0.5), inset 0 0 20px rgba(0,0,0,0.3)',
     animation: 'rotate 20s linear infinite',
-    filter: 'brightness(0.9) contrast(1.1)', // Делаем картинку чуть темнее для эффекта
+    filter: 'brightness(0.9) contrast(1.08)',
   };
 
-  const gnomeImageStyle = {
+  const gnome = {
     position: 'absolute',
     top: '50%',
     left: '50%',
@@ -114,156 +131,109 @@ const LoadingScreen = ({
     width: '60%',
     height: '60%',
     objectFit: 'contain',
-    filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.5))',
-    zIndex: 3 // Поверх круглой картинки
+    filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
+    zIndex: 3,
+    pointerEvents: 'none',
   };
 
-  const moonStyle = {
+  const moon = {
     position: 'absolute',
-    top: '10px',
-    right: '10px',
-    fontSize: '40px',
-    animation: 'glow 2s ease-in-out infinite alternate'
+    top: 10,
+    right: 10,
+    fontSize: 40,
+    animation: 'glow 2s ease-in-out infinite alternate',
   };
 
-  const loadingBarContainerStyle = {
-    width: 'clamp(200px, 50vw, 300px)',
-    height: '8px',
+  const barWrap = {
+    width: 'clamp(220px, 58vw, 360px)',
+    height: 10,
     backgroundColor: 'rgba(244,197,66,0.2)',
-    borderRadius: '4px',
+    borderRadius: 6,
     overflow: 'hidden',
-    border: '1px solid rgba(244,197,66,0.4)',
-    marginBottom: '20px',
-    position: 'relative'
+    border: '1px solid rgba(244,197,66,0.45)',
+    position: 'relative',
   };
 
-  const loadingBarFillStyle = {
+  const barFill = {
     height: '100%',
     width: `${progress}%`,
     background: 'linear-gradient(90deg, #F4C542, #FFD700, #F4C542)',
-    borderRadius: '4px',
+    borderRadius: 6,
     transition: 'width 0.1s ease-out',
     boxShadow: '0 0 10px rgba(244,197,66,0.6)',
     position: 'relative',
-    overflow: 'hidden'
+    overflow: 'hidden',
   };
 
-  const loadingBarGlowStyle = {
+  const barShimmer = {
     position: 'absolute',
     top: 0,
     left: '-100%',
     width: '100%',
     height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-    animation: progress > 0 ? 'shimmer 1.5s ease-in-out infinite' : 'none'
+    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+    animation: progress > 0 ? 'shimmer 1.5s ease-in-out infinite' : 'none',
   };
 
-  const loadingTextStyle = {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#F4C542',
-    textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-    marginBottom: '10px',
-    letterSpacing: '1px'
-  };
-
-  const consultingTextStyle = {
-    fontSize: '16px',
-    color: 'rgba(255,255,255,0.8)',
-    textShadow: '1px 1px 2px rgba(0,0,0,0.6)',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    maxWidth: '80%'
-  };
+  const title = { fontSize: 18, fontWeight: 800, color: '#F4C542', textShadow: '1px 1px 2px rgba(0,0,0,0.8)', letterSpacing: 1 };
+  const sub = { fontSize: 16, color: 'rgba(255,255,255,0.85)', textShadow: '1px 1px 2px rgba(0,0,0,0.6)', fontStyle: 'italic', textAlign: 'center', maxWidth: '80%' };
 
   return (
     <div style={screenStyle}>
-      <style>
-        {`
-          @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          
-          @keyframes glow {
-            from { 
-              text-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700;
-              transform: scale(1);
-            }
-            to { 
-              text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 25px #FFD700;
-              transform: scale(1.1);
-            }
-          }
-          
-          @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-          }
-        `}
-      </style>
+      <style>{`
+        @keyframes rotate { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes glow {
+          from { text-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700; transform: scale(1) }
+          to   { text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 25px #FFD700; transform: scale(1.08) }
+        }
+        @keyframes shimmer { 0% { left: -100% } 100% { left: 100% } }
+      `}</style>
 
-      <div style={moonStyle}>🌙</div>
-      
-      <h1 style={headerStyle}>GNOME HOROSCOPE</h1>
-      
-      <div style={gnomeContainerStyle}>
-        {/* 🚀 ВМЕСТО ЖЕЛТОГО КРУГА - ВАША КАРТИНКА */}
-        <img 
-          src="/assets/circle-background.png" // 🚀 ЗАМЕНИТЕ НА ПУТЬ К ВАШЕЙ КРУГЛОЙ КАРТИНКЕ
-          alt="Magic Circle" 
-          style={circleImageStyle}
-          onError={(e) => {
-            // Fallback: показываем желтый круг если картинка не загрузилась
-            e.target.style.display = 'none';
-            const fallbackCircle = document.createElement('div');
-            fallbackCircle.style.cssText = `
-              position: absolute; inset: 0; border-radius: 50%; 
-              background: conic-gradient(#F4C542 0deg, #D4A843 30deg, #F4C542 60deg, #E8B84A 90deg, #F4C542 120deg, #D4A843 150deg, #F4C542 180deg, #E8B84A 210deg, #F4C542 240deg, #D4A843 270deg, #F4C542 300deg, #E8B84A 330deg, #F4C542 360deg);
-              border: 3px solid #F4C542; animation: rotate 20s linear infinite;
-            `;
-            e.target.parentNode.appendChild(fallbackCircle);
-          }}
-        />
-        
-        <img 
-          src="/assets/gnome-astrologer.png" // 🚀 ЗАМЕНИТЕ НА ПУТЬ К ИЗОБРАЖЕНИЮ ГНОМА
-          alt="Cosmic Gnome" 
-          style={gnomeImageStyle}
-          onError={(e) => {
-            // Fallback: показываем эмоджи если картинка не загрузилась
-            e.target.style.display = 'none';
-            e.target.nextSibling.style.display = 'flex';
-          }}
-        />
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          fontSize: '80px',
-          display: 'none',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 3
-        }}>
-          🧙‍♂️
-        </div>
+      {/* Табличка-хедер */}
+      <div style={headerWrap}>
+        <img src={headerImage} alt="Gnome Horoscope" style={headerImg} draggable={false} />
       </div>
 
-      <div style={loadingTextStyle}>LOADING{dots}</div>
-      
-      {showProgress && (
-        <div style={loadingBarContainerStyle}>
-          <div style={loadingBarFillStyle}>
-            <div style={loadingBarGlowStyle}></div>
-          </div>
+      <div style={{ position: 'relative', width: '100%' }}>
+        <div style={moon}>🌙</div>
+      </div>
+
+      <div style={stage}>
+        <div style={arena}>
+          {/* Кастомный круг */}
+          <img src={circleImage} alt="Magic Circle" style={circleImg} draggable={false} />
+
+          {/* Гном */}
+          <img
+            src={gnomeImage}
+            alt="Cosmic Gnome"
+            style={gnome}
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.insertAdjacentHTML(
+                'afterend',
+                `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;">🧙‍♂️</div>`
+              );
+            }}
+          />
         </div>
-      )}
-      
-      <p style={consultingTextStyle}>
-        Consulting the Cosmic Gnomes{dots}
-      </p>
+
+        <div style={title}>LOADING{dots}</div>
+
+        {showProgress && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+            <div style={barWrap}>
+              <div style={barFill}>
+                <div style={barShimmer} />
+              </div>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.85 }}>{Math.round(progress)}%</div>
+          </div>
+        )}
+
+        <p style={sub}>Consulting the Cosmic Gnomes{dots}</p>
+      </div>
     </div>
   );
 };
