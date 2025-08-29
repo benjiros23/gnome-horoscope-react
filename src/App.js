@@ -282,11 +282,15 @@ function AppContent() {
   // 🚀 УСЛОВИЕ ПОКАЗА ЭКРАНА ЗАГРУЗКИ
   if (isLoading) {
     return (
-      <LoadingScreen 
-        onLoadingComplete={() => setIsLoading(false)}
-        minLoadingTime={3000} // 3 секунды минимум
-        showProgress={true}
-      />
+   <LoadingScreen
+  onLoadingComplete={() => setIsLoading(false)}
+  minLoadingTime={3000}
+  showProgress
+  backgroundImage="/assets/my-space-bg.jpg"       // ← ваш фоновый рисунок на весь экран
+  circleImage="/assets/my-magic-circle.png"       // ← ваша круглая картинка
+  gnomeImage="/assets/gnome-astrologer.png"       // ← ваш гном
+  headerImage="/assets/header.png"                // ← табличка «Gnome Horoscope»
+/>
     );
   }
 
