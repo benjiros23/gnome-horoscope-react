@@ -1,0 +1,19 @@
+/* Скрываем скроллбары для всех браузеров */
+.zodiac-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.zodiac-scroller {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Плавная прокрутка на мобильных */
+.zodiac-scroller {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+
+.zodiac-thumb {
+  scroll-snap-align: center;
+}
