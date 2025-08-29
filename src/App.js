@@ -287,7 +287,7 @@ function AppContent() {
   minLoadingTime={3000}
   showProgress
   backgroundImage="/assets/my-space-bg.jpg"       // ← ваш фоновый рисунок на весь экран
-  circleImage="/assets/my-magic-circle.png"       // ← ваша круглая картинка
+  circleImage="/assets/circle-background.png"       // ← ваша круглая картинка
   gnomeImage="/assets/gnome-astrologer.png"       // ← ваш гном
   headerImage="/assets/header.png"                // ← табличка «Gnome Horoscope»
 />
