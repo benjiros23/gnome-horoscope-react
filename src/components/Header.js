@@ -1,31 +1,34 @@
 import React from 'react';
 
-const Header = () => {
-  const headerStyle = {
-    position: 'fixed',
+const Header = ({ src = '/assets/header.jpg', sticky = true }) => {
+  const wrap = {
+    position: sticky ? 'fixed' : 'relative',
     top: 0,
     left: 0,
-    right: 0,
-    height: '80px',
+    width: '100vw',
+    maxWidth: '100%',
+    // Два режима высоты: через aspectRatio или через clamp высоты:
+    // aspectRatio: '2000 / 430',          // включите, если знаете пропорции
+    height: 'clamp(56px, 12vw, 120px)',    // адаптивная высота
     zIndex: 1000,
-    background: `url('/assets/header.png') center center/cover no-repeat`,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
+    overflow: 'hidden',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+    backgroundColor: '#2a1e14',
   };
 
-  const overlayStyle = {
-    position: 'absolute',
-    inset: 0,
-    background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))',
-    pointerEvents: 'none'
+  const img = {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',    // заполняет от края до края
+    display: 'block',
+    userSelect: 'none',
+    pointerEvents: 'none',
   };
 
   return (
-    <header style={headerStyle}>
-      <div style={overlayStyle}></div>
-    </header>
+    <div style={wrap} role="banner" aria-label="Gnome Horoscope Header">
+      <img src={src} alt="Gnome Horoscope" style={img} />
+    </div>
   );
 };
 
