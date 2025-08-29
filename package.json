@@ -2,44 +2,23 @@
   "name": "gnome-horoscope-react",
   "version": "1.0.0",
   "private": true,
-  "description": "🧙‍♂️ Гномий Гороскоп - магические предсказания от древних гномов",
-  "author": "Разработчик Гномий Гороскоп",
-  "license": "MIT",
   "dependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^14.5.2",
-    "axios": "^1.6.2",
-    "dayjs": "^1.11.13",
-    "lunarphase-js": "^2.0.3",
-    "node-cron": "^4.2.1",
-    "node-telegram-bot-api": "^0.61.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react-dom": "^18.2.0", 
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "suncalc": "^1.9.0"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build", 
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "analyze": "npm run build && npx bundle-analyzer build/static/js/*.js",
-    "clean": "rm -rf build node_modules",
-    "reinstall": "npm run clean && npm install"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ],
-    "rules": {
-      "no-unused-vars": "warn",
-      "no-console": "off",
-      "react-hooks/exhaustive-deps": "warn"
-    }
-    npm install suncalc
-
+    ]
   },
   "browserslist": {
     "production": [
@@ -49,27 +28,8 @@
     ],
     "development": [
       "last 1 chrome version",
-      "last 1 firefox version",
+      "last 1 firefox version", 
       "last 1 safari version"
     ]
-  },
-  "proxy": "http://localhost:10000",
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
-  },
-  "keywords": [
-    "react",
-    "telegram",
-    "webapp",
-    "horoscope",
-    "astrology",
-    "gnome",
-    "frontend"
-  ],
-  "homepage": ".",
-  "devDependencies": {
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18"
   }
 }
