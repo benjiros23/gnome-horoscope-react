@@ -1,74 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import Header from './components/Header';
+import Card from './components/UI/Card';
+import Button from './components/UI/Button';
+import BackButton from './components/UI/BackButton';
+import HoroscopeView from './components/HoroscopeView';
+import ZodiacCardsSelector from './components/ZodiacCardsSelector';
+import MoonView from './components/MoonView';
+import CompatibilityView from './components/CompatibilityView';
+import NumerologyView from './components/NumerologyView';
+import AstroEventsView from './components/AstroEventsView';
+import DayCardView from './components/DayCardView';
+import MercuryView from './components/MercuryView';
+import ButtonGrid from './components/ButtonGrid';
+import BentoGrid from './components/BentoGrid';
+import { EnhancedMoonPhase } from './enhanced_moonPhase';
+import { useAstrologyData } from './hooks/useAstrologyData';
+import LoadingScreen from './components/LoadingScreen';
 
-// Базовые компоненты UI
-const Header = () => (
-  <header style={{
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 'clamp(56px, 12vw, 120px)',
-    zIndex: 1000,
-    background: 'url("/assets/header.jpg") center/cover',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-  }} />
-);
-
-const LoadingScreen = ({ onLoadingComplete }) => {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          clearInterval(timer);
-          setTimeout(onLoadingComplete, 500);
-          return 100;
-        }
-        return p + 2;
-      });
-    }, 50);
-    return () => clearInterval(timer);
-  }, [onLoadingComplete]);
-
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'radial-gradient(ellipse at center, #2D1B69 0%, #1A1A2E 50%, #0F0F1A 100%)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#fff',
-      zIndex: 9999
-    }}>
-      <h1 style={{ fontSize: '2rem', marginBottom: '20px', color: '#F4C542' }}>
-        🧙‍♂️ GNOME HOROSCOPE
-      </h1>
-      <div style={{
-        width: 300,
-        height: 8,
-        background: 'rgba(244,197,66,0.3)',
-        borderRadius: 4,
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          width: `${progress}%`,
-          height: '100%',
-          background: '#F4C542',
-          transition: 'width 0.1s ease'
-        }} />
-      </div>
-      <p style={{ marginTop: '16px', opacity: 0.8 }}>
-        Consulting the Cosmic Gnomes...
-      </p>
-    </div>
-  );
-};
-
-// Данные
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
   { sign: 'Телец', emoji: '♉', dates: '21.04-20.05' },
@@ -99,12 +48,12 @@ const GNOME_PROFILES = {
   'Рыбы': { name: 'Гном Мечтатель', title: 'Морской волшебник', desc: 'Творческий, эмпатичный' }
 };
 
-// Бургер-меню
+// 🍔 БУРГЕР-МЕНЮ КОМПОНЕНТ
 const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
   const menuItems = [
     { id: 'home', label: '🏠 Главная' },
     { id: 'horoscope', label: '🔮 Гороскоп' },
-    { id: 'moon', label: '🌙 Луна' },
+    { id: 'moon', label: '🌙 Лунный календарь' },
     { id: 'compatibility', label: '💕 Совместимость' },
     { id: 'numerology', label: '🔢 Нумерология' },
     { id: 'events', label: '🌌 События' },
@@ -113,7 +62,7 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
     { id: 'favorites', label: '⭐ Избранное' },
   ];
 
-  const handleNavigate = (id) => {
+  const handleItemClick = (id) => {
     onNavigate(id);
     onClose();
   };
@@ -122,6 +71,7 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
 
   return (
     <>
+      {/* Backdrop */}
       <div 
         style={{
           position: 'fixed',
@@ -131,6 +81,8 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
         }}
         onClick={onClose}
       />
+      
+      {/* Menu Panel */}
       <nav style={{
         position: 'fixed',
         top: 0,
@@ -138,17 +90,28 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
         height: '100vh',
         width: '280px',
         background: theme.colors.surface,
+        borderRight: `1px solid ${theme.colors.border}`,
         transform: open ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform 250ms ease',
         zIndex: 1100,
         padding: '20px',
-        boxShadow: '2px 0 10px rgba(0,0,0,0.3)'
+        boxShadow: '2px 0 20px rgba(0,0,0,0.3)',
+        overflowY: 'auto'
       }}>
-        <h3 style={{ margin: '0 0 20px', color: theme.colors.text }}>Меню</h3>
+        <h3 style={{ 
+          margin: '0 0 20px', 
+          color: theme.colors.text,
+          fontSize: '1.2rem',
+          borderBottom: `1px solid ${theme.colors.border}`,
+          paddingBottom: '10px'
+        }}>
+          🧙‍♂️ Меню
+        </h3>
+        
         {menuItems.map(item => (
           <button
             key={item.id}
-            onClick={() => handleNavigate(item.id)}
+            onClick={() => handleItemClick(item.id)}
             style={{
               display: 'block',
               width: '100%',
@@ -160,7 +123,19 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
               color: theme.colors.text,
               textAlign: 'left',
               cursor: 'pointer',
-              fontWeight: currentView === item.id ? 'bold' : 'normal'
+              fontSize: '14px',
+              fontWeight: currentView === item.id ? 'bold' : 'normal',
+              transition: 'all 200ms ease'
+            }}
+            onMouseEnter={(e) => {
+              if (currentView !== item.id) {
+                e.target.style.background = theme.colors.border + '20';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (currentView !== item.id) {
+                e.target.style.background = 'transparent';
+              }
             }}
           >
             {item.label}
@@ -171,257 +146,452 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
   );
 };
 
-// Главный компонент
 function AppContent() {
-  const { theme } = useTheme();
-  
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState('home');
-  const [selectedSign, setSelectedSign] = useState('Лев');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const { theme, currentTheme } = useTheme();
 
-  // Network status
+  // 🚀 STATE ДЛЯ ЭКРАНА ЗАГРУЗКИ
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 🍔 STATE ДЛЯ БУРГЕР-МЕНЮ
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // 🚀 ХУК для актуальных астрологических данных
+  const astrologyData = useAstrologyData({
+    autoUpdate: true,
+    updateInterval: 6 * 60 * 60 * 1000,
+    coordinates: { lat: 55.7558, lng: 37.6173 },
+    enableHoroscope: false
+  });
+
+  // Состояние приложения
+  const [currentView, setCurrentView] = useState(() => {
+    try {
+      const savedView = localStorage.getItem('gnome-current-view');
+      return savedView || 'home';
+    } catch (error) {
+      console.error('Ошибка загрузки сохраненного view:', error);
+      return 'home';
+    }
+  });
+
+  const [selectedSign, setSelectedSign] = useState(() => {
+    try {
+      const savedSign = localStorage.getItem('gnome-selected-sign');
+      return savedSign || 'Лев';
+    } catch (error) {
+      console.error('Ошибка загрузки сохраненного знака:', error);
+      return 'Лев';
+    }
+  });
+
+  const [telegramApp, setTelegramApp] = useState(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('gnome-favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Ошибка загрузки избранного:', error);
+      return [];
+    }
+  });
+
+  // Все ваши useEffect остаются как были
+  useEffect(() => {
+    const initSunCalc = () => {
+      if (typeof window !== 'undefined' && window.SunCalc) {
+        console.log('✅ SunCalc готов к использованию');
+        const debugInfo = EnhancedMoonPhase.debugInfo();
+        console.log('🌙 Enhanced MoonPhase status:', debugInfo);
+      } else {
+        console.warn('⚠️ SunCalc не загружен. Добавьте скрипт в index.html');
+      }
+    };
+    setTimeout(initSunCalc, 1000);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('gnome-current-view', currentView);
+      console.log('💾 Сохранен view:', currentView);
+    } catch (error) {
+      console.error('Ошибка сохранения view:', error);
+    }
+  }, [currentView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('gnome-selected-sign', selectedSign);
+      console.log('💾 Сохранен знак:', selectedSign);
+    } catch (error) {
+      console.error('Ошибка сохранения знака:', error);
+    }
+  }, [selectedSign]);
+
+  useEffect(() => {
+    console.log('🎨 Тема изменилась на:', currentTheme);
+    setForceUpdate(prev => prev + 1);
+  }, [currentTheme]);
+
+  useEffect(() => {
+    if (astrologyData.moon) {
+      console.log('🌙 Актуальные лунные данные обновлены:', {
+        phase: astrologyData.moon.phase,
+        source: astrologyData.source,
+        lastUpdated: astrologyData.lastUpdated
+      });
+    }
+  }, [astrologyData.moon, astrologyData.lastUpdated]);
+
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      setTelegramApp(tg);
+      tg.ready();
+      tg.expand();
+
+      try {
+        if (tg.MainButton) {
+          tg.MainButton.setText('🃏 Получить карту дня');
+          tg.MainButton.color = theme.colors.primary;
+          tg.MainButton.show();
+          tg.MainButton.onClick(() => setCurrentView('cards'));
+        }
+      } catch (error) {
+        console.log('Ошибка MainButton:', error);
+      }
+
+      console.log('✅ Telegram WebApp инициализирован');
+    }
+  }, [theme.colors.primary]);
+
+  const silentTelegramAction = (action) => {
+    try {
+      const tg = window.Telegram?.WebApp;
+      if (tg && parseFloat(tg.version) >= 6.1) {
+        action(tg);
+      }
+    } catch (error) {
+      console.log('Telegram action error:', error);
+    }
+  };
+
+  const safeHapticFeedback = (type) => {
+    silentTelegramAction((tg) => {
+      if (type === 'impact') {
+        tg.HapticFeedback.impactOccurred('light');
+      } else if (type === 'selection') {
+        tg.HapticFeedback.selectionChanged();
+      }
+    });
+  };
+
+  useEffect(() => {
+    silentTelegramAction((tg) => {
+      if (currentView !== 'home') {
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => setCurrentView('home'));
+      } else {
+        tg.BackButton.hide();
+      }
+    });
+  }, [currentView]);
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // Persist state
   useEffect(() => {
     try {
-      localStorage.setItem('gnome-current-view', currentView);
-      localStorage.setItem('gnome-selected-sign', selectedSign);
-    } catch (e) {}
-  }, [currentView, selectedSign]);
+      localStorage.setItem('gnome-favorites', JSON.stringify(favorites));
+    } catch (error) {
+      console.error('Ошибка сохранения избранного:', error);
+    }
+  }, [favorites]);
 
+  // Обработчики событий
+  const handleButtonClick = (buttonId) => {
+    console.log('🔘 Нажата кнопка:', buttonId);
+    setCurrentView(buttonId);
+    safeHapticFeedback('selection');
+  };
+
+  const handleBackToHome = () => {
+    setCurrentView('home');
+    try {
+      localStorage.setItem('gnome-current-view', 'home');
+    } catch (error) {
+      console.error('Ошибка сохранения home view:', error);
+    }
+  };
+
+  const handleSignSelect = (sign) => {
+    console.log('🌟 Выбран знак:', sign);
+    setSelectedSign(sign);
+    safeHapticFeedback('impact');
+  };
+
+  const handleAddToFavorites = (item) => {
+    try {
+      const exists = favorites.some(fav =>
+        fav.type === item.type &&
+        fav.title === item.title &&
+        fav.date === item.date
+      );
+
+      if (exists) {
+        if (telegramApp) {
+          telegramApp.showAlert('Этот элемент уже в избранном!');
+        } else {
+          alert('Этот элемент уже в избранном!');
+        }
+        return;
+      }
+
+      const newItem = {
+        ...item,
+        id: Date.now() + Math.random(),
+        addedAt: new Date().toISOString()
+      };
+
+      setFavorites(prev => {
+        const updated = [newItem, ...prev];
+        return updated.length > 50 ? updated.slice(0, 50) : updated;
+      });
+
+      safeHapticFeedback('impact');
+    } catch (error) {
+      console.error('Ошибка добавления в избранное:', error);
+    }
+  };
+
+  // 🚀 УСЛОВИЕ ПОКАЗА ЭКРАНА ЗАГРУЗКИ
   if (isLoading) {
-    return <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />;
+    return (
+      <LoadingScreen
+        onLoadingComplete={() => setIsLoading(false)}
+        minLoadingTime={3000}
+        showProgress
+        backgroundImage="/assets/my-space-bg.jpg"
+        circleImage="/assets/circle-background.png"
+        gnomeImage="/assets/gnome-astrologer.png"
+        headerImage="/assets/header.png"
+      />
+    );
   }
 
-  // Рендер сцен
-  const renderScene = () => {
-    const commonStyle = {
+  // Рендер различных экранов (ваша логика остается)
+  const renderCurrentView = () => {
+    const viewProps = {
+      onAddToFavorites: handleAddToFavorites,
+      telegramApp,
+      key: `${currentView}-${forceUpdate}`,
+      astrologyData,
+      enhancedMoonPhase: EnhancedMoonPhase
+    };
+
+    const sceneStyle = {
       width: 'min(95vw, 800px)',
-      maxHeight: 'calc(100vh - 80px)',
+      maxHeight: 'calc(100vh - 120px)',
       overflow: 'auto',
-      padding: '20px',
-      color: theme.colors.text
+      padding: '10px'
     };
 
     switch (currentView) {
       case 'horoscope':
         return (
-          <div style={commonStyle}>
-            <h2>🔮 Гороскоп для {selectedSign}</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              margin: '20px 0'
-            }}>
-              <h3>{GNOME_PROFILES[selectedSign]?.name}</h3>
-              <p>{GNOME_PROFILES[selectedSign]?.desc}</p>
-              <p>Ваш гороскоп на сегодня готовится космическими гномами...</p>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="🔮 Гороскоп" subtitle="Ваш персональный гороскоп на сегодня">
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '16px',
+                fontSize: '14px'
+              }}>
+                <span>Сохранено: <strong>{favorites.filter(f => f.type === 'horoscope').length}</strong></span>
+                {astrologyData.lastUpdated && (
+                  <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                    Обновлено: {astrologyData.lastUpdated.toLocaleTimeString('ru-RU')}
+                  </span>
+                )}
+              </div>
+
+              <ZodiacCardsSelector 
+                selectedSign={selectedSign}
+                onSignSelect={handleSignSelect}
+                showHero={true}
+              />
+              
+              <HoroscopeView 
+                selectedSign={selectedSign} 
+                gnomeProfile={GNOME_PROFILES[selectedSign]}
+                {...viewProps}
+              />
+            </Card>
           </div>
         );
 
       case 'moon':
         return (
-          <div style={commonStyle}>
-            <h2>🌙 Лунный календарь</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '4rem', margin: '20px 0' }}>🌗</div>
-              <p>Текущая фаза луны и её влияние на ваш знак {selectedSign}</p>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="🌙 Лунный календарь" subtitle="Следите за фазами луны и получайте советы гномов">
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '16px',
+                fontSize: '14px'
+              }}>
+                <span>Сохранено: <strong>{favorites.filter(f => f.type === 'moon').length}</strong></span>
+                <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                  {astrologyData.loading ? (
+                    <span>🔄 Обновление...</span>
+                  ) : astrologyData.source ? (
+                    <span>✅ Источник: {astrologyData.source}</span>
+                  ) : null}
+                </div>
+              </div>
+
+              <MoonView 
+                {...viewProps}
+                realTimeMoonData={astrologyData.moon}
+                onRefreshMoonData={astrologyData.refresh}
+              />
+            </Card>
           </div>
         );
 
       case 'compatibility':
         return (
-          <div style={commonStyle}>
-            <h2>💕 Совместимость знаков</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <p>Узнайте совместимость между знаками зодиака</p>
-              <div style={{ fontSize: '3rem', margin: '20px 0' }}>💑</div>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="💕 Совместимость знаков" subtitle="Узнайте совместимость между знаками зодиака">
+              <CompatibilityView {...viewProps} />
+            </Card>
           </div>
         );
 
       case 'numerology':
         return (
-          <div style={commonStyle}>
-            <h2>🔢 Нумерология</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <p>Откройте тайны чисел вашей судьбы</p>
-              <div style={{ fontSize: '3rem', margin: '20px 0' }}>🔮</div>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="🔢 Нумерология" subtitle="Откройте тайны чисел вашей судьбы">
+              <NumerologyView {...viewProps} />
+            </Card>
           </div>
         );
 
       case 'events':
         return (
-          <div style={commonStyle}>
-            <h2>🌌 Астрологические события</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <p>Важные астрономические события и их влияние</p>
-              <div style={{ fontSize: '3rem', margin: '20px 0' }}>⭐</div>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="🌌 Астрологические события" subtitle="Важные астрономические события и их влияние">
+              <AstroEventsView {...viewProps} />
+            </Card>
           </div>
         );
 
       case 'cards':
         return (
-          <div style={commonStyle}>
-            <h2>🃏 Карта дня</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <p>Получите совет и предсказание на сегодня</p>
-              <div style={{ fontSize: '3rem', margin: '20px 0' }}>🎴</div>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="🃏 Карта дня" subtitle="Получите совет и предсказание на сегодня">
+              <DayCardView {...viewProps} />
+            </Card>
           </div>
         );
 
       case 'mercury':
         return (
-          <div style={commonStyle}>
-            <h2>🪐 Меркурий в ретрограде</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <p>Влияние ретроградного Меркурия на вашу жизнь</p>
-              <div style={{ fontSize: '3rem', margin: '20px 0' }}>🪐</div>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="🪐 Меркурий в ретрограде" subtitle="Влияние ретроградного Меркурия на вашу жизнь">
+              <MercuryView {...viewProps} />
+            </Card>
           </div>
         );
 
       case 'favorites':
         return (
-          <div style={commonStyle}>
-            <h2>⭐ Избранное</h2>
-            <div style={{
-              background: theme.colors.surface,
-              padding: '20px',
-              borderRadius: '12px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', margin: '20px 0' }}>📫</div>
-              <p>Ваши сохраненные гороскопы и предсказания</p>
-            </div>
+          <div style={sceneStyle}>
+            <Card title="⭐ Избранное" subtitle="Ваши сохраненные гороскопы и предсказания">
+              <div style={{ minHeight: '200px' }}>
+                {favorites.length === 0 ? (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '40px 20px',
+                    color: theme.colors.textSecondary 
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>📫</div>
+                    <p>Пока что здесь пусто</p>
+                    <p style={{ fontSize: '14px' }}>
+                      Добавляйте интересные гороскопы и предсказания в избранное!
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    {favorites.map((item, index) => (
+                      <div 
+                        key={item.id || index}
+                        style={{
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: '8px',
+                          padding: '12px',
+                          marginBottom: '8px',
+                          backgroundColor: theme.colors.surface
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '8px' 
+                        }}>
+                          <span style={{ fontWeight: '600' }}>{item.title}</span>
+                          <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                            {item.date}
+                          </span>
+                        </div>
+                        <p style={{ 
+                          margin: 0, 
+                          fontSize: '14px', 
+                          lineHeight: '1.4',
+                          color: theme.colors.text 
+                        }}>
+                          {item.content}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
           </div>
         );
 
-      default: // home
+      default:
         return (
-          <div style={commonStyle}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h1 style={{ 
-                fontSize: '2.5rem', 
-                background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                margin: '0 0 10px 0'
-              }}>
-                🧙‍♂️ Астро Гном
-              </h1>
-              <p style={{ opacity: 0.8 }}>{GNOME_PROFILES[selectedSign]?.desc}</p>
+          <div style={sceneStyle}>
+            {/* ZodiacCardsSelector на главной */}
+            <div style={{ marginBottom: '24px' }}>
+              <ZodiacCardsSelector 
+                selectedSign={selectedSign}
+                onSignSelect={handleSignSelect}
+                showHero={true}
+              />
             </div>
-
-            {/* Селектор знака */}
-            <div style={{
-              display: 'flex',
-              overflowX: 'auto',
-              gap: '10px',
-              padding: '10px 0',
-              marginBottom: '30px'
-            }}>
-              {ZODIAC_SIGNS.map(sign => (
-                <button
-                  key={sign.sign}
-                  onClick={() => setSelectedSign(sign.sign)}
-                  style={{
-                    minWidth: '80px',
-                    padding: '10px',
-                    border: `2px solid ${selectedSign === sign.sign ? theme.colors.primary : theme.colors.border}`,
-                    borderRadius: '12px',
-                    background: selectedSign === sign.sign ? theme.colors.primary + '20' : theme.colors.surface,
-                    color: theme.colors.text,
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  <div style={{ fontSize: '24px' }}>{sign.emoji}</div>
-                  <div>{sign.sign}</div>
-                </button>
-              ))}
-            </div>
-
-            {/* Быстрые действия */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '15px'
-            }}>
-              {[
-                { id: 'horoscope', icon: '🔮', title: 'Гороскоп' },
-                { id: 'moon', icon: '🌙', title: 'Луна' },
-                { id: 'cards', icon: '🃏', title: 'Карта дня' },
-                { id: 'compatibility', icon: '💕', title: 'Совместимость' }
-              ].map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentView(item.id)}
-                  style={{
-                    padding: '20px',
-                    background: theme.colors.surface,
-                    border: `1px solid ${theme.colors.border}`,
-                    borderRadius: '12px',
-                    color: theme.colors.text,
-                    cursor: 'pointer',
-                    textAlign: 'center'
-                  }}
-                >
-                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>{item.icon}</div>
-                  <div>{item.title}</div>
-                </button>
-              ))}
-            </div>
+            
+            {/* Bento-сетка */}
+            <BentoGrid 
+              astrologyData={astrologyData}
+              selectedSign={selectedSign}
+              gnomeProfiles={GNOME_PROFILES}
+              onButtonClick={handleButtonClick}
+              onSignSelect={handleSignSelect}
+            />
           </div>
         );
     }
@@ -432,12 +602,13 @@ function AppContent() {
       position: 'relative',
       width: '100vw',
       height: '100vh',
-      overflow: 'hidden',
+      overflow: 'hidden', // 🚀 УБИРАЕМ ВЕРТИКАЛЬНЫЙ СКРОЛЛ
       background: theme.colors.background
     }}>
+      {/* 🚀 ШАПКА */}
       <Header />
-      
-      {/* Бургер-кнопка */}
+
+      {/* 🍔 БУРГЕР-КНОПКА ВМЕСТО ThemeSelector */}
       <button
         onClick={() => setMenuOpen(true)}
         style={{
@@ -452,12 +623,18 @@ function AppContent() {
           background: theme.colors.surface,
           color: theme.colors.text,
           cursor: 'pointer',
-          fontSize: '18px'
+          fontSize: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
         }}
+        aria-label="Открыть меню"
       >
         ☰
       </button>
 
+      {/* 🍔 БУРГЕР-МЕНЮ */}
       <BurgerMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -465,26 +642,37 @@ function AppContent() {
         currentView={currentView}
         theme={theme}
       />
-
-      {/* Оффлайн баннер */}
+      
+      {currentView !== 'home' && (
+        <BackButton 
+          onClick={handleBackToHome}
+          style={{ 
+            position: 'fixed',
+            top: 'calc(clamp(56px, 12vw, 120px) + 10px)',
+            right: '16px', // 🚀 ПЕРЕМЕСТИЛИ ВПРАВО, ЧТОБЫ НЕ МЕШАЛСЯ С БУРГЕРОМ
+            zIndex: 999
+          }}
+        />
+      )}
+      
       {!isOnline && (
         <div style={{
           position: 'fixed',
           top: 'clamp(56px, 12vw, 120px)',
-          left: 0,
-          right: 0,
-          background: '#dc2626',
+          left: '0',
+          right: '0',
+          backgroundColor: theme.colors.danger,
           color: 'white',
           padding: '8px',
           textAlign: 'center',
           fontSize: '14px',
-          zIndex: 1300
+          zIndex: 1001
         }}>
           🔌 Нет подключения к интернету
         </div>
       )}
 
-      {/* Сцена */}
+      {/* 🚀 СЦЕНА ОДНОГО ЭКРАНА */}
       <main style={{
         position: 'absolute',
         top: 'clamp(56px, 12vw, 120px)',
@@ -495,7 +683,7 @@ function AppContent() {
         placeItems: 'center',
         padding: '10px'
       }}>
-        {renderScene()}
+        {renderCurrentView()}
       </main>
     </div>
   );
