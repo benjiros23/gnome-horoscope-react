@@ -8,7 +8,7 @@ const Header = () => {
     right: 0,
     height: '80px',
     zIndex: 1000,
-    background: `url('/assets/header.jpg') center center/cover no-repeat`,
+    background: `url('/assets/header.png') center center/cover no-repeat`,
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
     display: 'flex',
     alignItems: 'center',
