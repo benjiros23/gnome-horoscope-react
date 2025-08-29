@@ -33,10 +33,6 @@ const BentoGrid = ({
     gridRow: size === 'tall' ? 'span 2' : 'span 1',
     minHeight: size === 'large' ? '200px' : size === 'tall' ? '280px' : '140px',
     background: `linear-gradient(135deg, ${color}15 0%, ${theme.card.background} 100%)`,
-    '&:hover': {
-      transform: 'translateY(-4px)',
-      boxShadow: '0 12px 24px rgba(0,0,0,0.15)'
-    }
   });
 
   const iconStyle = {
@@ -67,12 +63,24 @@ const BentoGrid = ({
     }
   };
 
+  const handleMouseEnter = (e) => {
+    e.currentTarget.style.transform = 'translateY(-4px)';
+    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
+  };
+
+  const handleMouseLeave = (e) => {
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = theme.card.boxShadow;
+  };
+
   return (
     <div style={bentoStyle}>
       {/* Большая карточка - Текущая лунная фаза */}
       <div 
         style={cardStyle('large', theme.colors.primary)}
         onClick={() => handleCardClick('navigate', 'moon')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {astrologyData?.moon ? (
           <>
@@ -119,6 +127,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', theme.colors.secondary)}
         onClick={() => handleCardClick('navigate', 'horoscope')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>
           {['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
@@ -140,6 +150,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', theme.colors.warning)}
         onClick={() => handleCardClick('navigate', 'cards')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>🃏</div>
         <h3 style={titleStyle}>Карта дня</h3>
@@ -150,6 +162,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', theme.colors.danger)}
         onClick={() => handleCardClick('navigate', 'compatibility')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>💕</div>
         <h3 style={titleStyle}>Совместимость</h3>
@@ -160,6 +174,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', theme.colors.info)}
         onClick={() => handleCardClick('navigate', 'numerology')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>🔢</div>
         <h3 style={titleStyle}>Число судьбы</h3>
@@ -170,6 +186,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', theme.colors.success)}
         onClick={() => handleCardClick('navigate', 'events')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>🌌</div>
         <h3 style={titleStyle}>События</h3>
@@ -180,6 +198,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', theme.colors.secondary)}
         onClick={() => handleCardClick('navigate', 'mercury')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>🪐</div>
         <h3 style={titleStyle}>Меркурий</h3>
@@ -190,6 +210,8 @@ const BentoGrid = ({
       <div 
         style={cardStyle('normal', '#ffd700')}
         onClick={() => handleCardClick('navigate', 'favorites')}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div style={iconStyle}>⭐</div>
         <h3 style={titleStyle}>Избранное</h3>
