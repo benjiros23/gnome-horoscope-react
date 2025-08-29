@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-
 import Header from './components/Header';
-import BackButton from './components/BackButton'; // поправьте путь, если лежит в UI/
+import BackButton from './components/BackButton'; // если у вас в UI/BackButton, поправьте путь
 import HoroscopeView from './components/HoroscopeView';
 import ZodiacCardsSelector from './components/ZodiacCardsSelector';
 import MoonView from './components/MoonView';
@@ -17,7 +16,7 @@ import LoadingScreen from './components/LoadingScreen';
 import { EnhancedMoonPhase } from './enhanced_moonPhase';
 import { useAstrologyData } from './hooks/useAstrologyData';
 
-// ДАННЫЕ
+// Константы
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
   { sign: 'Телец', emoji: '♉', dates: '21.04-20.05' },
@@ -48,25 +47,25 @@ const GNOME_PROFILES = {
   'Рыбы': { name: 'Гном Мечтатель', title: 'Морской волшебник', desc: 'Творческий, эмпатичный' }
 };
 
-// Бургер-меню (off-canvas)
-const BurgerMenu = ({ open, onClose, onNavigate, theme, current }) => {
+// Простой компонент бургер-меню (off-canvas)
+const BurgerMenu = ({ open, onClose, onNavigate, theme }) => {
   const panel = {
     position: 'fixed',
     top: 0,
     left: 0,
     height: '100vh',
     width: '72vw',
-    maxWidth: 320,
+    maxWidth: 300,
     backgroundColor: theme.colors.surface,
     borderRight: `1px solid ${theme.colors.border}`,
+    boxShadow: '0 0 30px rgba(0,0,0,0.35)',
     transform: open ? 'translateX(0)' : 'translateX(-100%)',
-    transition: 'transform 240ms ease',
+    transition: 'transform 250ms ease',
     zIndex: 1100,
     display: 'flex',
     flexDirection: 'column',
-    padding: 16,
-    gap: 8,
-    boxShadow: '0 0 30px rgba(0,0,0,0.35)'
+    padding: '16px',
+    gap: '8px'
   };
   const backdrop = {
     position: 'fixed',
@@ -77,41 +76,38 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, current }) => {
     transition: 'opacity 200ms ease',
     zIndex: 1000
   };
-  const link = (active) => ({
+  const item = (active) => ({
     padding: '12px 14px',
     borderRadius: 10,
-    border: `1px solid ${active ? theme.colors.primary : theme.colors.border}`,
-    background: active ? theme.colors.primary + '22' : 'transparent',
+    backgroundColor: active ? theme.colors.primary + '22' : 'transparent',
     color: theme.colors.text,
-    textAlign: 'left',
+    border: `1px solid ${active ? theme.colors.primary : theme.colors.border}`,
     cursor: 'pointer',
     fontWeight: active ? 700 : 500
   });
-
-  const items = [
-    { id: 'home', label: '🏠 Главная' },
-    { id: 'horoscope', label: '🔮 Гороскоп' },
-    { id: 'moon', label: '🌙 Луна' },
-    { id: 'compatibility', label: '💕 Совместимость' },
-    { id: 'numerology', label: '🔢 Нумерология' },
-    { id: 'events', label: '🌌 События' },
-    { id: 'cards', label: '🃏 Карта дня' },
-    { id: 'mercury', label: '🪐 Меркурий' },
-    { id: 'favorites', label: '⭐ Избранное' },
-  ];
 
   return (
     <>
       <div style={backdrop} onClick={onClose} />
       <nav style={panel} aria-label="Main navigation">
         <h3 style={{ margin: '0 0 12px', color: theme.colors.text }}>Меню</h3>
-        {items.map((i) => (
+        {[
+          { id: 'home', label: '🏠 Главная' },
+          { id: 'horoscope', label: '🔮 Гороскоп' },
+          { id: 'moon', label: '🌙 Луна' },
+          { id: 'compatibility', label: '💕 Совместимость' },
+          { id: 'numerology', label: '🔢 Нумерология' },
+          { id: 'events', label: '🌌 События' },
+          { id: 'cards', label: '🃏 Карта дня' },
+          { id: 'mercury', label: '🪐 Меркурий' },
+          { id: 'favorites', label: '⭐ Избранное' },
+        ].map((link) => (
           <button
-            key={i.id}
-            style={link(current === i.id)}
-            onClick={() => { onNavigate(i.id); onClose(); }}
+            key={link.id}
+            onClick={() => onNavigate(link.id)}
+            style={item(false)}
           >
-            {i.label}
+            {link.label}
           </button>
         ))}
       </nav>
@@ -120,12 +116,11 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, current }) => {
 };
 
 function AppContent() {
-  const { theme } = useTheme(); // тема фиксирована тёмная
-
+  const { theme } = useTheme(); // тема одна тёмная
   // Экран загрузки
   const [isLoading, setIsLoading] = useState(true);
 
-  // Данные
+  // Актуальные данные
   const astrologyData = useAstrologyData({
     autoUpdate: true,
     updateInterval: 6 * 60 * 60 * 1000,
@@ -133,26 +128,45 @@ function AppContent() {
     enableHoroscope: false
   });
 
-  // Сцены
+  // Навигация между экранами (single-screen app)
   const [currentView, setCurrentView] = useState(() => {
-    try { return localStorage.getItem('gnome-current-view') || 'home'; } catch { return 'home'; }
+    try {
+      return localStorage.getItem('gnome-current-view') || 'home';
+    } catch {
+      return 'home';
+    }
   });
 
   const [selectedSign, setSelectedSign] = useState(() => {
-    try { return localStorage.getItem('gnome-selected-sign') || 'Лев'; } catch { return 'Лев'; }
+    try {
+      return localStorage.getItem('gnome-selected-sign') || 'Лев';
+    } catch {
+      return 'Лев';
+    }
   });
 
   const [favorites, setFavorites] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('gnome-favorites') || '[]'); } catch { return []; }
+    try {
+      const saved = localStorage.getItem('gnome-favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Persist
-  useEffect(() => { try { localStorage.setItem('gnome-current-view', currentView); } catch {} }, [currentView]);
-  useEffect(() => { try { localStorage.setItem('gnome-selected-sign', selectedSign); } catch {} }, [selectedSign]);
-  useEffect(() => { try { localStorage.setItem('gnome-favorites', JSON.stringify(favorites)); } catch {} }, [favorites]);
+  useEffect(() => {
+    try { localStorage.setItem('gnome-current-view', currentView); } catch {}
+  }, [currentView]);
+  useEffect(() => {
+    try { localStorage.setItem('gnome-selected-sign', selectedSign); } catch {}
+  }, [selectedSign]);
+  useEffect(() => {
+    try { localStorage.setItem('gnome-favorites', JSON.stringify(favorites)); } catch {}
+  }, [favorites]);
 
   // Network
   useEffect(() => {
@@ -160,10 +174,13 @@ function AppContent() {
     const off = () => setIsOnline(false);
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
   }, []);
 
-  // Загрузка
+  // Экран загрузки
   if (isLoading) {
     return (
       <LoadingScreen
@@ -173,36 +190,35 @@ function AppContent() {
         backgroundImage="/assets/my-space-bg.jpg"
         circleImage="/assets/circle-background.png"
         gnomeImage="/assets/gnome-astrologer.png"
-        headerImage="/assets/header.jpg"
+        headerImage="/assets/header.png"
       />
     );
   }
 
-  // Оболочка приложения: один экран, без скролла
+  // Корневой холст без скроллинга: 100vh, контент центрируется
   const appShell = {
     position: 'relative',
     width: '100vw',
     height: '100vh',
-    overflow: 'hidden',
+    overflow: 'hidden',            // запрет прокрутки
     backgroundColor: theme.colors.background
   };
 
-  // Сцена под шапкой
-  const headerHeight = 'clamp(56px, 12vw, 120px)';
+  // «Сцена»: область под шапкой, вмещающая один экран
   const stage = {
     position: 'absolute',
-    top: headerHeight,
+    top: 'clamp(56px, 12vw, 120px)', // высота шапки (совместимо с Header)
     left: 0,
     right: 0,
     bottom: 0,
     display: 'grid',
     placeItems: 'center',
-    padding: 16
+    padding: '16px',
   };
 
   const burgerBtn = {
     position: 'fixed',
-    top: `calc(${headerHeight} + 12px)`,
+    top: 'calc(clamp(56px, 12vw, 120px) + 12px)',
     left: 16,
     zIndex: 1200,
     width: 44,
@@ -220,7 +236,7 @@ function AppContent() {
 
   const offlineBanner = {
     position: 'fixed',
-    top: headerHeight,
+    top: 'clamp(56px, 12vw, 120px)',
     left: 0,
     right: 0,
     backgroundColor: theme.colors.danger,
@@ -231,57 +247,63 @@ function AppContent() {
     zIndex: 1300
   };
 
-  const navigate = (view) => setCurrentView(view);
+  // Навигация через бургер
+  const navigate = (view) => {
+    setMenuOpen(false);
+    setCurrentView(view);
+  };
 
-  // Каждая сцена вписывается в окно
+  // Экран по текущему разделу (вписывается в 100vh)
   const Scene = useMemo(() => {
     switch (currentView) {
       case 'horoscope':
         return (
-          <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}>
+          <div style={{ width: 'min(96vw, 860px)', maxHeight: '100%', overflow: 'hidden' }}>
             <ZodiacCardsSelector selectedSign={selectedSign} onSignSelect={setSelectedSign} showHero />
             <HoroscopeView
               selectedSign={selectedSign}
               gnomeProfile={GNOME_PROFILES[selectedSign]}
               astrologyData={astrologyData}
               onAddToFavorites={(item) =>
-                setFavorites((p) => [{ ...item, id: Date.now() }, ...p].slice(0, 50))
+                setFavorites(prev => [ { ...item, id: Date.now() }, ...prev ].slice(0, 50))
               }
             />
           </div>
         );
       case 'moon':
         return (
-          <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}>
+          <div style={{ width: 'min(96vw, 860px)' }}>
             <MoonView
               astrologyData={astrologyData}
               enhancedMoonPhase={EnhancedMoonPhase}
               onAddToFavorites={(item) =>
-                setFavorites((p) => [{ ...item, id: Date.now() }, ...p].slice(0, 50))
+                setFavorites(prev => [ { ...item, id: Date.now() }, ...prev ].slice(0, 50))
               }
             />
           </div>
         );
       case 'compatibility':
-        return <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}><CompatibilityView /></div>;
+        return <div style={{ width: 'min(96vw, 860px)' }}><CompatibilityView /></div>;
       case 'numerology':
-        return <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}><NumerologyView /></div>;
+        return <div style={{ width: 'min(96vw, 860px)' }}><NumerologyView /></div>;
       case 'events':
-        return <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}><AstroEventsView /></div>;
+        return <div style={{ width: 'min(96vw, 860px)' }}><AstroEventsView /></div>;
       case 'cards':
-        return <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}><DayCardView /></div>;
+        return <div style={{ width: 'min(96vw, 860px)' }}><DayCardView /></div>;
       case 'mercury':
-        return <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto' }}><MercuryView /></div>;
+        return <div style={{ width: 'min(96vw, 860px)' }}><MercuryView /></div>;
       case 'favorites':
         return (
-          <div style={{ width: 'min(96vw, 900px)', maxHeight: '100%', overflow: 'auto', color: theme.colors.text }}>
-            <div style={{ opacity: 0.7, marginBottom: 8 }}>⭐ Избранное: {favorites.length}</div>
-            {/* Выведите список избранного, если нужно */}
+          <div style={{ width: 'min(96vw, 860px)' }}>
+            {/* Можно отрисовать список избранного компактно */}
+            <div style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
+              ⭐ Избранное: {favorites.length}
+            </div>
           </div>
         );
       default: // home
         return (
-          <div style={{ width: 'min(96vw, 980px)', maxHeight: '100%', overflow: 'auto' }}>
+          <div style={{ width: 'min(96vw, 920px)' }}>
             <ZodiacCardsSelector selectedSign={selectedSign} onSignSelect={setSelectedSign} showHero />
             <BentoGrid
               astrologyData={astrologyData}
@@ -293,26 +315,34 @@ function AppContent() {
           </div>
         );
     }
-  }, [currentView, selectedSign, astrologyData, favorites, theme.colors.text]);
+  }, [currentView, selectedSign, astrologyData, favorites, theme.colors.textSecondary]);
 
   return (
     <div style={appShell}>
+      {/* Шапка от края до края (Header сам адаптивный) */}
       <Header src="/assets/header.jpg" sticky />
 
       {/* Бургер-кнопка */}
-      <button aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={burgerBtn}>☰</button>
+      <button
+        aria-label="Открыть меню"
+        onClick={() => setMenuOpen(true)}
+        style={burgerBtn}
+      >
+        ☰
+      </button>
 
-      {/* Off-canvas меню */}
+      {/* Боковое меню */}
       <BurgerMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         onNavigate={navigate}
-        current={currentView}
         theme={theme}
       />
 
       {/* Оффлайн-баннер */}
-      {!isOnline && <div style={offlineBanner}>🔌 Нет подключения к интернету</div>}
+      {!isOnline && (
+        <div style={offlineBanner}>🔌 Нет подключения к интернету</div>
+      )}
 
       {/* Сцена одного экрана */}
       <main style={stage} role="main">
