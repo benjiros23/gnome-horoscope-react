@@ -210,7 +210,7 @@ const LoadingScreen = ({
       <div style={gnomeContainerStyle}>
         {/* 🚀 ВМЕСТО ЖЕЛТОГО КРУГА - ВАША КАРТИНКА */}
         <img 
-          src="/assets/circle-background.jpg" // 🚀 ЗАМЕНИТЕ НА ПУТЬ К ВАШЕЙ КРУГЛОЙ КАРТИНКЕ
+          src="/assets/circle-background.png" // 🚀 ЗАМЕНИТЕ НА ПУТЬ К ВАШЕЙ КРУГЛОЙ КАРТИНКЕ
           alt="Magic Circle" 
           style={circleImageStyle}
           onError={(e) => {
