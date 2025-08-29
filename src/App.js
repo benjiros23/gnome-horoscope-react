@@ -5,7 +5,7 @@ import Card from './components/UI/Card';
 import Button from './components/UI/Button';
 import BackButton from './components/UI/BackButton';
 import HoroscopeView from './components/HoroscopeView';
-import ZodiacCardsSelector from './components/ZodiacCardsSelector'; // 🚀 ЗАМЕНИЛИ на новый компонент
+import ZodiacCardsSelector from './components/ZodiacCardsSelector';
 import MoonView from './components/MoonView';
 import CompatibilityView from './components/CompatibilityView';
 import NumerologyView from './components/NumerologyView';
@@ -18,6 +18,7 @@ import BentoGrid from './components/BentoGrid';
 // 🚀 НОВЫЕ ИМПОРТЫ для актуальных данных
 import { EnhancedMoonPhase } from './enhanced_moonPhase';
 import { useAstrologyData } from './hooks/useAstrologyData';
+import LoadingScreen from './components/LoadingScreen';
 
 const ZODIAC_SIGNS = [
   { sign: 'Овен', emoji: '♈', dates: '21.03-20.04' },
@@ -51,6 +52,9 @@ const GNOME_PROFILES = {
 
 function AppContent() {
   const { theme, currentTheme } = useTheme();
+
+  // 🚀 STATE ДЛЯ ЭКРАНА ЗАГРУЗКИ
+  const [isLoading, setIsLoading] = useState(true);
 
   // 🚀 ХУК для актуальных астрологических данных
   const astrologyData = useAstrologyData({
@@ -234,7 +238,6 @@ function AppContent() {
     }
   };
 
-  // 🚀 ОБНОВЛЕННЫЙ обработчик выбора знака для ZodiacCardsSelector
   const handleSignSelect = (sign) => {
     console.log('🌟 Выбран знак:', sign);
     setSelectedSign(sign);
@@ -275,7 +278,18 @@ function AppContent() {
     }
   };
 
-  // 🚀 ОБНОВЛЕННЫЙ рендер с новым ZodiacCardsSelector
+  // 🚀 УСЛОВИЕ ПОКАЗА ЭКРАНА ЗАГРУЗКИ
+  if (isLoading) {
+    return (
+      <LoadingScreen 
+        onLoadingComplete={() => setIsLoading(false)}
+        minLoadingTime={3000} // 3 секунды минимум
+        showProgress={true}
+      />
+    );
+  }
+
+  // Рендер различных экранов
   const renderCurrentView = () => {
     const viewProps = {
       onAddToFavorites: handleAddToFavorites,
@@ -304,7 +318,6 @@ function AppContent() {
               )}
             </div>
 
-            {/* 🚀 ЗАМЕНИЛИ ZodiacCarousel на ZodiacCardsSelector */}
             <ZodiacCardsSelector 
               selectedSign={selectedSign}
               onSignSelect={handleSignSelect}
@@ -466,7 +479,7 @@ function AppContent() {
               </p>
             </div>
 
-            {/* 🚀 НОВЫЙ ZodiacCardsSelector на главной */}
+            {/* ZodiacCardsSelector на главной */}
             <div style={{ marginBottom: '24px' }}>
               <ZodiacCardsSelector 
                 selectedSign={selectedSign}
