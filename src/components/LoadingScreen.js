@@ -194,10 +194,7 @@ const LoadingScreen = ({
         <img src={headerImage} alt="Gnome Horoscope" style={headerImg} draggable={false} />
       </div>
 
-      <div style={{ position: 'relative', width: '100%' }}>
-        <div style={moon}>🌙</div>
-      </div>
-
+  
       <div style={stage}>
         <div style={arena}>
           {/* Кастомный круг */}
