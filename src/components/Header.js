@@ -1,35 +1,30 @@
-import React from 'react';
-
-const Header = ({ src = '/assets/header.jpg', sticky = true }) => {
-  const wrap = {
-    position: sticky ? 'fixed' : 'relative',
+const Header = () => (
+  <header style={{
+    position: 'fixed',
     top: 0,
     left: 0,
     width: '100vw',
-    maxWidth: '100%',
-    // Два режима высоты: через aspectRatio или через clamp высоты:
-    // aspectRatio: '2000 / 430',          // включите, если знаете пропорции
-    height: 'clamp(56px, 12vw, 120px)',    // адаптивная высота
+    height: 'clamp(60px, 15vw, 140px)',
     zIndex: 1000,
     overflow: 'hidden',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
-    backgroundColor: '#2a1e14',
-  };
-
-  const img = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',    // заполняет от края до края
-    display: 'block',
-    userSelect: 'none',
-    pointerEvents: 'none',
-  };
-
-  return (
-    <div style={wrap} role="banner" aria-label="Gnome Horoscope Header">
-      <img src={src} alt="Gnome Horoscope" style={img} />
-    </div>
-  );
-};
-
-export default Header;
+    boxShadow: '0 2px 12px rgba(0,0,0,0.4)'
+  }}>
+    <img 
+      src="/assets/header.png"  // 🚀 ИСПРАВИЛ НА .png
+      alt="Gnome Horoscope"
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        objectPosition: 'center',
+        display: 'block'
+      }}
+      onError={(e) => {
+        console.error('Header image failed to load:', e.target.src);
+        // Fallback: скрыть изображение и показать цветной фон
+        e.target.style.display = 'none';
+        e.target.parentElement.style.background = 'linear-gradient(135deg, #8B4513, #CD853F)';
+      }}
+    />
+  </header>
+);
