@@ -1,237 +1,437 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const LoadingScreen = ({
   onLoadingComplete,
   minLoadingTime = 3000,
   showProgress = true,
-  // Кастомные изображения:
-  backgroundImage = '/assets/my-space-bg.jpg',  // Фон всей сцены (ВЫ МОЖЕТЕ ЗАМЕНИТЬ)
-  circleImage = '/assets/circle-background.png',// Круглая картинка под гномом
-  gnomeImage = '/assets/gnome-astrologer.png',  // Гном
-  headerImage = '/assets/header.png',           // Табличка «Gnome Horoscope»
+  // Кастомные изображения
+  backgroundImage = '/assets/my-space-bg.jpg',
+  circleImage = '/assets/circle-background.png',
+  gnomeImage = '/assets/gnome-astrologer.png',
+  headerImage = '/assets/header.png'
 }) => {
   const { theme } = useTheme();
   const [progress, setProgress] = useState(0);
   const [dots, setDots] = useState('');
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
 
-  // Прогресс
+  // Прогресс загрузки
   useEffect(() => {
     const start = Date.now();
-    const id = setInterval(() => {
+    
+    const updateProgress = () => {
       const elapsed = Date.now() - start;
       const p = Math.min(100, (elapsed / minLoadingTime) * 100);
       setProgress(p);
-      if (p >= 100) {
-        clearInterval(id);
-        setTimeout(() => onLoadingComplete?.(), 400);
+      
+      if (p >= 100 && imagesLoaded) {
+        setTimeout(() => {
+          onLoadingComplete?.();
+        }, 400);
       }
-    }, 50);
-    return () => clearInterval(id);
-  }, [minLoadingTime, onLoadingComplete]);
+    };
 
-  // Точки
+    const interval = setInterval(updateProgress, 50);
+    return () => clearInterval(interval);
+  }, [minLoadingTime, onLoadingComplete, imagesLoaded]);
+
+  // Анимация точек
   useEffect(() => {
-    const id = setInterval(() => setDots((d) => (d.length >= 3 ? '' : d + '.')), 500);
-    return () => clearInterval(id);
+    const interval = setInterval(() => {
+      setDots((d) => (d.length >= 3 ? '' : d + '.'));
+    }, 500);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  // Фон: если указан backgroundImage — используем его, иначе градиент+звезды
-  const backgroundLayer =
-    backgroundImage
-      ? `url("${backgroundImage}") center/cover no-repeat, `
-      : '';
+  // Предзагрузка изображений
+  useEffect(() => {
+    const imagesToLoad = [backgroundImage, circleImage, gnomeImage, headerImage];
+    let loadedCount = 0;
+    const errors = {};
 
-  const starfield = `
-    url("data:image/svg+xml,${encodeURIComponent(`
-      <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'>
-        <circle cx='20' cy='20' r='1' fill='white' opacity='0.8'/>
-        <circle cx='80' cy='25' r='0.5' fill='white' opacity='0.6'/>
-        <circle cx='40' cy='60' r='0.8' fill='white' opacity='0.7'/>
-        <circle cx='90' cy='70' r='0.6' fill='white' opacity='0.5'/>
-        <circle cx='10' cy='80' r='1.2' fill='white' opacity='0.9'/>
-        <circle cx='70' cy='15' r='0.4' fill='white' opacity='0.4'/>
-        <circle cx='25' cy='85' r='0.7' fill='white' opacity='0.6'/>
-        <circle cx='60' cy='30' r='0.9' fill='white' opacity='0.8'/>
-      </svg>
-    `)}") repeat
-  `;
+    const handleImageLoad = () => {
+      loadedCount++;
+      if (loadedCount === imagesToLoad.length) {
+        setImagesLoaded(true);
+      }
+    };
 
-  const screenStyle = {
-    position: 'fixed',
-    inset: 0,
-    background: `
-      ${backgroundLayer}
-      radial-gradient(ellipse at center top, #2D1B69 0%, #1A1A2E 50%, #0F0F1A 100%),
-      ${starfield}
-    `,
-    backgroundBlendMode: backgroundImage ? 'normal, multiply, screen' : 'normal, normal, screen',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    color: '#fff',
-    zIndex: 9999,
-    overflow: 'hidden',
-  };
+    const handleImageError = (src) => {
+      errors[src] = true;
+      setImageErrors(prev => ({ ...prev, [src]: true }));
+      loadedCount++;
+      if (loadedCount === imagesToLoad.length) {
+        setImagesLoaded(true);
+      }
+    };
 
-  const headerWrap = {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    paddingTop: 12,
-    marginBottom: 12,
-  };
+    imagesToLoad.forEach(src => {
+      if (src) {
+        const img = new Image();
+        img.onload = handleImageLoad;
+        img.onerror = () => handleImageError(src);
+        img.src = src;
+      } else {
+        handleImageLoad();
+      }
+    });
+  }, [backgroundImage, circleImage, gnomeImage, headerImage]);
 
-  const headerImg = {
-    width: 'min(92vw, 820px)',
-    height: 'auto',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.5))',
-    pointerEvents: 'none',
-    userSelect: 'none',
-  };
+  // CSS анимации через стили
+  const keyframes = useMemo(() => `
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes glow {
+      0% { text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+      100% { text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(244,197,66,0.6); }
+    }
+    
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+  `, []);
 
-  const stage = {
-    flex: '1 1 auto',
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '12px 16px 24px',
-    gap: 16,
-  };
+  // Генерация звездного поля
+  const starfield = useMemo(() => {
+    const stars = Array.from({ length: 50 }, (_, i) => {
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      const size = Math.random() * 2 + 1;
+      const delay = Math.random() * 4;
+      
+      return (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${x}%`,
+            top: `${y}%`,
+            width: `${size}px`,
+            height: `${size}px`,
+            background: '#ffffff',
+            borderRadius: '50%',
+            animation: `twinkle ${2 + Math.random() * 2}s ease-in-out infinite`,
+            animationDelay: `${delay}s`,
+            opacity: 0.3
+          }}
+        />
+      );
+    });
+    
+    return stars;
+  }, []);
 
-  const arena = {
-    position: 'relative',
-    width: 'clamp(240px, 40vw, 360px)',
-    height: 'clamp(240px, 40vw, 360px)',
-    marginBottom: 12,
-  };
+  // Мемоизированные стили
+  const styles = useMemo(() => ({
+    screen: {
+      position: 'fixed',
+      inset: 0,
+      background: backgroundImage && !imageErrors[backgroundImage]
+        ? `linear-gradient(rgba(15, 15, 35, 0.7), rgba(26, 26, 46, 0.8)), url("${backgroundImage}") center/cover no-repeat`
+        : 'radial-gradient(ellipse at center top, #2D1B69 0%, #1A1A2E 50%, #0F0F1A 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      zIndex: 9999,
+      overflow: 'hidden',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    },
 
-  const circleImg = {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '3px solid #F4C542',
-    boxShadow: '0 0 30px rgba(244,197,66,0.5), inset 0 0 20px rgba(0,0,0,0.3)',
-    animation: 'rotate 20s linear infinite',
-    filter: 'brightness(0.9) contrast(1.08)',
-  };
+    headerWrap: {
+      position: 'absolute',
+      top: '20px',
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      padding: '0 16px',
+      animation: 'fadeIn 1s ease-out'
+    },
 
-  const gnome = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '60%',
-    height: '60%',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
-    zIndex: 3,
-    pointerEvents: 'none',
-  };
+    headerImg: {
+      width: 'min(90vw, 300px)',
+      height: 'auto',
+      objectFit: 'contain',
+      filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.5))',
+      pointerEvents: 'none',
+      userSelect: 'none'
+    },
 
-  const moon = {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    fontSize: 40,
-    animation: 'glow 2s ease-in-out infinite alternate',
-  };
+    content: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '24px',
+      padding: '20px',
+      animation: 'fadeIn 1.5s ease-out 0.5s both'
+    },
 
-  const barWrap = {
-    width: 'clamp(220px, 58vw, 360px)',
-    height: 10,
-    backgroundColor: 'rgba(244,197,66,0.2)',
-    borderRadius: 6,
-    overflow: 'hidden',
-    border: '1px solid rgba(244,197,66,0.45)',
-    position: 'relative',
-  };
+    arena: {
+      position: 'relative',
+      width: 'clamp(200px, 35vw, 280px)',
+      height: 'clamp(200px, 35vw, 280px)',
+      marginBottom: '16px'
+    },
 
-  const barFill = {
-    height: '100%',
-    width: `${progress}%`,
-    background: 'linear-gradient(90deg, #F4C542, #FFD700, #F4C542)',
-    borderRadius: 6,
-    transition: 'width 0.1s ease-out',
-    boxShadow: '0 0 10px rgba(244,197,66,0.6)',
-    position: 'relative',
-    overflow: 'hidden',
-  };
+    circleImg: {
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      borderRadius: '50%',
+      objectFit: 'cover',
+      border: '3px solid #F4C542',
+      boxShadow: `
+        0 0 30px rgba(244,197,66,0.5),
+        inset 0 0 20px rgba(0,0,0,0.3),
+        0 0 60px rgba(244,197,66,0.3)
+      `,
+      animation: 'rotate 20s linear infinite',
+      filter: 'brightness(0.9) contrast(1.08)'
+    },
 
-  const barShimmer = {
-    position: 'absolute',
-    top: 0,
-    left: '-100%',
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
-    animation: progress > 0 ? 'shimmer 1.5s ease-in-out infinite' : 'none',
-  };
+    gnome: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '65%',
+      height: '65%',
+      objectFit: 'contain',
+      filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
+      zIndex: 3,
+      pointerEvents: 'none',
+      animation: 'pulse 3s ease-in-out infinite'
+    },
 
-  const title = { fontSize: 18, fontWeight: 800, color: '#F4C542', textShadow: '1px 1px 2px rgba(0,0,0,0.8)', letterSpacing: 1 };
-  const sub = { fontSize: 16, color: 'rgba(255,255,255,0.85)', textShadow: '1px 1px 2px rgba(0,0,0,0.6)', fontStyle: 'italic', textAlign: 'center', maxWidth: '80%' };
+    moon: {
+      position: 'absolute',
+      top: '8px',
+      right: '8px',
+      fontSize: '32px',
+      animation: 'glow 2s ease-in-out infinite alternate',
+      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+    },
+
+    progressSection: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '12px',
+      width: '100%',
+      maxWidth: '320px'
+    },
+
+    barWrap: {
+      width: '100%',
+      height: '8px',
+      backgroundColor: 'rgba(244,197,66,0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+      border: '1px solid rgba(244,197,66,0.4)',
+      position: 'relative'
+    },
+
+    barFill: {
+      height: '100%',
+      width: `${progress}%`,
+      background: 'linear-gradient(90deg, #F4C542, #FFD700, #F4C542)',
+      borderRadius: '4px',
+      transition: 'width 0.2s ease-out',
+      boxShadow: '0 0 10px rgba(244,197,66,0.6)',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+
+    barShimmer: {
+      position: 'absolute',
+      top: 0,
+      left: '-100%',
+      width: '100%',
+      height: '100%',
+      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+      animation: progress > 0 ? 'shimmer 1.5s ease-in-out infinite' : 'none'
+    },
+
+    title: {
+      fontSize: '18px',
+      fontWeight: '700',
+      color: '#F4C542',
+      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+      letterSpacing: '1px',
+      textAlign: 'center',
+      marginBottom: '8px'
+    },
+
+    subtitle: {
+      fontSize: '14px',
+      color: 'rgba(255,255,255,0.85)',
+      textShadow: '1px 1px 2px rgba(0,0,0,0.6)',
+      fontStyle: 'italic',
+      textAlign: 'center',
+      maxWidth: '280px',
+      lineHeight: '1.4'
+    },
+
+    progressText: {
+      fontSize: '12px',
+      color: 'rgba(255,255,255,0.7)',
+      fontWeight: '500'
+    }
+  }), [progress, backgroundImage, imageErrors]);
+
+  // Fallback изображения
+  const renderImage = useCallback((src, style, alt, fallback) => {
+    if (imageErrors[src]) {
+      return fallback || (
+        <div style={{
+          ...style,
+          background: 'rgba(244,197,66,0.1)',
+          border: '2px dashed rgba(244,197,66,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(255,255,255,0.5)',
+          fontSize: '12px'
+        }}>
+          {alt}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={src}
+        alt={alt}
+        style={style}
+        loading="eager"
+        onError={() => setImageErrors(prev => ({ ...prev, [src]: true }))}
+      />
+    );
+  }, [imageErrors]);
 
   return (
-    <div style={screenStyle}>
-      <style>{`
-        @keyframes rotate { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes glow {
-          from { text-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700; transform: scale(1) }
-          to   { text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 25px #FFD700; transform: scale(1.08) }
-        }
-        @keyframes shimmer { 0% { left: -100% } 100% { left: 100% } }
-      `}</style>
-
-      {/* Табличка-хедер */}
-      <div style={headerWrap}>
-        <img src={headerImage} alt="Gnome Horoscope" style={headerImg} draggable={false} />
-      </div>
-
-  
-      <div style={stage}>
-        <div style={arena}>
-          {/* Кастомный круг */}
-          <img src={circleImage} alt="Magic Circle" style={circleImg} draggable={false} />
-
-          {/* Гном */}
-          <img
-            src={gnomeImage}
-            alt="Cosmic Gnome"
-            style={gnome}
-            draggable={false}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.insertAdjacentHTML(
-                'afterend',
-                `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;">🧙‍♂️</div>`
-              );
-            }}
-          />
+    <>
+      <style>{keyframes}</style>
+      <div style={styles.screen}>
+        {/* Звездное поле */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          {starfield}
         </div>
 
-        <div style={title}>LOADING{dots}</div>
-
-        {showProgress && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-            <div style={barWrap}>
-              <div style={barFill}>
-                <div style={barShimmer} />
+        {/* Заголовок */}
+        {headerImage && (
+          <div style={styles.headerWrap}>
+            {renderImage(
+              headerImage,
+              styles.headerImg,
+              'Gnome Horoscope',
+              <div style={{
+                ...styles.headerImg,
+                background: 'linear-gradient(135deg, #F4C542, #FFD700)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '12px',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#1a1a2e'
+              }}>
+                🔮 Gnome Horoscope
               </div>
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>{Math.round(progress)}%</div>
+            )}
           </div>
         )}
 
-        <p style={sub}>Consulting the Cosmic Gnomes{dots}</p>
+        {/* Основной контент */}
+        <div style={styles.content}>
+          {/* Арена с гномом */}
+          <div style={styles.arena}>
+            {/* Фоновый круг */}
+            {circleImage && renderImage(
+              circleImage,
+              styles.circleImg,
+              'Magical Circle',
+              <div style={{
+                ...styles.circleImg,
+                background: 'radial-gradient(circle, #2D1B69, #1A1A2E)',
+                border: '3px solid #F4C542'
+              }} />
+            )}
+
+            {/* Гном */}
+            {gnomeImage && renderImage(
+              gnomeImage,
+              styles.gnome,
+              'Astrologer Gnome',
+              <div style={{
+                ...styles.gnome,
+                background: 'linear-gradient(135deg, #F4C542, #FFD700)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '48px'
+              }}>
+                🧙‍♂️
+              </div>
+            )}
+
+            {/* Луна */}
+            <div style={styles.moon}>🌙</div>
+          </div>
+
+          {/* Текст и прогресс */}
+          <div style={styles.progressSection}>
+            <div style={styles.title}>
+              Consulting the Cosmic Gnomes{dots}
+            </div>
+            
+            <div style={styles.subtitle}>
+              Загружаем звездные карты и настраиваем кристальный шар...
+            </div>
+
+            {showProgress && (
+              <>
+                <div style={styles.barWrap}>
+                  <div style={styles.barFill}>
+                    <div style={styles.barShimmer} />
+                  </div>
+                </div>
+                
+                <div style={styles.progressText}>
+                  {Math.round(progress)}% готово
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
