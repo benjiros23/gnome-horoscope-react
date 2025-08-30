@@ -1,7 +1,92 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
-const BentoGrid = ({ 
+// ===== КОНСТАНТЫ =====
+const ZODIAC_SIGNS = ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'];
+const ZODIAC_EMOJIS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
+
+// Данные карточек навигации
+const NAVIGATION_CARDS = [
+  { id: 'cards', icon: '🃏', title: 'Карта дня', subtitle: 'Получите совет на сегодня', color: 'warning' },
+  { id: 'compatibility', icon: '💕', title: 'Совместимость', subtitle: 'Проверьте отношения', color: 'error' },
+  { id: 'numerology', icon: '🔢', title: 'Число судьбы', subtitle: 'Раскройте тайны чисел', color: 'info' },
+  { id: 'events', icon: '🌌', title: 'События', subtitle: 'Астрологический календарь', color: 'success' },
+  { id: 'mercury', icon: '🪐', title: 'Меркурий', subtitle: 'Ретроградное влияние', color: 'secondary' },
+  { id: 'favorites', icon: '⭐', title: 'Избранное', subtitle: 'Сохраненные предсказания', color: '#ffd700' }
+];
+
+// ===== УТИЛИТЫ =====
+const getZodiacEmoji = (sign) => {
+  const index = ZODIAC_SIGNS.indexOf(sign);
+  return index !== -1 ? ZODIAC_EMOJIS[index] : '♌';
+};
+
+// ===== КОМПОНЕНТ КАРТОЧКИ =====
+const BentoCard = React.memo(({ 
+  size = 'normal', 
+  color, 
+  onClick, 
+  children, 
+  className = '',
+  tabIndex = 0,
+  'aria-label': ariaLabel,
+  theme
+}) => {
+  const cardSizes = useMemo(() => ({
+    normal: { gridColumn: 'span 1', gridRow: 'span 1', minHeight: '140px' },
+    large: { gridColumn: 'span 2', gridRow: 'span 1', minHeight: '200px' },
+    wide: { gridColumn: 'span 3', gridRow: 'span 1', minHeight: '140px' },
+    tall: { gridColumn: 'span 1', gridRow: 'span 2', minHeight: '280px' }
+  }), []);
+
+  const cardStyle = useMemo(() => ({
+    ...theme.components.card,
+    ...cardSizes[size],
+    background: `linear-gradient(135deg, ${color}15 0%, ${theme.components.card.background} 100%)`,
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden'
+  }), [theme, size, color, cardSizes]);
+
+  const handleMouseEnter = useCallback((e) => {
+    e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.2)';
+  }, []);
+
+  const handleMouseLeave = useCallback((e) => {
+    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+    e.currentTarget.style.boxShadow = cardStyle.boxShadow;
+  }, [cardStyle.boxShadow]);
+
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  }, [onClick]);
+
+  return (
+    <div
+      className={className}
+      style={cardStyle}
+      onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onKeyPress={handleKeyPress}
+      tabIndex={tabIndex}
+      role="button"
+      aria-label={ariaLabel}
+    >
+      {children}
+    </div>
+  );
+});
+
+BentoCard.displayName = 'BentoCard';
+
+// ===== ОСНОВНОЙ КОМПОНЕНТ =====
+const BentoGrid = React.memo(({ 
   astrologyData, 
   selectedSign, 
   gnomeProfiles, 
@@ -10,215 +95,175 @@ const BentoGrid = ({
 }) => {
   const { theme } = useTheme();
 
-  const bentoStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-    gap: '16px',
-    padding: '20px',
-    maxWidth: '800px',
-    margin: '0 auto'
-  };
-
-  const cardStyle = (size = 'normal', color = theme.colors.primary) => ({
-    backgroundColor: theme.card.background,
-    border: theme.card.border,
-    borderRadius: '16px',
-    padding: '20px',
-    boxShadow: theme.card.boxShadow,
-    cursor: 'pointer',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    position: 'relative',
-    overflow: 'hidden',
-    gridColumn: size === 'large' ? 'span 2' : size === 'wide' ? 'span 3' : 'span 1',
-    gridRow: size === 'tall' ? 'span 2' : 'span 1',
-    minHeight: size === 'large' ? '200px' : size === 'tall' ? '280px' : '140px',
-    background: `linear-gradient(135deg, ${color}15 0%, ${theme.card.background} 100%)`,
-  });
-
-  const iconStyle = {
-    fontSize: '32px',
-    marginBottom: '8px',
-    display: 'block'
-  };
-
-  const titleStyle = {
-    fontSize: '16px',
-    fontWeight: '600',
-    margin: '0 0 4px 0',
-    color: theme.colors.text
-  };
-
-  const subtitleStyle = {
-    fontSize: '14px',
-    color: theme.colors.textSecondary,
-    margin: 0,
-    lineHeight: '1.4'
-  };
-
-  const handleCardClick = (action, data) => {
-    if (action === 'navigate') {
-      onButtonClick(data);
-    } else if (action === 'selectSign') {
-      onSignSelect(data);
+  // Мемоизированные стили
+  const styles = useMemo(() => ({
+    container: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+      gap: '16px',
+      padding: '20px',
+      maxWidth: '800px',
+      margin: '0 auto'
+    },
+    
+    icon: {
+      fontSize: '32px',
+      marginBottom: '8px',
+      display: 'block'
+    },
+    
+    title: {
+      ...theme.typography.h3,
+      fontSize: '16px',
+      margin: '0 0 4px 0'
+    },
+    
+    subtitle: {
+      ...theme.typography.caption,
+      margin: 0,
+      lineHeight: '1.4'
+    },
+    
+    largeIcon: {
+      fontSize: '48px',
+      marginBottom: '12px'
+    },
+    
+    largeTitle: {
+      ...theme.typography.h2,
+      fontSize: '20px',
+      margin: '0 0 8px 0'
+    },
+    
+    timestamp: {
+      position: 'absolute',
+      bottom: '12px',
+      right: '12px',
+      fontSize: '12px',
+      opacity: 0.6,
+      backgroundColor: theme.colors.surface || 'rgba(255,255,255,0.1)',
+      padding: '4px 8px',
+      borderRadius: '12px'
     }
-  };
+  }), [theme]);
 
-  const handleMouseEnter = (e) => {
-    e.currentTarget.style.transform = 'translateY(-4px)';
-    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
-  };
+  // Обработчики событий
+  const handleCardClick = useCallback((action, data) => {
+    if (action === 'navigate') {
+      onButtonClick?.(data);
+    } else if (action === 'selectSign') {
+      onSignSelect?.(data);
+    }
+  }, [onButtonClick, onSignSelect]);
 
-  const handleMouseLeave = (e) => {
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = theme.card.boxShadow;
-  };
+  // Мемоизированные данные
+  const moonCardContent = useMemo(() => {
+    if (astrologyData?.moon) {
+      return {
+        icon: astrologyData.moon.emoji,
+        title: astrologyData.moon.phase,
+        subtitle: `${astrologyData.moon.illumination}% освещенности`,
+        extraInfo: `${astrologyData.moon.lunarDay} лунный день`,
+        timestamp: astrologyData.lastUpdated
+      };
+    }
+    
+    return {
+      icon: '🌙',
+      title: 'Лунный календарь',
+      subtitle: 'Загрузка фазы луны...',
+      extraInfo: null,
+      timestamp: null
+    };
+  }, [astrologyData]);
+
+  const zodiacCardContent = useMemo(() => ({
+    emoji: getZodiacEmoji(selectedSign),
+    title: selectedSign,
+    subtitle: gnomeProfiles?.[selectedSign]?.name || 'Ваш гороскоп'
+  }), [selectedSign, gnomeProfiles]);
 
   return (
-    <div style={bentoStyle}>
+    <div style={styles.container}>
       {/* Большая карточка - Текущая лунная фаза */}
-      <div 
-        style={cardStyle('large', theme.colors.primary)}
+      <BentoCard
+        size="large"
+        color={theme.colors.primary}
         onClick={() => handleCardClick('navigate', 'moon')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        aria-label={`Лунная фаза: ${moonCardContent.title}`}
+        theme={theme}
       >
-        {astrologyData?.moon ? (
-          <>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>
-              {astrologyData.moon.emoji}
-            </div>
-            <h3 style={{ ...titleStyle, fontSize: '20px' }}>
-              {astrologyData.moon.phase}
-            </h3>
-            <p style={subtitleStyle}>
-              {astrologyData.moon.illumination}% освещенности
-            </p>
-            <p style={{ ...subtitleStyle, marginTop: '8px' }}>
-              {astrologyData.moon.lunarDay} лунный день
-            </p>
-            {astrologyData.lastUpdated && (
-              <div style={{
-                position: 'absolute',
-                bottom: '12px',
-                right: '12px',
-                fontSize: '12px',
-                opacity: 0.6,
-                backgroundColor: theme.colors.surface,
-                padding: '4px 8px',
-                borderRadius: '12px'
-              }}>
-                {astrologyData.lastUpdated.toLocaleTimeString('ru-RU', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <div style={iconStyle}>🌙</div>
-            <h3 style={titleStyle}>Лунный календарь</h3>
-            <p style={subtitleStyle}>Загрузка фазы луны...</p>
-          </>
+        <div style={styles.largeIcon}>
+          {moonCardContent.icon}
+        </div>
+        <h3 style={styles.largeTitle}>
+          {moonCardContent.title}
+        </h3>
+        <p style={styles.subtitle}>
+          {moonCardContent.subtitle}
+        </p>
+        {moonCardContent.extraInfo && (
+          <p style={{ ...styles.subtitle, marginTop: '8px' }}>
+            {moonCardContent.extraInfo}
+          </p>
         )}
-      </div>
+        
+        {moonCardContent.timestamp && (
+          <div style={styles.timestamp}>
+            {moonCardContent.timestamp.toLocaleTimeString('ru-RU', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </div>
+        )}
+      </BentoCard>
 
       {/* Текущий знак зодиака */}
-      <div 
-        style={cardStyle('normal', theme.colors.secondary)}
+      <BentoCard
+        size="normal"
+        color={theme.colors.secondary}
         onClick={() => handleCardClick('navigate', 'horoscope')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        aria-label={`Знак зодиака: ${zodiacCardContent.title}`}
+        theme={theme}
       >
-        <div style={iconStyle}>
-          {['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
-            'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы']
-            .find(sign => sign === selectedSign) ? 
-            ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓']
-            [['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
-              'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы']
-              .indexOf(selectedSign)] : '♌'
-          }
+        <div style={styles.icon}>
+          {zodiacCardContent.emoji}
         </div>
-        <h3 style={titleStyle}>{selectedSign}</h3>
-        <p style={subtitleStyle}>
-          {gnomeProfiles[selectedSign]?.name || 'Ваш гороскоп'}
+        <h3 style={styles.title}>
+          {zodiacCardContent.title}
+        </h3>
+        <p style={styles.subtitle}>
+          {zodiacCardContent.subtitle}
         </p>
-      </div>
+      </BentoCard>
 
-      {/* Карта дня */}
-      <div 
-        style={cardStyle('normal', theme.colors.warning)}
-        onClick={() => handleCardClick('navigate', 'cards')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div style={iconStyle}>🃏</div>
-        <h3 style={titleStyle}>Карта дня</h3>
-        <p style={subtitleStyle}>Получите совет на сегодня</p>
-      </div>
-
-      {/* Совместимость */}
-      <div 
-        style={cardStyle('normal', theme.colors.danger)}
-        onClick={() => handleCardClick('navigate', 'compatibility')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div style={iconStyle}>💕</div>
-        <h3 style={titleStyle}>Совместимость</h3>
-        <p style={subtitleStyle}>Проверьте отношения</p>
-      </div>
-
-      {/* Нумерология */}
-      <div 
-        style={cardStyle('normal', theme.colors.info)}
-        onClick={() => handleCardClick('navigate', 'numerology')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div style={iconStyle}>🔢</div>
-        <h3 style={titleStyle}>Число судьбы</h3>
-        <p style={subtitleStyle}>Раскройте тайны чисел</p>
-      </div>
-
-      {/* Астрособытия */}
-      <div 
-        style={cardStyle('normal', theme.colors.success)}
-        onClick={() => handleCardClick('navigate', 'events')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div style={iconStyle}>🌌</div>
-        <h3 style={titleStyle}>События</h3>
-        <p style={subtitleStyle}>Астрологический календарь</p>
-      </div>
-
-      {/* Меркурий */}
-      <div 
-        style={cardStyle('normal', theme.colors.secondary)}
-        onClick={() => handleCardClick('navigate', 'mercury')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div style={iconStyle}>🪐</div>
-        <h3 style={titleStyle}>Меркурий</h3>
-        <p style={subtitleStyle}>Ретроградное влияние</p>
-      </div>
-
-      {/* Избранное */}
-      <div 
-        style={cardStyle('normal', '#ffd700')}
-        onClick={() => handleCardClick('navigate', 'favorites')}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div style={iconStyle}>⭐</div>
-        <h3 style={titleStyle}>Избранное</h3>
-        <p style={subtitleStyle}>Сохраненные предсказания</p>
-      </div>
+      {/* Навигационные карточки */}
+      {NAVIGATION_CARDS.map(card => (
+        <BentoCard
+          key={card.id}
+          size="normal"
+          color={typeof card.color === 'string' && card.color.startsWith('#') 
+            ? card.color 
+            : theme.colors[card.color] || theme.colors.primary}
+          onClick={() => handleCardClick('navigate', card.id)}
+          aria-label={`${card.title}: ${card.subtitle}`}
+          theme={theme}
+        >
+          <div style={styles.icon}>
+            {card.icon}
+          </div>
+          <h3 style={styles.title}>
+            {card.title}
+          </h3>
+          <p style={styles.subtitle}>
+            {card.subtitle}
+          </p>
+        </BentoCard>
+      ))}
     </div>
   );
-};
+});
+
+BentoGrid.displayName = 'BentoGrid';
 
 export default BentoGrid;
