@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import Header from './components/Header';
 import Card from './components/UI/Card';
 import Button from './components/UI/Button';
 import BackButton from './components/UI/BackButton';
@@ -48,6 +47,32 @@ const GNOME_PROFILES = {
   'Рыбы': { name: 'Гном Мечтатель', title: 'Морской волшебник', desc: 'Творческий, эмпатичный' }
 };
 
+// 🚀 РАСТЯГИВАЮЩИЙСЯ HEADER НА ВСЮ ШИРИНУ
+const Header = () => (
+  <header style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw', // 🚀 ПОЛНАЯ ШИРИНА ЭКРАНА
+    height: 'clamp(60px, 15vw, 140px)', // 🚀 АДАПТИВНАЯ ВЫСОТА
+    zIndex: 1000,
+    overflow: 'hidden',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.4)'
+  }}>
+    <img 
+      src="/assets/header.jpg"
+      alt="Gnome Horoscope"
+      style={{
+        width: '100%', // 🚀 РАСТЯГИВАЕТСЯ НА ВСЮ ШИРИНУ
+        height: '100%', // 🚀 ЗАПОЛНЯЕТ ВСЮ ВЫСОТУ
+        objectFit: 'cover', // 🚀 ОБРЕЗАЕТ ПРОПОРЦИОНАЛЬНО
+        objectPosition: 'center', // 🚀 ЦЕНТРИРУЕТ ИЗОБРАЖЕНИЕ
+        display: 'block'
+      }}
+    />
+  </header>
+);
+
 // 🍔 БУРГЕР-МЕНЮ КОМПОНЕНТ
 const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
   const menuItems = [
@@ -71,7 +96,6 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
 
   return (
     <>
-      {/* Backdrop */}
       <div 
         style={{
           position: 'fixed',
@@ -82,7 +106,6 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
         onClick={onClose}
       />
       
-      {/* Menu Panel */}
       <nav style={{
         position: 'fixed',
         top: 0,
@@ -127,16 +150,6 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
               fontWeight: currentView === item.id ? 'bold' : 'normal',
               transition: 'all 200ms ease'
             }}
-            onMouseEnter={(e) => {
-              if (currentView !== item.id) {
-                e.target.style.background = theme.colors.border + '20';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentView !== item.id) {
-                e.target.style.background = 'transparent';
-              }
-            }}
           >
             {item.label}
           </button>
@@ -149,13 +162,9 @@ const BurgerMenu = ({ open, onClose, onNavigate, theme, currentView }) => {
 function AppContent() {
   const { theme, currentTheme } = useTheme();
 
-  // 🚀 STATE ДЛЯ ЭКРАНА ЗАГРУЗКИ
   const [isLoading, setIsLoading] = useState(true);
-
-  // 🍔 STATE ДЛЯ БУРГЕР-МЕНЮ
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // 🚀 ХУК для актуальных астрологических данных
   const astrologyData = useAstrologyData({
     autoUpdate: true,
     updateInterval: 6 * 60 * 60 * 1000,
@@ -163,7 +172,6 @@ function AppContent() {
     enableHoroscope: false
   });
 
-  // Состояние приложения
   const [currentView, setCurrentView] = useState(() => {
     try {
       const savedView = localStorage.getItem('gnome-current-view');
@@ -197,7 +205,7 @@ function AppContent() {
     }
   });
 
-  // Все ваши useEffect остаются как были
+  // Все ваши useEffect остаются без изменений
   useEffect(() => {
     const initSunCalc = () => {
       if (typeof window !== 'undefined' && window.SunCalc) {
@@ -373,7 +381,6 @@ function AppContent() {
     }
   };
 
-  // 🚀 УСЛОВИЕ ПОКАЗА ЭКРАНА ЗАГРУЗКИ
   if (isLoading) {
     return (
       <LoadingScreen
@@ -388,7 +395,7 @@ function AppContent() {
     );
   }
 
-  // Рендер различных экранов (ваша логика остается)
+  // Рендер различных экранов
   const renderCurrentView = () => {
     const viewProps = {
       onAddToFavorites: handleAddToFavorites,
@@ -399,10 +406,10 @@ function AppContent() {
     };
 
     const sceneStyle = {
-      width: 'min(95vw, 800px)',
-      maxHeight: 'calc(100vh - 120px)',
+      width: 'min(98vw, 900px)',
+      maxHeight: 'calc(100vh - 140px)',
       overflow: 'auto',
-      padding: '10px'
+      padding: '10px' // 🚀 УБРАЛИ НИЖНИЙ ОТСТУП
     };
 
     switch (currentView) {
@@ -575,7 +582,6 @@ function AppContent() {
       default:
         return (
           <div style={sceneStyle}>
-            {/* ZodiacCardsSelector на главной */}
             <div style={{ marginBottom: '24px' }}>
               <ZodiacCardsSelector 
                 selectedSign={selectedSign}
@@ -584,7 +590,6 @@ function AppContent() {
               />
             </div>
             
-            {/* Bento-сетка */}
             <BentoGrid 
               astrologyData={astrologyData}
               selectedSign={selectedSign}
@@ -597,23 +602,25 @@ function AppContent() {
     }
   };
 
+  const headerHeight = 'clamp(60px, 15vw, 140px)'; // 🚀 ПЕРЕМЕННАЯ ДЛЯ ВЫСОТЫ HEADER
+
   return (
     <div style={{
       position: 'relative',
       width: '100vw',
       height: '100vh',
-      overflow: 'hidden', // 🚀 УБИРАЕМ ВЕРТИКАЛЬНЫЙ СКРОЛЛ
+      overflow: 'hidden',
       background: theme.colors.background
     }}>
-      {/* 🚀 ШАПКА */}
+      {/* 🚀 РАСТЯГИВАЮЩИЙСЯ HEADER */}
       <Header />
 
-      {/* 🍔 БУРГЕР-КНОПКА ВМЕСТО ThemeSelector */}
+      {/* 🍔 БУРГЕР-КНОПКА */}
       <button
         onClick={() => setMenuOpen(true)}
         style={{
           position: 'fixed',
-          top: 'calc(clamp(56px, 12vw, 120px) + 10px)',
+          top: `calc(${headerHeight} + 10px)`,
           left: '16px',
           zIndex: 1200,
           width: '44px',
@@ -634,7 +641,6 @@ function AppContent() {
         ☰
       </button>
 
-      {/* 🍔 БУРГЕР-МЕНЮ */}
       <BurgerMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -648,8 +654,8 @@ function AppContent() {
           onClick={handleBackToHome}
           style={{ 
             position: 'fixed',
-            top: 'calc(clamp(56px, 12vw, 120px) + 10px)',
-            right: '16px', // 🚀 ПЕРЕМЕСТИЛИ ВПРАВО, ЧТОБЫ НЕ МЕШАЛСЯ С БУРГЕРОМ
+            top: `calc(${headerHeight} + 10px)`,
+            right: '16px',
             zIndex: 999
           }}
         />
@@ -658,7 +664,7 @@ function AppContent() {
       {!isOnline && (
         <div style={{
           position: 'fixed',
-          top: 'clamp(56px, 12vw, 120px)',
+          top: headerHeight,
           left: '0',
           right: '0',
           backgroundColor: theme.colors.danger,
@@ -672,16 +678,15 @@ function AppContent() {
         </div>
       )}
 
-      {/* 🚀 СЦЕНА ОДНОГО ЭКРАНА */}
+      {/* 🚀 СЦЕНА БЕЗ НИЖНИХ ОТСТУПОВ */}
       <main style={{
         position: 'absolute',
-        top: 'clamp(56px, 12vw, 120px)',
+        top: headerHeight,
         left: 0,
         right: 0,
-        bottom: 0,
+        bottom: 0, // 🚀 УБРАЛИ PADDING СНИЗУ
         display: 'grid',
-        placeItems: 'center',
-        padding: '10px'
+        placeItems: 'center'
       }}>
         {renderCurrentView()}
       </main>
