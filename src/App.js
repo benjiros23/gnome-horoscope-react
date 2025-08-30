@@ -13,8 +13,6 @@ import NumerologyView from './components/NumerologyView';
 import AstroEventsView from './components/AstroEventsView';
 import DayCardView from './components/DayCardView';
 import MercuryView from './components/MercuryView';
-import ButtonGrid from './components/ButtonGrid';
-import BentoGrid from './components/BentoGrid';
 import LoadingScreen from './components/LoadingScreen';
 
 // Хуки и утилиты
@@ -53,15 +51,14 @@ const GNOME_PROFILES = {
 };
 
 const MENU_ITEMS = [
-  { id: 'home', label: '🏠 Главная' },
-  { id: 'horoscope', label: '🔮 Гороскоп' },
-  { id: 'moon', label: '🌙 Лунный календарь' },
-  { id: 'compatibility', label: '💕 Совместимость' },
-  { id: 'numerology', label: '🔢 Нумерология' },
-  { id: 'events', label: '🌌 События' },
-  { id: 'cards', label: '🃏 Карта дня' },
-  { id: 'mercury', label: '🪐 Меркурий' },
-  { id: 'favorites', label: '⭐ Избранное' }
+  { id: 'horoscope', label: '🔮 Гороскоп', title: 'Гороскоп на день' },
+  { id: 'moon', label: '🌙 Луна', title: 'Лунный календарь' },
+  { id: 'compatibility', label: '💕 Совместимость', title: 'Совместимость знаков' },
+  { id: 'numerology', label: '🔢 Нумерология', title: 'Число судьбы' },
+  { id: 'events', label: '🌌 События', title: 'Астрологические события' },
+  { id: 'cards', label: '🃏 Карта дня', title: 'Карта дня' },
+  { id: 'mercury', label: '🪐 Меркурий', title: 'Ретроград Меркурия' },
+  { id: 'favorites', label: '⭐ Избранное', title: 'Сохраненное' }
 ];
 
 // ===== КАСТОМНЫЕ ХУКИ =====
@@ -92,7 +89,7 @@ const useLocalStorage = (key, defaultValue) => {
 };
 
 // Хук для Telegram WebApp
-const useTelegram = (theme) => {
+const useTelegram = () => {
   const [telegramApp, setTelegramApp] = useState(null);
 
   const silentTelegramAction = useCallback((action) => {
@@ -122,44 +119,49 @@ const useTelegram = (theme) => {
       setTelegramApp(tg);
       tg.ready();
       tg.expand();
-
+      
+      // Убираем MainButton так как теперь навигация через нижнее меню
       try {
         if (tg.MainButton) {
-          tg.MainButton.setText('🃏 Получить карту дня');
-          tg.MainButton.color = theme.colors.primary;
-          tg.MainButton.show();
-          tg.MainButton.onClick(() => setCurrentView('cards'));
+          tg.MainButton.hide();
         }
       } catch (error) {
-        console.log('Ошибка MainButton:', error);
+        console.log('Ошибка скрытия MainButton:', error);
       }
 
       console.log('✅ Telegram WebApp инициализирован');
     }
-  }, [theme.colors.primary]);
+  }, []);
 
   return { telegramApp, silentTelegramAction, safeHapticFeedback };
 };
 
 // ===== КОМПОНЕНТЫ =====
 
-// Header компонент
+// 🚀 ПОЛНОЭКРАННЫЙ HEADER НА ВСЮ ШИРИНУ МОБИЛЬНОГО УСТРОЙСТВА
 const Header = React.memo(() => (
   <div style={{
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: '20px',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    width: '100vw',
+    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+    padding: '20px 16px',
     textAlign: 'center',
-    color: 'white',
+    color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: '24px',
-    marginBottom: '20px'
+    fontSize: '22px',
+    zIndex: 100,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+    borderBottom: '1px solid rgba(255,255,255,0.1)'
   }}>
     🔮 Гномий Гороскоп
   </div>
 ));
 
-// BurgerMenu компонент
-const BurgerMenu = React.memo(({ open, onClose, onNavigate, theme, currentView }) => {
+// 🍔 НИЖНЕЕ БУРГЕР-МЕНЮ ДЛЯ УДОБСТВА
+const BottomBurgerMenu = React.memo(({ open, onClose, onNavigate, currentView }) => {
   const handleItemClick = useCallback((id) => {
     onNavigate(id);
     onClose();
@@ -177,67 +179,221 @@ const BurgerMenu = React.memo(({ open, onClose, onNavigate, theme, currentView }
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
           zIndex: 998
         }}
         onClick={onClose}
       />
 
-      {/* Menu */}
+      {/* Нижнее меню */}
       <div style={{
         position: 'fixed',
-        top: 0,
+        bottom: 0,
+        left: 0,
         right: 0,
-        width: '280px',
-        height: '100vh',
-        background: theme.card.background,
+        width: '100vw',
+        background: '#1a1a2e',
         zIndex: 999,
-        padding: '20px',
-        boxShadow: '-2px 0 10px rgba(0,0,0,0.1)',
-        borderLeft: `1px solid ${theme.colors.border}`,
-        overflowY: 'auto'
+        borderRadius: '20px 20px 0 0',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.3)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderBottom: 'none',
+        maxHeight: '70vh',
+        overflowY: 'auto',
+        transform: open ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-          <h3 style={{ color: theme.card.color, margin: 0 }}>Меню</h3>
-        </div>
-
-        {MENU_ITEMS.map(item => (
-          <div
-            key={item.id}
-            onClick={() => handleItemClick(item.id)}
-            style={{
-              padding: '15px 20px',
-              margin: '5px 0',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              color: theme.card.color,
-              backgroundColor: currentView === item.id ? theme.colors.primary : 'transparent',
-              border: `1px solid ${currentView === item.id ? theme.colors.primary : theme.colors.border}`,
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {item.label}
+        {/* Хэндл для перетаскивания */}
+        <div style={{
+          width: '40px',
+          height: '4px',
+          background: 'rgba(255,255,255,0.3)',
+          borderRadius: '2px',
+          margin: '12px auto 20px auto'
+        }} />
+        
+        <div style={{ padding: '0 20px 20px 20px' }}>
+          <div style={{ 
+            marginBottom: '24px', 
+            textAlign: 'center',
+            color: '#ffffff',
+            fontSize: '18px',
+            fontWeight: '600'
+          }}>
+            Выберите функцию
           </div>
-        ))}
+
+          {MENU_ITEMS.map(item => (
+            <div
+              key={item.id}
+              onClick={() => handleItemClick(item.id)}
+              style={{
+                padding: '16px 20px',
+                margin: '8px 0',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                color: '#ffffff',
+                backgroundColor: currentView === item.id 
+                  ? 'rgba(100, 126, 234, 0.8)' 
+                  : 'rgba(255, 255, 255, 0.05)',
+                border: `1px solid ${currentView === item.id 
+                  ? 'rgba(100, 126, 234, 1)' 
+                  : 'rgba(255, 255, 255, 0.1)'}`,
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '24px', marginRight: '12px' }}>
+                  {item.label.split(' ')[0]}
+                </span>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '600' }}>
+                    {item.label.substring(2)}
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: 'rgba(255,255,255,0.7)',
+                    marginTop: '2px'
+                  }}>
+                    {item.title}
+                  </div>
+                </div>
+              </div>
+              {currentView === item.id && (
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#ffffff'
+                }} />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
 });
 
+// 🏠 ГЛАВНЫЙ ЭКРАН БЕЗ ПЛИТОК
+const HomeScreen = React.memo(({ selectedSign, moonData, gnomeProfile, onSignSelect }) => {
+  const currentDate = new Date().toLocaleDateString('ru-RU', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  return (
+    <div style={{ padding: '20px' }}>
+      {/* Приветствие */}
+      <Card style={{ marginBottom: '24px', textAlign: 'center' }}>
+        <h2 style={{ 
+          margin: '0 0 12px 0', 
+          color: '#ffffff',
+          fontSize: '24px',
+          fontWeight: '700'
+        }}>
+          Добро пожаловать!
+        </h2>
+        <p style={{ 
+          color: 'rgba(255,255,255,0.8)', 
+          margin: '0 0 16px 0',
+          fontSize: '14px'
+        }}>
+          {currentDate}
+        </p>
+        <p style={{ 
+          color: 'rgba(255,255,255,0.9)', 
+          margin: 0,
+          fontSize: '16px'
+        }}>
+          Выберите функцию в меню снизу для начала работы с астрологическими данными
+        </p>
+      </Card>
+
+      {/* Информация о выбранном знаке */}
+      <Card title={`Ваш знак: ${selectedSign} ${ZODIAC_SIGNS.find(z => z.sign === selectedSign)?.emoji || ''}`}>
+        <div style={{ marginBottom: '16px' }}>
+          <h3 style={{ color: '#ffffff', margin: '0 0 8px 0' }}>
+            {gnomeProfile.name}
+          </h3>
+          <p style={{ 
+            color: 'rgba(100, 126, 234, 1)', 
+            margin: '0 0 8px 0',
+            fontWeight: '600'
+          }}>
+            {gnomeProfile.title}
+          </p>
+          <p style={{ 
+            color: 'rgba(255,255,255,0.8)', 
+            margin: 0,
+            fontSize: '14px'
+          }}>
+            {gnomeProfile.desc}
+          </p>
+        </div>
+        
+        <Button 
+          onClick={() => onSignSelect && onSignSelect()}
+          style={{
+            width: '100%',
+            background: 'rgba(100, 126, 234, 0.8)',
+            border: '1px solid rgba(100, 126, 234, 1)',
+            color: '#ffffff'
+          }}
+        >
+          Изменить знак зодиака
+        </Button>
+      </Card>
+
+      {/* Текущая лунная фаза */}
+      {moonData && (
+        <Card title="🌙 Сегодняшняя лунная фаза">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', margin: '12px 0' }}>
+              {moonData.emoji}
+            </div>
+            <h3 style={{ color: '#ffffff', margin: '0 0 8px 0' }}>
+              {moonData.phase}
+            </h3>
+            <p style={{ 
+              color: 'rgba(255,255,255,0.7)', 
+              margin: '0 0 12px 0',
+              fontSize: '14px'
+            }}>
+              Освещенность: {moonData.illumination}%
+            </p>
+            <p style={{ 
+              color: 'rgba(255,255,255,0.6)', 
+              margin: 0,
+              fontSize: '12px'
+            }}>
+              {moonData.lunarDay} лунный день
+            </p>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+});
+
 // ===== ОСНОВНОЙ КОМПОНЕНТ =====
 function AppContent() {
-  const { theme, currentTheme } = useTheme();
+  const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [forceUpdate, setForceUpdate] = useState(0);
 
   // Кастомные хуки
   const [currentView, setCurrentView] = useLocalStorage('gnome-current-view', 'home');
   const [selectedSign, setSelectedSign] = useLocalStorage('gnome-selected-sign', 'Лев');
   const [favorites, setFavorites] = useLocalStorage('gnome-favorites', []);
 
-  const { telegramApp, silentTelegramAction, safeHapticFeedback } = useTelegram(theme);
+  const { telegramApp, silentTelegramAction, safeHapticFeedback } = useTelegram();
 
   // Астрологические данные
   const astrologyData = useAstrologyData({
@@ -269,12 +425,6 @@ function AppContent() {
 
     return () => clearTimeout(timer);
   }, []);
-
-  // Отслеживание изменения темы
-  useEffect(() => {
-    console.log('🎨 Тема изменилась на:', currentTheme);
-    setForceUpdate(prev => prev + 1);
-  }, [currentTheme]);
 
   // Логирование лунных данных
   useEffect(() => {
@@ -314,9 +464,9 @@ function AppContent() {
   }, []);
 
   // ===== HANDLERS =====
-  const handleButtonClick = useCallback((buttonId) => {
-    console.log('🔘 Нажата кнопка:', buttonId);
-    setCurrentView(buttonId);
+  const handleNavigate = useCallback((viewId) => {
+    console.log('🔘 Навигация к:', viewId);
+    setCurrentView(viewId);
     safeHapticFeedback('selection');
   }, [setCurrentView, safeHapticFeedback]);
 
@@ -367,7 +517,8 @@ function AppContent() {
 
   const handleToggleMenu = useCallback(() => {
     setMenuOpen(prev => !prev);
-  }, []);
+    safeHapticFeedback('selection');
+  }, [safeHapticFeedback]);
 
   const handleCloseMenu = useCallback(() => {
     setMenuOpen(false);
@@ -406,117 +557,132 @@ function AppContent() {
         return <MercuryView {...commonProps} />;
       case 'favorites':
         return (
-          <Card title="⭐ Избранное">
-            {favorites.length > 0 ? (
-              <div>
-                {favorites.map(item => (
-                  <div key={item.id} style={{ 
-                    ...theme.card,
-                    margin: '10px 0',
-                    padding: '15px'
-                  }}>
-                    <strong>{item.title}</strong>
-                    <p>{item.content}</p>
-                    <small>Добавлено: {new Date(item.addedAt).toLocaleDateString('ru-RU')}</small>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '40px 20px',
-                color: theme.colors.textSecondary
-              }}>
-                <h3>Пока что здесь пусто</h3>
-                <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
-              </div>
-            )}
-          </Card>
+          <div style={{ padding: '20px' }}>
+            <Card title="⭐ Избранное">
+              {favorites.length > 0 ? (
+                <div>
+                  {favorites.map(item => (
+                    <div key={item.id} style={{ 
+                      background: 'rgba(255,255,255,0.05)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      margin: '12px 0',
+                      padding: '16px'
+                    }}>
+                      <strong style={{ color: '#ffffff' }}>{item.title}</strong>
+                      <p style={{ color: 'rgba(255,255,255,0.8)', margin: '8px 0' }}>{item.content}</p>
+                      <small style={{ color: 'rgba(255,255,255,0.6)' }}>
+                        Добавлено: {new Date(item.addedAt).toLocaleDateString('ru-RU')}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 20px',
+                  color: 'rgba(255,255,255,0.6)'
+                }}>
+                  <h3>Пока что здесь пусто</h3>
+                  <p>Добавляйте интересные гороскопы и предсказания в избранное!</p>
+                </div>
+              )}
+            </Card>
+          </div>
         );
       default:
         return (
-          <div>
-            <Header />
-            <BentoGrid 
-              moonData={astrologyData.moon}
-              selectedSign={selectedSign}
-              gnomeProfile={currentGnomeProfile}
-              onButtonClick={handleButtonClick}
-              isOnline={isOnline}
-            />
-            <ButtonGrid onButtonClick={handleButtonClick} />
-          </div>
+          <HomeScreen 
+            selectedSign={selectedSign}
+            moonData={astrologyData.moon}
+            gnomeProfile={currentGnomeProfile}
+            onSignSelect={() => handleNavigate('horoscope')}
+          />
         );
     }
   };
 
+  const currentTitle = MENU_ITEMS.find(item => item.id === currentView)?.title || 'Гномий Гороскоп';
+
   return (
     <div style={{
-      ...theme.container,
+      background: '#0f0f23',
       minHeight: '100vh',
-      position: 'relative'
+      position: 'relative',
+      paddingTop: '80px', // Отступ для фиксированного хедера
+      paddingBottom: '80px' // Отступ для кнопок снизу
     }}>
-      {/* Burger Menu Toggle */}
+      {/* Фиксированный хедер на всю ширину */}
+      <Header />
+
+      {/* Основной контент */}
+      <main>
+        {renderCurrentView()}
+      </main>
+
+      {/* Нижнее бургер-меню */}
+      <BottomBurgerMenu
+        open={menuOpen}
+        onClose={handleCloseMenu}
+        onNavigate={handleNavigate}
+        currentView={currentView}
+      />
+
+      {/* Кнопка открытия меню снизу */}
       <button
         onClick={handleToggleMenu}
         style={{
           position: 'fixed',
-          top: '15px',
-          right: '15px',
-          zIndex: 1000,
-          width: '48px',
-          height: '48px',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '60px',
+          height: '60px',
           borderRadius: '50%',
-          background: theme.colors.primary,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           border: 'none',
-          color: 'white',
+          color: '#ffffff',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '24px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+          zIndex: 100,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'translateX(-50%) scale(1.1)';
+          e.target.style.boxShadow = '0 6px 25px rgba(102, 126, 234, 0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'translateX(-50%) scale(1)';
+          e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.4)';
         }}
       >
         {menuOpen ? '×' : '☰'}
       </button>
 
-      {/* Burger Menu */}
-      <BurgerMenu
-        open={menuOpen}
-        onClose={handleCloseMenu}
-        onNavigate={setCurrentView}
-        theme={theme}
-        currentView={currentView}
-      />
-
-      {/* Main Content */}
-      <main style={{ 
-        padding: currentView === 'home' ? '0' : '20px',
-        paddingTop: currentView === 'home' ? '0' : '80px'
-      }}>
-        {renderCurrentView()}
-      </main>
-
-      {/* Back Button */}
+      {/* Back Button - показывается только не на главной странице */}
       <BackButton
         show={currentView !== 'home'}
         onClick={handleBackToHome}
       />
 
-      {/* Offline Indicator */}
+      {/* Индикатор офлайн */}
       {!isOnline && (
         <div style={{
           position: 'fixed',
-          bottom: currentView !== 'home' ? '100px' : '20px',
+          bottom: '90px',
           left: '50%',
           transform: 'translateX(-50%)',
           background: '#ff6b6b',
-          color: 'white',
+          color: '#ffffff',
           padding: '8px 16px',
           borderRadius: '20px',
           fontSize: '12px',
-          zIndex: 1000
+          zIndex: 1000,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
         }}>
           📡 Офлайн режим
         </div>
