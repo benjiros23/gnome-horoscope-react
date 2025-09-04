@@ -1,321 +1,433 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+// src/components/ZodiacCardsSelector.js
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import '../styles/carousel.css';
 
-// ИМПОРТЫ КАРТИНОК (ваши файлы .png)
-import ovenImg from '../assets/zodiac/овен.png';
-import teletsImg from '../assets/zodiac/телец.png';
-import bliznestyImg from '../assets/zodiac/близнецы.png';
-import rakImg from '../assets/zodiac/рак.png';
-import levImg from '../assets/zodiac/лев.png';
-import devaImg from '../assets/zodiac/дева.png';
-import vesyImg from '../assets/zodiac/весы.png';
-import skorpionImg from '../assets/zodiac/скорпион.png';
-import strelecImg from '../assets/zodiac/стрелец.png';
-import kozerogImg from '../assets/zodiac/козерог.png';
-import vodoleyImg from '../assets/zodiac/водолей.png';
-import rybyImg from '../assets/zodiac/рыбы.png';
-
-const SIGNS = [
-  { sign: 'Овен',      emoji: '♈', img: ovenImg },
-  { sign: 'Телец',     emoji: '♉', img: teletsImg },
-  { sign: 'Близнецы',  emoji: '♊', img: bliznestyImg },
-  { sign: 'Рак',       emoji: '♋', img: rakImg },
-  { sign: 'Лев',       emoji: '♌', img: levImg },
-  { sign: 'Дева',      emoji: '♍', img: devaImg },
-  { sign: 'Весы',      emoji: '♎', img: vesyImg },
-  { sign: 'Скорпион',  emoji: '♏', img: skorpionImg },
-  { sign: 'Стрелец',   emoji: '♐', img: strelecImg },
-  { sign: 'Козерог',   emoji: '♑', img: kozerogImg },
-  { sign: 'Водолей',   emoji: '♒', img: vodoleyImg },
-  { sign: 'Рыбы',      emoji: '♓', img: rybyImg },
-];
-
-const clampIndex = (i) => (i + SIGNS.length) % SIGNS.length;
-
-const useSmoothWheelToHorizontal = (ref) => {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onWheel = (e) => {
-      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-        el.scrollBy({ left: e.deltaY, behavior: 'smooth' });
-        e.preventDefault();
-      }
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [ref]);
-};
-
-const useTouchScroll = (ref) => {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-
-    const onStart = (e) => {
-      isDown = true;
-      startX = (e.pageX || e.touches?.[0]?.pageX || 0) - el.offsetLeft;
-      scrollLeft = el.scrollLeft;
-      el.style.cursor = 'grabbing';
-    };
-
-    const onEnd = () => {
-      isDown = false;
-      el.style.cursor = 'grab';
-    };
-
-    const onMove = (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = (e.pageX || e.touches?.[0]?.pageX || 0) - el.offsetLeft;
-      const walk = (x - startX) * 2;
-      el.scrollLeft = scrollLeft - walk;
-    };
-
-    el.addEventListener('mousedown', onStart);
-    el.addEventListener('mouseleave', onEnd);
-    el.addEventListener('mouseup', onEnd);
-    el.addEventListener('mousemove', onMove);
-    el.addEventListener('touchstart', onStart, { passive: true });
-    el.addEventListener('touchend', onEnd);
-    el.addEventListener('touchmove', onMove, { passive: false });
-
-    return () => {
-      el.removeEventListener('mousedown', onStart);
-      el.removeEventListener('mouseleave', onEnd);
-      el.removeEventListener('mouseup', onEnd);
-      el.removeEventListener('mousemove', onMove);
-      el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchend', onEnd);
-      el.removeEventListener('touchmove', onMove);
-    };
-  }, [ref]);
-};
-
-const ZodiacCardsSelector = ({
-  selectedSign = 'Овен',
-  onSignSelect,
-  showHero = true,
+const ZodiacCardsSelector = ({ 
+  onSignSelect, 
+  selectedSign = null,
+  showTitle = true,
+  compact = false 
 }) => {
   const { theme } = useTheme();
-  const [active, setActive] = useState(selectedSign);
-  const scrollerRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [tapCount, setTapCount] = useState(0);
+  const [tapTimer, setTapTimer] = useState(null);
+  const scrollRef = useRef(null);
+  const scrollTimeout = useRef(null);
 
-  useSmoothWheelToHorizontal(scrollerRef);
-  useTouchScroll(scrollerRef);
+  // Данные знаков зодиака
+  const zodiacSigns = [
+    { id: 'aries', sign: 'Овен', emoji: '♈', dates: '21.03 - 20.04', element: 'Огонь',
+      gnome: { name: 'Гном Огнебород', title: 'Боевой кузнец', image: 'aries.png', colors: ['#FF6B6B', '#FF8E53'] }},
+    { id: 'taurus', sign: 'Телец', emoji: '♉', dates: '21.04 - 20.05', element: 'Земля',
+      gnome: { name: 'Гном Златоруд', title: 'Мастер сокровищ', image: 'taurus.png', colors: ['#4ECDC4', '#44A08D'] }},
+    { id: 'gemini', sign: 'Близнецы', emoji: '♊', dates: '21.05 - 21.06', element: 'Воздух',
+      gnome: { name: 'Гном Двойняшка', title: 'Мастер слова', image: 'gemini.png', colors: ['#A8E6CF', '#7FCDCD'] }},
+    { id: 'cancer', sign: 'Рак', emoji: '♋', dates: '22.06 - 22.07', element: 'Вода',
+      gnome: { name: 'Гном Домовой', title: 'Хранитель очага', image: 'cancer.png', colors: ['#FFB6C1', '#FFA07A'] }},
+    { id: 'leo', sign: 'Лев', emoji: '♌', dates: '23.07 - 22.08', element: 'Огонь',
+      gnome: { name: 'Гном Златогрив', title: 'Король подземелий', image: 'leo.png', colors: ['#FF6B6B', '#FF8E53'] }},
+    { id: 'virgo', sign: 'Дева', emoji: '♍', dates: '23.08 - 22.09', element: 'Земля',
+      gnome: { name: 'Гном Аккуратный', title: 'Мастер деталей', image: 'virgo.png', colors: ['#4ECDC4', '#44A08D'] }},
+    { id: 'libra', sign: 'Весы', emoji: '♎', dates: '23.09 - 22.10', element: 'Воздух',
+      gnome: { name: 'Гном Справедливый', title: 'Судья гор', image: 'libra.png', colors: ['#A8E6CF', '#7FCDCD'] }},
+    { id: 'scorpio', sign: 'Скорпион', emoji: '♏', dates: '23.10 - 22.11', element: 'Вода',
+      gnome: { name: 'Гном Тайновед', title: 'Хранитель секретов', image: 'scorpio.png', colors: ['#FFB6C1', '#FFA07A'] }},
+    { id: 'sagittarius', sign: 'Стрелец', emoji: '♐', dates: '23.11 - 21.12', element: 'Огонь',
+      gnome: { name: 'Гном Путешественник', title: 'Исследователь пещер', image: 'sagittarius.png', colors: ['#FF6B6B', '#FF8E53'] }},
+    { id: 'capricorn', sign: 'Козерог', emoji: '♑', dates: '22.12 - 20.01', element: 'Земля',
+      gnome: { name: 'Гном Горовосходитель', title: 'Строитель империй', image: 'capricorn.png', colors: ['#4ECDC4', '#44A08D'] }},
+    { id: 'aquarius', sign: 'Водолей', emoji: '♒', dates: '21.01 - 19.02', element: 'Воздух',
+      gnome: { name: 'Гном Изобретатель', title: 'Гений механизмов', image: 'aquarius.png', colors: ['#A8E6CF', '#7FCDCD'] }},
+    { id: 'pisces', sign: 'Рыбы', emoji: '♓', dates: '20.02 - 20.03', element: 'Вода',
+      gnome: { name: 'Гном Мечтатель', title: 'Пророк глубин', image: 'pisces.png', colors: ['#FFB6C1', '#FFA07A'] }}
+  ];
 
-  useEffect(() => setActive(selectedSign), [selectedSign]);
+  // Создаем расширенный массив для плавного зацикливания
+  const extendedSigns = [
+    ...zodiacSigns.slice(-2), // Последние 2 элемента в начале
+    ...zodiacSigns,           // Основной массив
+    ...zodiacSigns.slice(0, 2) // Первые 2 элемента в конце
+  ];
+  
+  // Корректируем активный индекс для расширенного массива
+  const extendedActiveIndex = activeIndex + 2;
 
-  const activeIndex = useMemo(
-    () => Math.max(0, SIGNS.findIndex((s) => s.sign === active)),
-    [active]
-  );
-  const activeItem = SIGNS[clampIndex(activeIndex)];
-
-  const ordered = useMemo(() => {
-    const list = [];
-    for (let i = 0; i < SIGNS.length; i++) {
-      list.push(SIGNS[clampIndex(activeIndex + i)]);
-    }
-    return list;
-  }, [activeIndex]);
-
-  const scrollActiveIntoView = useCallback(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    const activeEl = scroller.querySelector('[data-active="true"]');
-    if (activeEl) {
-      const scrollerRect = scroller.getBoundingClientRect();
-      const elRect = activeEl.getBoundingClientRect();
-      const delta = (elRect.left + elRect.right) / 2 - (scrollerRect.left + scrollerRect.right) / 2;
-      scroller.scrollBy({ left: delta, behavior: 'smooth' });
-    }
+  // Отслеживание размера экрана
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ✅ ОБРАБОТЧИК ДВОЙНОГО КЛИКА
+  const handleDoubleClick = () => {
+    handleSignSelect();
+  };
+
+  // ✅ ОБРАБОТЧИК ДВОЙНОГО ТАПА ДЛЯ МОБИЛЬНЫХ
+  const handleTouchEnd = () => {
+    setTapCount(prev => prev + 1);
+    
+    if (tapCount === 0) {
+      setTapTimer(setTimeout(() => {
+        setTapCount(0);
+      }, 300));
+    } else if (tapCount === 1) {
+      clearTimeout(tapTimer);
+      setTapCount(0);
+      handleSignSelect();
+    }
+  };
+
+  // Очистка таймера при размонтировании
   useEffect(() => {
-    scrollActiveIntoView();
-  }, [active, scrollActiveIntoView]);
+    return () => {
+      if (tapTimer) {
+        clearTimeout(tapTimer);
+      }
+    };
+  }, [tapTimer]);
 
-  const handlePick = (sign) => {
-    setActive(sign);
-    onSignSelect?.(sign);
+  // Инициализация позиции скролла для зацикленной карусели
+  useEffect(() => {
+    if (scrollRef.current) {
+      const container = scrollRef.current;
+      const cardWidth = isMobile ? 260 : 280;
+      const gap = isMobile ? 16 : 20;
+      const itemWidth = cardWidth + gap;
+      
+      // Устанавливаем начальную позицию на первый реальный элемент (индекс 2 в extended array)
+      const initialPosition = 2 * itemWidth - (container.clientWidth / 2) + (cardWidth / 2) + (isMobile ? 50 : 60);
+      container.scrollLeft = initialPosition;
+    }
+  }, [isMobile]);
+
+  // Обработчик прокрутки с плавным зацикливанием
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+
+    const container = scrollRef.current;
+    const cardWidth = isMobile ? 260 : 280;
+    const gap = isMobile ? 16 : 20;
+    const itemWidth = cardWidth + gap;
+
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    
+    scrollTimeout.current = setTimeout(() => {
+      const scrollLeft = container.scrollLeft;
+      const centerPosition = scrollLeft + container.clientWidth / 2;
+      
+      // Определяем индекс в расширенном массиве
+      const extendedIndex = Math.round((centerPosition - (isMobile ? 50 : 60)) / itemWidth);
+      
+      // Преобразуем в реальный индекс зодиака
+      let realIndex;
+      if (extendedIndex < 2) {
+        realIndex = zodiacSigns.length + extendedIndex - 2;
+      } else if (extendedIndex >= zodiacSigns.length + 2) {
+        realIndex = extendedIndex - zodiacSigns.length - 2;
+      } else {
+        realIndex = extendedIndex - 2;
+      }
+      
+      realIndex = Math.max(0, Math.min(realIndex, zodiacSigns.length - 1));
+      
+      if (realIndex !== activeIndex) {
+        setActiveIndex(realIndex);
+        
+        // Haptic feedback
+        const tg = window.Telegram?.WebApp;
+        if (tg?.HapticFeedback && typeof tg.HapticFeedback.impactOccurred === 'function') {
+          try {
+            tg.HapticFeedback.impactOccurred('light');
+          } catch (e) {}
+        }
+      }
+      
+      // Плавное зацикливание при достижении краев
+      if (extendedIndex <= 0) {
+        // Перемещаемся к концу основного массива без анимации
+        setTimeout(() => {
+          const newPosition = (zodiacSigns.length + 1) * itemWidth - (container.clientWidth / 2) + (cardWidth / 2) + (isMobile ? 50 : 60);
+          container.scrollTo({ left: newPosition, behavior: 'auto' });
+        }, 150);
+      } else if (extendedIndex >= extendedSigns.length - 1) {
+        // Перемещаемся к началу основного массива без анимации
+        setTimeout(() => {
+          const newPosition = 2 * itemWidth - (container.clientWidth / 2) + (cardWidth / 2) + (isMobile ? 50 : 60);
+          container.scrollTo({ left: newPosition, behavior: 'auto' });
+        }, 150);
+      }
+    }, 100);
+  }, [isMobile, activeIndex, zodiacSigns.length, extendedSigns.length]);
+
+  // Навигация стрелками с плавным зацикливанием
+  const scrollToIndex = useCallback((index) => {
+    if (!scrollRef.current) return;
+
+    const container = scrollRef.current;
+    const cardWidth = isMobile ? 260 : 280;
+    const gap = isMobile ? 16 : 20;
+    const itemWidth = cardWidth + gap;
+
+    // Преобразуем реальный индекс в расширенный
+    const extendedIndex = index + 2;
+    const targetScroll = extendedIndex * itemWidth - (container.clientWidth / 2) + (cardWidth / 2) + (isMobile ? 50 : 60);
+
+    container.scrollTo({
+      left: targetScroll,
+      behavior: 'smooth'
+    });
+
+    setActiveIndex(index);
+  }, [isMobile]);
+
+  // Зацикленная навигация
+  const handlePrevious = () => {
+    const newIndex = activeIndex > 0 ? activeIndex - 1 : zodiacSigns.length - 1; // Зацикливание
+    scrollToIndex(newIndex);
+    
+    // Haptic feedback
+    const tg = window.Telegram?.WebApp;
+    if (tg?.HapticFeedback && typeof tg.HapticFeedback.impactOccurred === 'function') {
+      try {
+        tg.HapticFeedback.impactOccurred('light');
+      } catch (e) {}
+    }
   };
 
-  // Стили
-  const heroStyle = {
-    width: 'min(70vw, 480px)',
-    aspectRatio: '5 / 7',
-    maxHeight: '75vh',
-    borderRadius: '16px',
-    overflow: 'hidden',
-    position: 'relative',
-    border: `2px solid ${theme.colors.primary}`,
-    boxShadow: theme.name === 'dark'
-      ? `0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px ${theme.colors.primary}40`
-      : `0 20px 40px rgba(0,0,0,0.2), 0 0 0 1px ${theme.colors.primary}40`,
-    background: theme.card.background,
+  const handleNext = () => {
+    const newIndex = activeIndex < zodiacSigns.length - 1 ? activeIndex + 1 : 0; // Зацикливание
+    scrollToIndex(newIndex);
+    
+    // Haptic feedback
+    const tg = window.Telegram?.WebApp;
+    if (tg?.HapticFeedback && typeof tg.HapticFeedback.impactOccurred === 'function') {
+      try {
+        tg.HapticFeedback.impactOccurred('light');
+      } catch (e) {}
+    }
   };
 
-  const heroImgStyle = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    transition: 'transform 300ms ease',
-    display: 'block',
+  // Определение класса карточки для расширенного массива
+  const getCardClass = (extendedIndex) => {
+    // Преобразуем расширенный индекс в реальный
+    let realIndex;
+    if (extendedIndex < 2) {
+      realIndex = zodiacSigns.length + extendedIndex - 2;
+    } else if (extendedIndex >= zodiacSigns.length + 2) {
+      realIndex = extendedIndex - zodiacSigns.length - 2;
+    } else {
+      realIndex = extendedIndex - 2;
+    }
+    
+    const isActive = realIndex === activeIndex;
+    const isNearby = Math.abs(realIndex - activeIndex) === 1 || 
+                     (activeIndex === 0 && realIndex === zodiacSigns.length - 1) ||
+                     (activeIndex === zodiacSigns.length - 1 && realIndex === 0);
+    
+    let className = 'modern-carousel-card';
+    if (isActive) className += ' active';
+    else if (isNearby) className += ' nearby';
+    
+    return className;
   };
 
-  const heroOverlayStyle = {
-    position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-    padding: '16px',
-    background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.7) 100%)',
-    color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  // Обработчик выбора знака
+  const handleSignSelect = () => {
+    const selectedSign = zodiacSigns[activeIndex];
+    
+    if (onSignSelect) {
+      onSignSelect(selectedSign);
+    }
+
+    const tg = window.Telegram?.WebApp;
+    if (tg?.HapticFeedback && typeof tg.HapticFeedback.impactOccurred === 'function') {
+      try {
+        tg.HapticFeedback.impactOccurred('medium');
+      } catch (e) {}
+    }
+
+    localStorage.setItem('gnome-selected-sign', JSON.stringify(selectedSign));
+    console.log('🔮 Выбран знак:', selectedSign);
   };
 
-  const badgeStyle = {
-    padding: '10px 16px',
-    borderRadius: '20px',
-    background: 'rgba(255,255,255,0.2)',
-    backdropFilter: 'blur(10px)',
-    fontSize: '18px',
-    fontWeight: '700',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    border: '1px solid rgba(255,255,255,0.3)',
-  };
-
-  const scrollerStyle = {
-    width: '100%',
-    marginTop: '20px',
-    padding: '12px 8px',
-    display: 'flex',
-    gap: '12px',
-    overflowX: 'auto',
-    overflowY: 'hidden',
-    WebkitOverflowScrolling: 'touch',
-    scrollBehavior: 'smooth',
-    borderRadius: '12px',
-    background: theme.card.background,
-    border: `1px solid ${theme.colors.border}`,
-    cursor: 'grab',
-    userSelect: 'none',
-    // Убираем скроллбар
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
-  };
-
-  const thumbStyle = (isActive) => ({
-    flex: '0 0 auto',
-    width: '80px',
-    height: '80px',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    border: `3px solid ${isActive ? theme.colors.primary : 'transparent'}`,
-    boxShadow: isActive
-      ? `0 8px 20px ${theme.colors.primary}66, 0 0 0 1px ${theme.colors.primary}`
-      : theme.card.boxShadow,
-    transform: isActive ? 'scale(1.1)' : 'scale(1)',
-    transition: 'all 250ms ease',
-    cursor: 'pointer',
-    position: 'relative',
-    background: theme.card.background,
-  });
-
-  const thumbImgStyle = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    display: 'block',
-  };
-
-  const emojiStyle = {
-    position: 'absolute',
-    top: '4px',
-    right: '4px',
-    background: 'rgba(0,0,0,0.6)',
-    color: '#fff',
-    borderRadius: '50%',
-    width: '20px',
-    height: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '10px',
-  };
+  const getCurrentSign = () => zodiacSigns[activeIndex];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0' }}>
-      {/* Большая карта героя */}
-      {showHero && (
-        <div
-          style={heroStyle}
-          onMouseEnter={(e) => {
-            const img = e.currentTarget.querySelector('img');
-            if (img) img.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            const img = e.currentTarget.querySelector('img');
-            if (img) img.style.transform = 'scale(1)';
-          }}
-        >
-          <img
-            src={activeItem.img}
-            alt={activeItem.sign}
-            style={heroImgStyle}
-            draggable={false}
-          />
-          <div style={heroOverlayStyle}>
-            <div style={badgeStyle}>
-              <span style={{ fontSize: '24px' }}>{activeItem.emoji}</span>
-              <span>{activeItem.sign}</span>
-            </div>
-          </div>
+    <div style={{
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      paddingTop: isMobile ? '10px' : '20px',
+      paddingBottom: '120px',
+      justifyContent: 'flex-start',
+      boxSizing: 'border-box',
+      overflow: 'visible'
+    }}>
+      
+      {/* Заголовок */}
+      {showTitle && (
+        <div style={{
+          textAlign: 'center',
+          marginBottom: theme.spacing.md,
+          padding: `0 ${theme.spacing.md}`,
+          flexShrink: 0
+        }}>
+          <h1 style={{
+            fontSize: isMobile ? theme.typography.sizes.lg : theme.typography.sizes.xl,
+            fontWeight: theme.typography.weights.bold,
+            color: theme.colors.text,
+            marginBottom: theme.spacing.xs,
+            textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+            margin: 0
+          }}>
+            🔮 Выберите знак зодиака
+          </h1>
+          <p style={{
+            fontSize: isMobile ? theme.typography.sizes.sm : theme.typography.sizes.md,
+            color: theme.colors.textSecondary,
+            margin: 0,
+            textShadow: '1px 1px 2px rgba(0,0,0,0.6)'
+          }}>
+            {isMobile ? "Прокрутите или двойной тап для выбора" : "Прокрутите или используйте стрелки, двойной клик для выбора"}
+          </p>
         </div>
       )}
 
-      {/* Горизонтальная карусель БЕЗ СТРЕЛОК */}
-      <div 
-        ref={scrollerRef} 
-        style={{
-          ...scrollerStyle,
-          // Скрываем скроллбар для WebKit браузеров
-          '::-webkit-scrollbar': { display: 'none' }
-        }}
-      >
-        {ordered.map((s) => {
-          const isActive = s.sign === activeItem.sign;
-          return (
-            <div
-              key={s.sign}
-              data-active={isActive ? 'true' : 'false'}
-              style={thumbStyle(isActive)}
-              onClick={() => handlePick(s.sign)}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.transform = 'scale(1)';
-                }
-              }}
-            >
-              <img src={s.img} alt={s.sign} style={thumbImgStyle} draggable={false} />
-              <div style={emojiStyle}>
-                {s.emoji}
+      {/* Карусель */}
+      <div className="modern-carousel-container">
+        
+        {/* Левая стрелка */}
+        <div className="carousel-arrow left" onClick={handlePrevious}>
+          ←
+        </div>
+        
+        {/* Правая стрелка */}
+        <div className="carousel-arrow right" onClick={handleNext}>
+          →
+        </div>
+        
+        {/* Трек с карточками */}
+        <div
+          ref={scrollRef}
+          className="carousel-track"
+          onScroll={handleScroll}
+        >
+          {extendedSigns.map((sign, extendedIndex) => {
+            // Определяем реальный индекс для проверки активности
+            let realIndex;
+            if (extendedIndex < 2) {
+              realIndex = zodiacSigns.length + extendedIndex - 2;
+            } else if (extendedIndex >= zodiacSigns.length + 2) {
+              realIndex = extendedIndex - zodiacSigns.length - 2;
+            } else {
+              realIndex = extendedIndex - 2;
+            }
+            
+            return (
+              <div
+                key={`${sign.id}-${extendedIndex}`}
+                className={getCardClass(extendedIndex)}
+                onDoubleClick={handleDoubleClick}
+                onTouchEnd={handleTouchEnd}
+                style={{ 
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+              <img
+                src={`${process.env.PUBLIC_URL || ''}/assets/gnomes/${sign.gnome.image}`}
+                alt={sign.gnome.name}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `
+                    <div style="
+                      display: flex; 
+                      align-items: center; 
+                      justify-content: center; 
+                      height: 100%; 
+                      font-size: 4rem; 
+                      background: linear-gradient(135deg, ${sign.gnome.colors[0]}, ${sign.gnome.colors[1]});
+                      color: white;
+                      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+                      border-radius: 16px;
+                    ">
+                      ${sign.emoji}
+                    </div>
+                    <div class="card-gradient"></div>
+                    <div class="element-badge">${sign.element}</div>
+                    <div class="card-text-area">
+                      <h3 class="card-sign-name">${sign.sign}</h3>
+                      <p class="card-dates">${sign.dates}</p>
+                      <h4 class="card-gnome-name">${sign.gnome.name}</h4>
+                      <p class="card-gnome-title">${sign.gnome.title}</p>
+                      ${realIndex === activeIndex ? `<div style="
+                        position: absolute; 
+                        bottom: -15px; 
+                        left: 50%; 
+                        transform: translateX(-50%); 
+                        font-size: 11px; 
+                        color: rgba(255,255,255,0.7); 
+                        font-style: italic; 
+                        text-align: center;
+                      ">${isMobile ? "Двойной тап для выбора" : "Двойной клик для выбора"}</div>` : ''}
+                    </div>`;
+                }}
+                loading="lazy"
+              />
+              
+              <div className="card-gradient" />
+              
+              <div className="element-badge">
+                {sign.element}
+              </div>
+
+              <div className="card-text-area">
+                <h3 className="card-sign-name">{sign.sign}</h3>
+                <p className="card-dates">{sign.dates}</p>
+                <h4 className="card-gnome-name">{sign.gnome.name}</h4>
+                <p className="card-gnome-title">{sign.gnome.title}</p>
+                
+                {realIndex === activeIndex && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-15px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: '11px',
+                    color: 'rgba(255,255,255,0.7)',
+                    fontStyle: 'italic',
+                    textAlign: 'center'
+                  }}>
+                    {isMobile ? "Двойной тап для выбора" : "Двойной клик для выбора"}
+                  </div>
+                )}
               </div>
             </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        
+        {/* Индикаторы зацикленной карусели */}
+        <div className="carousel-indicators">
+          {zodiacSigns.map((_, index) => (
+            <div
+              key={index}
+              className={`carousel-indicator ${index === activeIndex ? 'active' : ''}`}
+              onClick={() => scrollToIndex(index)}
+              style={{
+                opacity: index === activeIndex ? 1 : 0.6
+              }}
+            />
+          ))}
+        </div>
       </div>
+
     </div>
   );
 };

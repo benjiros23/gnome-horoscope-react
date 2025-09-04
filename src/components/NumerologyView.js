@@ -1,434 +1,506 @@
+// src/components/NumerologyView.js
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNumerology } from '../hooks/useAstrologyData';
 import Card from './UI/Card';
 import Button from './UI/Button';
 
-const NumerologyView = ({ onAddToFavorites, telegramApp }) => {
-  const { theme } = useTheme();
+
+const NumerologyView = ({ 
+  onBack, 
+  onAddToFavorites, 
+  selectedSign = null 
+}) => {
+  const { theme, styles, createGradientStyle } = useTheme();
   const [birthDate, setBirthDate] = useState('');
-  const [result, setResult] = useState(null);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [userName, setUserName] = useState('');
 
-  const calculateNumerology = (dateString) => {
-    if (!dateString) return null;
+  // Используем хук нумерологии
+  const { data: numerologyData, loading, error, refetch } = useNumerology(birthDate);
 
-    const [day, month, year] = dateString.split('.').map(Number);
-    if (!day || !month || !year) return null;
-
-    // Число жизненного пути
-    const lifePath = ((day + month + year).toString().split('').reduce((a, b) => a + parseInt(b), 0)).toString().split('').reduce((a, b) => a + parseInt(b), 0);
-    const finalLifePath = lifePath > 9 ? lifePath.toString().split('').reduce((a, b) => a + parseInt(b), 0) : lifePath;
-
-    // Число души (день рождения)
-    const soul = day > 9 ? day.toString().split('').reduce((a, b) => a + parseInt(b), 0) : day;
-    const finalSoul = soul > 9 ? soul.toString().split('').reduce((a, b) => a + parseInt(b), 0) : soul;
-
-    // Число судьбы (полная дата)
-    const destiny = (day + month + year);
-    let finalDestiny = destiny;
-    while (finalDestiny > 9) {
-      finalDestiny = finalDestiny.toString().split('').reduce((a, b) => a + parseInt(b), 0);
+  // Загружаем данные при изменении даты
+  useEffect(() => {
+    if (birthDate && showResults) {
+      refetch();
     }
+  }, [birthDate, showResults, refetch]);
 
-    return {
-      lifePath: finalLifePath,
-      soul: finalSoul,
-      destiny: finalDestiny,
-      day,
-      month,
-      year,
-      birthDate: dateString
-    };
+  // Стили компонента
+  const numerologyStyles = {
+    container: {
+      padding: theme.spacing.lg,
+      maxWidth: '800px',
+      margin: '0 auto',
+      height: '100vh',
+      overflowY: 'auto',
+      paddingBottom: '100px'
+    },
+
+    header: {
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl
+    },
+
+    title: {
+      fontSize: theme.typography.sizes.title,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm
+    },
+
+    subtitle: {
+      fontSize: theme.typography.sizes.md,
+      color: theme.colors.textSecondary,
+      margin: 0
+    },
+
+    inputCard: {
+      marginBottom: theme.spacing.xl
+    },
+
+    inputGroup: {
+      marginBottom: theme.spacing.lg
+    },
+
+    label: {
+      display: 'block',
+      fontSize: theme.typography.sizes.md,
+      fontWeight: theme.typography.weights.semibold,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm
+    },
+
+    input: {
+      width: '100%',
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      border: `2px solid ${theme.colors.border}`,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+      fontSize: theme.typography.sizes.md,
+      outline: 'none',
+      transition: `border-color ${theme.animations.duration.normal} ease`,
+      boxSizing: 'border-box'
+    },
+
+    inputFocus: {
+      borderColor: theme.colors.primary
+    },
+
+    calculateButton: {
+      width: '100%',
+      marginTop: theme.spacing.lg
+    },
+
+    numberCard: {
+      marginBottom: theme.spacing.xl,
+      background: createGradientStyle([theme.colors.primary, theme.colors.secondary], '135deg').background,
+      position: 'relative',
+      overflow: 'hidden',
+      minHeight: '200px'
+    },
+
+    numberOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.2)',
+      zIndex: 1
+    },
+
+    numberContent: {
+      position: 'relative',
+      zIndex: 2,
+      color: '#ffffff',
+      textAlign: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      minHeight: '200px'
+    },
+
+    mainNumber: {
+      fontSize: '6rem',
+      fontWeight: theme.typography.weights.bold,
+      margin: '0 0 8px 0',
+      textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+      lineHeight: 1
+    },
+
+    numberLabel: {
+      fontSize: theme.typography.sizes.lg,
+      margin: 0,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+    },
+
+    meaningText: {
+      fontSize: theme.typography.sizes.md,
+      marginTop: theme.spacing.md,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+      opacity: 0.9
+    },
+
+    gridContainer: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: theme.spacing.lg,
+      marginBottom: theme.spacing.xl
+    },
+
+    sectionCard: {
+      marginBottom: theme.spacing.lg
+    },
+
+    sectionTitle: {
+      fontSize: theme.typography.sizes.lg,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.md,
+      display: 'flex',
+      alignItems: 'center',
+      gap: theme.spacing.xs
+    },
+
+    characteristicItem: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+      padding: theme.spacing.sm,
+      backgroundColor: `${theme.colors.primary}10`,
+      borderRadius: theme.borderRadius.sm,
+      border: `1px solid ${theme.colors.primary}20`
+    },
+
+    statCard: {
+      textAlign: 'center',
+      padding: theme.spacing.lg,
+      backgroundColor: `${theme.colors.secondary}15`,
+      borderRadius: theme.borderRadius.md,
+      border: `1px solid ${theme.colors.secondary}30`
+    },
+
+    statNumber: {
+      fontSize: theme.typography.sizes.xl,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.secondary,
+      margin: '0 0 4px 0'
+    },
+
+    statLabel: {
+      fontSize: theme.typography.sizes.sm,
+      color: theme.colors.textSecondary,
+      margin: 0
+    },
+
+    recommendationCard: {
+      padding: theme.spacing.lg,
+      backgroundColor: `${theme.colors.secondary}10`,
+      borderRadius: theme.borderRadius.md,
+      border: `1px solid ${theme.colors.secondary}30`,
+      position: 'relative',
+      overflow: 'hidden'
+    },
+
+    recommendationIcon: {
+      position: 'absolute',
+      top: theme.spacing.sm,
+      right: theme.spacing.sm,
+      fontSize: '2rem',
+      opacity: 0.3
+    },
+
+    recommendationText: {
+      fontSize: theme.typography.sizes.md,
+      lineHeight: 1.6,
+      margin: 0,
+      fontStyle: 'italic'
+    },
+
+    loadingContainer: {
+      textAlign: 'center',
+      padding: theme.spacing.xxl
+    },
+
+    loadingIcon: {
+      fontSize: '4rem',
+      marginBottom: theme.spacing.lg,
+      animation: 'pulse 2s infinite'
+    }
   };
 
-  const getNumerologyDescription = (number, type) => {
-    const descriptions = {
-      lifePath: {
-        1: { title: "Лидер", desc: "Вы прирожденный лидер, независимый и амбициозный. Стремитесь к достижению целей.", color: "#FF6B6B" },
-        2: { title: "Дипломат", desc: "Вы миротворец, чувствительный и сотрудничающий. Работаете хорошо в команде.", color: "#4ECDC4" },
-        3: { title: "Творец", desc: "Вы творческая личность, оптимистичная и общительная. Любите самовыражение.", color: "#45B7D1" },
-        4: { title: "Строитель", desc: "Вы практичный, надежный и трудолюбивый. Цените стабильность.", color: "#96CEB4" },
-        5: { title: "Искатель", desc: "Вы свободолюбивый, любознательный и энергичный. Любите перемены.", color: "#FDCB6E" },
-        6: { title: "Заботливый", desc: "Вы ответственный, заботливый и семейный. Помогаете другим.", color: "#E17055" },
-        7: { title: "Мыслитель", desc: "Вы аналитичный, духовный и интуитивный. Ищете истину.", color: "#A29BFE" },
-        8: { title: "Организатор", desc: "Вы материально ориентированный, властный и успешный в бизнесе.", color: "#FD79A8" },
-        9: { title: "Гуманист", desc: "Вы сострадательный, щедрый и мудрый. Служите человечеству.", color: "#00B894" }
-      }
-    };
-
-    return descriptions[type][number] || { title: "Особенный", desc: "У вас уникальный путь", color: theme.colors.primary };
-  };
-
-  const handleCalculate = () => {
-    if (!birthDate) return;
-
-    setIsCalculating(true);
+  // Вычисление числа жизненного пути
+  const calculateLifePath = (date) => {
+    if (!date) return null;
     
-    setTimeout(() => {
-      const numerologyResult = calculateNumerology(birthDate);
-      setResult(numerologyResult);
-      setIsCalculating(false);
-
-      try {
-        if (telegramApp?.HapticFeedback) {
-          telegramApp.HapticFeedback.notificationOccurred('success');
-        }
-      } catch (e) {}
-    }, 1500);
+    const digits = date.replace(/-/g, '').split('').map(Number);
+    let sum = digits.reduce((a, b) => a + b, 0);
+    
+    // Приводим к однозначному числу
+    while (sum > 9) {
+      sum = sum.toString().split('').map(Number).reduce((a, b) => a + b, 0);
+    }
+    
+    return sum;
   };
 
-  const handleAddToFavorites = () => {
-    if (result && onAddToFavorites) {
-      onAddToFavorites({
-        type: 'numerology',
-        title: `Нумерология для ${result.birthDate}`,
-        content: `Число жизненного пути: ${result.lifePath}, Число души: ${result.soul}, Число судьбы: ${result.destiny}`,
-        date: new Date().toLocaleDateString()
-      });
-
-      try {
-        if (telegramApp?.HapticFeedback) {
-          telegramApp.HapticFeedback.notificationOccurred('success');
-        }
-      } catch (e) {}
+  // Обработчик расчета
+  const handleCalculate = () => {
+    if (birthDate) {
+      setShowResults(true);
     }
   };
 
-  const containerStyle = {
-    padding: '20px',
-    maxWidth: '600px',
-    margin: '0 auto',
-    fontFamily: theme.container.fontFamily
+  // Обработчик добавления в избранное
+  const handleAddToFavorites = () => {
+    if (numerologyData && birthDate && onAddToFavorites) {
+      const favoriteItem = {
+        type: 'numerology',
+        id: `numerology-${birthDate}-${Date.now()}`,
+        title: `🔢 Нумерология ${userName || 'пользователя'}`,
+        content: `Число жизни: ${numerologyData.number} - ${numerologyData.meaning}`,
+        date: new Date().toLocaleDateString('ru-RU'),
+        birthDate: birthDate,
+        number: numerologyData.number,
+        meaning: numerologyData.meaning
+      };
+
+      onAddToFavorites(favoriteItem);
+
+      // Haptic feedback
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+    }
   };
 
-  const headerStyle = {
-    ...theme.card,
-    padding: '24px',
-    marginBottom: '20px',
-    textAlign: 'center',
-    background: theme.name === 'facebook' 
-      ? 'linear-gradient(135deg, #1877F2 0%, #42A5F5 100%)'
-      : theme.name === 'dark'
-        ? 'linear-gradient(135deg, #A29BFE 0%, #6C5CE7 100%)'
-        : 'linear-gradient(135deg, #A29BFE 0%, #6C5CE7 100%)',
-    color: '#ffffff',
-    position: 'relative',
-    overflow: 'hidden'
-  };
-
-  const inputCardStyle = {
-    ...theme.card,
-    padding: '24px',
-    marginBottom: '20px'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    maxWidth: '200px',
-    padding: '12px 16px',
-    fontSize: '16px',
-    border: `2px solid ${theme.colors.border}`,
-    borderRadius: '12px',
-    background: theme.name === 'dark' ? '#495057' : '#ffffff',
-    color: theme.card.color,
-    textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: '16px',
-    transition: 'all 0.3s ease'
-  };
-
-  const numberCardStyle = (color) => ({
-    ...theme.card,
-    padding: '20px',
-    margin: '16px 0',
-    background: theme.name === 'dark' 
-      ? `linear-gradient(135deg, ${color}20, ${color}10)`
-      : `linear-gradient(135deg, ${color}15, ${color}08)`,
-    border: `2px solid ${color}40`,
-    borderRadius: '16px',
-    position: 'relative',
-    overflow: 'hidden'
-  });
-
-  const bigNumberStyle = {
-    fontSize: '48px',
-    fontWeight: '900',
-    textAlign: 'center',
-    margin: '16px 0',
-    textShadow: theme.name === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)'
-  };
+  // CSS анимации
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+      }
+      
+      @keyframes numberGlow {
+        0%, 100% { text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        50% { text-shadow: 2px 2px 4px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.3); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
-    <div style={containerStyle}>
+    <div style={numerologyStyles.container}>
+
+      
       {/* Заголовок */}
-      <div style={headerStyle}>
-        <div style={{
-          position: 'absolute',
-          top: '-30px',
-          right: '-30px',
-          fontSize: '100px',
-          opacity: 0.1,
-          pointerEvents: 'none'
-        }}>
-          🔢
-        </div>
-        
-        <h1 style={{ 
-          fontSize: '28px', 
-          fontWeight: '700',
-          margin: '0 0 8px 0',
-          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-        }}>
-          🔢 Нумерология
-        </h1>
-        <p style={{ 
-          fontSize: '16px', 
-          opacity: 0.9,
-          margin: 0,
-          fontWeight: '400'
-        }}>
-          Откройте тайны своих чисел судьбы
+      <div style={numerologyStyles.header}>
+        <h1 style={numerologyStyles.title}>🔢 Нумерология</h1>
+        <p style={numerologyStyles.subtitle}>
+          Откройте тайны чисел вашей жизни
         </p>
       </div>
 
-      {/* Ввод даты рождения */}
-      <div style={inputCardStyle}>
-        <h3 style={{ 
-          ...theme.typography.subtitle, 
-          textAlign: 'center',
-          marginBottom: '16px',
-          color: theme.card.color 
-        }}>
-          📅 Ваша дата рождения
-        </h3>
-        <p style={{
-          textAlign: 'center',
-          fontSize: '14px',
-          color: theme.colors.textSecondary,
-          marginBottom: '20px'
-        }}>
-          Древние гномы-математики раскроют тайны ваших чисел
-        </p>
-
-        <div style={{ textAlign: 'center' }}>
+      {/* Форма ввода данных */}
+      <Card padding="lg" style={numerologyStyles.inputCard}>
+        
+        <div style={numerologyStyles.inputGroup}>
+          <label style={numerologyStyles.label}>
+            👤 Ваше имя (необязательно)
+          </label>
           <input
             type="text"
-            placeholder="дд.мм.гггг"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            style={inputStyle}
+            placeholder="Введите ваше имя"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            style={numerologyStyles.input}
             onFocus={(e) => {
               e.target.style.borderColor = theme.colors.primary;
-              e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
             }}
             onBlur={(e) => {
               e.target.style.borderColor = theme.colors.border;
-              e.target.style.boxShadow = 'none';
             }}
           />
-          
-          <div style={{ margin: '16px 0' }}>
-            <Button
-              variant="primary"
-              onClick={handleCalculate}
-              disabled={!birthDate || isCalculating}
-            >
-              {isCalculating ? (
-                <>
-                  <span style={{ 
-                    display: 'inline-block',
-                    animation: 'spin 1s linear infinite',
-                    marginRight: '8px'
-                  }}>🔄</span>
-                  Рассчитываем...
-                </>
-              ) : (
-                <>🧮 Рассчитать нумерологию</>
-              )}
-            </Button>
-          </div>
-
-          <div style={{
-            fontSize: '12px',
-            color: theme.colors.textSecondary,
-            fontStyle: 'italic'
-          }}>
-            💡 Результат основан на древних нумерологических методах и мудрости гномов
-          </div>
         </div>
-      </div>
+
+        <div style={numerologyStyles.inputGroup}>
+          <label style={numerologyStyles.label}>
+            📅 Дата рождения *
+          </label>
+          <input
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            style={numerologyStyles.input}
+            max={new Date().toISOString().split('T')[0]}
+            onFocus={(e) => {
+              e.target.style.borderColor = theme.colors.primary;
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = theme.colors.border;
+            }}
+          />
+        </div>
+
+        <Button
+          variant="primary"
+          onClick={handleCalculate}
+          style={numerologyStyles.calculateButton}
+          disabled={!birthDate || loading}
+        >
+          {loading ? '🔮 Вычисляем...' : '✨ Рассчитать нумерологию'}
+        </Button>
+      </Card>
 
       {/* Результаты */}
-      {result && (
-        <div>
-          {/* Число жизненного пути */}
-          {(() => {
-            const pathInfo = getNumerologyDescription(result.lifePath, 'lifePath');
-            return (
-              <div style={numberCardStyle(pathInfo.color)}>
-                <h3 style={{ 
-                  margin: '0 0 12px 0',
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  textAlign: 'center',
-                  color: theme.card.color
-                }}>
-                  🛤️ Число жизненного пути
-                </h3>
-                
-                <div style={{...bigNumberStyle, color: pathInfo.color}}>
-                  {result.lifePath}
-                </div>
-                
-                <div style={{
-                  textAlign: 'center',
-                  marginBottom: '16px'
-                }}>
+      {showResults && (
+        <>
+          {loading && (
+            <div style={numerologyStyles.loadingContainer}>
+              <div style={numerologyStyles.loadingIcon}>🔢</div>
+              <h3 style={{ color: theme.colors.primary }}>
+                Анализируем числовые вибрации...
+              </h3>
+            </div>
+          )}
+
+          {error && (
+            <Card padding="lg" style={numerologyStyles.sectionCard}>
+              <h3 style={{ color: theme.colors.danger, textAlign: 'center' }}>
+                Ошибка: {error}
+              </h3>
+              <div style={{ textAlign: 'center', marginTop: theme.spacing.md }}>
+                <Button variant="primary" onClick={refetch}>
+                  🔄 Попробовать снова
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {numerologyData && !loading && (
+            <>
+              {/* Основное число */}
+              <Card padding="xl" style={numerologyStyles.numberCard}>
+                <div style={numerologyStyles.numberOverlay} />
+                <div style={numerologyStyles.numberContent}>
+                  
                   <div style={{
-                    display: 'inline-block',
-                    background: `${pathInfo.color}20`,
-                    color: pathInfo.color,
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    marginBottom: '12px'
+                    ...numerologyStyles.mainNumber,
+                    animation: 'numberGlow 3s ease-in-out infinite'
                   }}>
-                    {pathInfo.title}
+                    {numerologyData.number}
+                  </div>
+                  
+                  <div style={numerologyStyles.numberLabel}>
+                    Число жизненного пути
+                  </div>
+                  
+                  <div style={numerologyStyles.meaningText}>
+                    {numerologyData.meaning}
                   </div>
                 </div>
-                
-                <p style={{
-                  textAlign: 'center',
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  color: theme.card.color,
-                  margin: '0'
-                }}>
-                  {pathInfo.desc}
-                </p>
-              </div>
-            );
-          })()}
+              </Card>
 
-          {/* Число души */}
-          {(() => {
-            const soulInfo = getNumerologyDescription(result.soul, 'lifePath');
-            return (
-              <div style={numberCardStyle(soulInfo.color)}>
-                <h3 style={{ 
-                  margin: '0 0 12px 0',
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  textAlign: 'center',
-                  color: theme.card.color
-                }}>
-                  💫 Число души
+              {/* Статистика */}
+              <div style={numerologyStyles.gridContainer}>
+                
+                <div style={numerologyStyles.statCard}>
+                  <div style={numerologyStyles.statNumber}>
+                    {numerologyData.personalYear || new Date().getFullYear() % 9 + 1}
+                  </div>
+                  <div style={numerologyStyles.statLabel}>Личный год</div>
+                </div>
+
+                <div style={numerologyStyles.statCard}>
+                  <div style={numerologyStyles.statNumber}>
+                    {calculateLifePath(birthDate) || numerologyData.number}
+                  </div>
+                  <div style={numerologyStyles.statLabel}>Жизненный путь</div>
+                </div>
+              </div>
+
+              {/* Характеристики */}
+              <Card padding="lg" style={numerologyStyles.sectionCard}>
+                <h3 style={numerologyStyles.sectionTitle}>
+                  <span>✨</span>
+                  <span>Ваши качества</span>
                 </h3>
                 
-                <div style={{...bigNumberStyle, color: soulInfo.color}}>
-                  {result.soul}
-                </div>
-                
-                <div style={{
-                  textAlign: 'center',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{
-                    display: 'inline-block',
-                    background: `${soulInfo.color}20`,
-                    color: soulInfo.color,
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    marginBottom: '12px'
-                  }}>
-                    {soulInfo.title}
+                {numerologyData.characteristics?.map((characteristic, index) => (
+                  <div key={index} style={numerologyStyles.characteristicItem}>
+                    <span style={{ color: theme.colors.primary, fontSize: '16px' }}>🌟</span>
+                    <span style={{ lineHeight: 1.5 }}>{characteristic}</span>
                   </div>
-                </div>
-                
-                <p style={{
-                  textAlign: 'center',
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  color: theme.card.color,
-                  margin: '0'
-                }}>
-                  Ваша внутренняя сущность и желания души
-                </p>
-              </div>
-            );
-          })()}
+                ))}
+              </Card>
 
-          {/* Число судьбы */}
-          {(() => {
-            const destinyInfo = getNumerologyDescription(result.destiny, 'lifePath');
-            return (
-              <div style={numberCardStyle(destinyInfo.color)}>
-                <h3 style={{ 
-                  margin: '0 0 12px 0',
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  textAlign: 'center',
-                  color: theme.card.color
-                }}>
-                  ⭐ Число судьбы
-                </h3>
-                
-                <div style={{...bigNumberStyle, color: destinyInfo.color}}>
-                  {result.destiny}
-                </div>
-                
-                <div style={{
-                  textAlign: 'center',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{
-                    display: 'inline-block',
-                    background: `${destinyInfo.color}20`,
-                    color: destinyInfo.color,
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    marginBottom: '12px'
-                  }}>
-                    Ваше предназначение
+              {/* Рекомендации */}
+              {numerologyData.recommendations && (
+                <Card padding="none" style={numerologyStyles.sectionCard}>
+                  <div style={numerologyStyles.recommendationCard}>
+                    <div style={numerologyStyles.recommendationIcon}>💎</div>
+                    <h3 style={{
+                      ...numerologyStyles.sectionTitle,
+                      marginBottom: theme.spacing.sm
+                    }}>
+                      <span>💡</span>
+                      <span>Совет от чисел</span>
+                    </h3>
+                    <p style={numerologyStyles.recommendationText}>
+                      {numerologyData.recommendations}
+                    </p>
                   </div>
-                </div>
-                
-                <p style={{
-                  textAlign: 'center',
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  color: theme.card.color,
-                  margin: '0'
-                }}>
-                  Ваш жизненный урок и предназначение в этом мире
-                </p>
-              </div>
-            );
-          })()}
+                </Card>
+              )}
 
-          {/* Кнопка добавления в избранное */}
-          <div style={{ textAlign: 'center', margin: '24px 0' }}>
-            <Button
-              variant="primary"
-              onClick={handleAddToFavorites}
-            >
-              ⭐ Добавить в избранное
-            </Button>
-          </div>
-        </div>
+              {/* Жизненный путь */}
+              {numerologyData.lifePath && (
+                <Card padding="lg" style={numerologyStyles.sectionCard}>
+                  <h3 style={numerologyStyles.sectionTitle}>
+                    <span>🛤️</span>
+                    <span>Ваш путь</span>
+                  </h3>
+                  
+                  <div style={{
+                    padding: theme.spacing.md,
+                    backgroundColor: `${theme.colors.primary}10`,
+                    borderRadius: theme.borderRadius.md,
+                    borderLeft: `4px solid ${theme.colors.primary}`,
+                    lineHeight: 1.6
+                  }}>
+                    {numerologyData.lifePath}
+                  </div>
+                </Card>
+              )}
+
+              {/* Действия */}
+              <div style={{ 
+                display: 'flex',
+                gap: theme.spacing.md,
+                justifyContent: 'center',
+                marginTop: theme.spacing.xl
+              }}>
+                <Button variant="primary" onClick={handleAddToFavorites}>
+                  ⭐ В избранное
+                </Button>
+                
+                <Button variant="outline" onClick={() => refetch()}>
+                  🔄 Пересчитать
+                </Button>
+              </div>
+            </>
+          )}
+        </>
       )}
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

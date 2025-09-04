@@ -1,354 +1,543 @@
+// src/components/HoroscopeView.js
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import useRealHoroscope from '../hooks/useRealHoroscope';
 import Card from './UI/Card';
 import Button from './UI/Button';
-import useAPI from '../hooks/useAPI';
-import { saveHoroscope, loadHoroscope } from '../enhanced_cache';
+import telegramBot from '../services/telegramBot'; // 🤖 TELEGRAM BOT INTEGRATION
+
 
 const HoroscopeView = ({ 
+  onBack, 
   selectedSign, 
-  gnomeProfile, 
-  onAddToFavorites, 
-  telegramApp,
-  astrologyData // актуальные астрологические данные
+  onSignChange, 
+  onAddToFavorites 
 }) => {
-  const { theme } = useTheme();
-  const { getHoroscope } = useAPI();
-  const [horoscopeData, setHoroscopeData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { theme, styles, createGradientStyle } = useTheme();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isSharing, setIsSharing] = useState(false); // 📲 Состояние шеринга
 
-  // Функция для получения фиксированного гороскопа на день
-  const loadDailyHoroscope = async (sign = selectedSign) => {
-    setLoading(true);
-    setError(null);
+  // ✅ ИСПОЛЬЗУЕМ НОВЫЙ ХУК С РЕАЛЬНЫМИ ДАННЫМИ
+  const { data: horoscopeData, loading, error, refetch } = useRealHoroscope(selectedSign?.sign);
 
-    try {
-      // Проверяем кеш на сегодняшний день
-      const today = new Date().toISOString().split('T')[0];
-      const cacheKey = `${sign}_${today}`;
-      
-      let dailyHoroscope = loadHoroscope(sign);
-      
-      if (dailyHoroscope) {
-        console.log('📦 Гороскоп загружен из кеша для', sign);
-        setHoroscopeData(dailyHoroscope);
-        setLoading(false);
-        return;
-      }
-
-      // Если в кеше нет, получаем новый и сохраняем на весь день
-      console.log('🔮 Генерируем новый дневной гороскоп для', sign);
-      const apiData = await getHoroscope(sign);
-      
-      if (apiData) {
-        // Добавляем метаданные для фиксации на день
-        const fixedHoroscope = {
-          ...apiData,
-          generatedDate: today,
-          sign: sign,
-          cached: true,
-          expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
-        };
-
-        // Сохраняем в кеш до конца дня
-        saveHoroscope(sign, fixedHoroscope);
-        setHoroscopeData(fixedHoroscope);
-      }
-
-    } catch (err) {
-      console.error('Ошибка загрузки гороскопа:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Отслеживание размера экрана
   useEffect(() => {
-    loadDailyHoroscope();
-  }, [selectedSign]);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
 
-  const handleAddToFavorites = () => {
-    if (horoscopeData && onAddToFavorites) {
-      const content = horoscopeData.horoscope?.general || 
-                     horoscopeData.prediction || 
-                     horoscopeData.text || 
-                     horoscopeData.horoscope ||
-                     'Персональный гороскоп на день';
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-      onAddToFavorites({
-        type: 'horoscope',
-        title: `${selectedSign} - ${new Date().toLocaleDateString('ru-RU')}`,
-        content: content,
-        date: new Date().toLocaleDateString('ru-RU'),
-        sign: selectedSign
-      });
-
-      if (telegramApp) {
-        telegramApp.showAlert('Гороскоп добавлен в избранное! ⭐');
+  // 📲 Обработчик отправки в Telegram
+  const handleShareToTelegram = async () => {
+    if (!horoscopeData || isSharing) return;
+    
+    setIsSharing(true);
+    
+    try {
+      const success = await telegramBot.shareHoroscopeToTelegram(horoscopeData);
+      
+      if (success) {
+        console.log('✅ Гороскоп отправлен в Telegram');
+      } else {
+        console.warn('⚠️ Ошибка отправки в Telegram');
       }
+    } catch (error) {
+      console.error('❌ Ошибка отправки в Telegram:', error);
+    } finally {
+      setIsSharing(false);
     }
   };
 
+  // Стили компонента
+  const horoscopeStyles = {
+    container: {
+      padding: isMobile ? theme.spacing.md : theme.spacing.lg,
+      maxWidth: '800px',
+      margin: '0 auto',
+      height: '100vh',
+      overflowY: 'auto',
+      paddingBottom: '100px'
+    },
+
+    // ✅ ИСПРАВЛЕННАЯ КАРТОЧКА С ГНОМОМ И ИЗОБРАЖЕНИЕМ
+    gnomeCard: {
+      marginBottom: theme.spacing.xl,
+      position: 'relative',
+      height: '280px',
+      overflow: 'hidden',
+      borderRadius: theme.borderRadius.lg,
+      background: selectedSign?.gnome?.colors ? 
+        createGradientStyle(selectedSign.gnome.colors, '135deg').background :
+        createGradientStyle(['#667eea', '#764ba2'], '135deg').background
+    },
+
+    gnomeBackgroundImage: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      opacity: 0.3,
+      zIndex: 1
+    },
+
+    gnomeOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
+      zIndex: 2
+    },
+
+    gnomeInfo: {
+      position: 'relative',
+      zIndex: 3,
+      padding: theme.spacing.xl,
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center'
+    },
+
+    gnomeCircle: {
+      position: 'absolute',
+      top: '24px',
+      right: '24px',
+      width: '90px',
+      height: '90px',
+      borderRadius: '50%',
+      border: '4px solid rgba(255,255,255,0.9)',
+      overflow: 'hidden',
+      zIndex: 4,
+      boxShadow: '0 6px 25px rgba(0,0,0,0.4)',
+      transition: 'all 0.3s ease',
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      backdropFilter: 'blur(10px)'
+    },
+
+    gnomeCircleImage: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover'
+    },
+
+    sectionCard: {
+      marginBottom: theme.spacing.lg
+    },
+
+    sectionTitle: {
+      fontSize: theme.typography.sizes.lg,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm,
+      display: 'flex',
+      alignItems: 'center',
+      gap: theme.spacing.xs
+    },
+
+    sectionText: {
+      fontSize: theme.typography.sizes.md,
+      lineHeight: 1.6,
+      color: theme.colors.text,
+      margin: 0
+    },
+
+    luckyContainer: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.md
+    },
+
+    luckyItem: {
+      textAlign: 'center',
+      padding: theme.spacing.sm,
+      backgroundColor: `${theme.colors.primary}20`,
+      borderRadius: theme.borderRadius.md,
+      border: `1px solid ${theme.colors.primary}40`
+    },
+
+    loadingContainer: {
+      textAlign: 'center',
+      padding: theme.spacing.xxl
+    },
+
+    loadingIcon: {
+      fontSize: '4rem',
+      marginBottom: theme.spacing.lg,
+      animation: 'pulse 2s infinite'
+    },
+
+    errorContainer: {
+      textAlign: 'center',
+      padding: theme.spacing.lg,
+      backgroundColor: `${theme.colors.danger}20`,
+      borderRadius: theme.borderRadius.md,
+      border: `1px solid ${theme.colors.danger}40`
+    },
+
+    buttonContainer: {
+      display: 'flex',
+      gap: theme.spacing.md,
+      justifyContent: 'center',
+      marginTop: theme.spacing.xl,
+      flexDirection: isMobile ? 'column' : 'row'
+    }
+  };
+
+  // Состояние загрузки
   if (loading) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔮</div>
-          <p>Гномы изучают звезды для вас...</p>
+      <div style={horoscopeStyles.container}>
+        
+        
+        <div style={horoscopeStyles.loadingContainer}>
+          <div style={horoscopeStyles.loadingIcon}>🔮</div>
+          <h3 style={{ color: theme.colors.primary }}>
+            Гном составляет ваш персональный гороскоп...
+          </h3>
+          <p style={{ color: theme.colors.textSecondary, marginTop: theme.spacing.md }}>
+            Запрашиваем данные с сервера
+          </p>
         </div>
-      </Card>
+      </div>
     );
   }
 
-  if (error && !horoscopeData) {
+  // Состояние ошибки
+  if (error) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-          <p style={{ color: theme.colors.danger, marginBottom: '16px' }}>
-            Не удалось загрузить гороскоп
+      <div style={horoscopeStyles.container}>
+        
+        
+        <div style={horoscopeStyles.errorContainer}>
+          <h3 style={{ color: theme.colors.danger, marginBottom: theme.spacing.md }}>
+            ⚠️ Ошибка загрузки гороскопа
+          </h3>
+          <p style={{ color: theme.colors.danger, marginBottom: theme.spacing.lg }}>
+            {error}
           </p>
-          <p style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
-            Попробуйте перезагрузить приложение
-          </p>
+          <div style={{ display: 'flex', gap: theme.spacing.md, justifyContent: 'center' }}>
+            <Button variant="primary" onClick={refetch}>
+              🔄 Попробовать снова
+            </Button>
+            {onSignChange && (
+              <Button variant="outline" onClick={onSignChange}>
+                🔄 Сменить знак
+              </Button>
+            )}
+          </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
-  return (
-    <div>
-      {/* Интеграция с лунными данными */}
-      {astrologyData?.moon && (
-        <Card>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px',
-            backgroundColor: theme.colors.surface,
-            borderRadius: '8px',
-            marginBottom: '8px'
-          }}>
-            <span style={{ fontSize: '32px' }}>{astrologyData.moon.emoji}</span>
-            <div>
-              <div style={{ fontWeight: '600', color: theme.colors.text }}>
-                {astrologyData.moon.phase}
-              </div>
-              <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
-                Влияет на энергетику {selectedSign}
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Основной гороскоп */}
-      <Card title={`🔮 Гороскоп на сегодня для ${selectedSign}`}>
-        {/* Индикатор фиксированного гороскопа */}
-        <div style={{
-          padding: '8px 12px',
-          backgroundColor: theme.colors.success + '20',
-          border: `1px solid ${theme.colors.success}`,
-          borderRadius: '6px',
-          fontSize: '14px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span>🔒</span>
-          <span>Ваш персональный гороскоп на {new Date().toLocaleDateString('ru-RU')}</span>
-          {horoscopeData?.cached && (
-            <span style={{ opacity: 0.7, fontSize: '12px' }}>
-              (сохранен на весь день)
-            </span>
-          )}
+  // Если нет выбранного знака
+  if (!selectedSign) {
+    return (
+      <div style={horoscopeStyles.container}>
+        
+        <div style={horoscopeStyles.errorContainer}>
+          <h3 style={{ color: theme.colors.textSecondary }}>
+            🔮 Знак зодиака не выбран
+          </h3>
+          <Button variant="primary" onClick={onBack || onSignChange}>
+            Выбрать знак
+          </Button>
         </div>
+      </div>
+    );
+  }
 
-        {gnomeProfile && (
-          <div style={{
-            marginBottom: '20px',
-            padding: '16px',
-            backgroundColor: theme.colors.surface,
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.border}`
+  // Основной контент с данными
+  return (
+    <div style={horoscopeStyles.container}>
+      
+      
+      {/* ✅ КАРТОЧКА С ГНОМОМ И ИЗОБРАЖЕНИЕМ */}
+      <Card 
+        padding="none" 
+        style={horoscopeStyles.gnomeCard}
+      >
+        {/* Фоновое изображение знака зодиака */}
+        <img
+          src={`${process.env.PUBLIC_URL || ''}/assets/zodiac-backgrounds/${selectedSign.id}.jpg`}
+          alt={selectedSign.sign}
+          style={horoscopeStyles.gnomeBackgroundImage}
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+        
+        {/* Затемняющий оверлей */}
+        <div style={horoscopeStyles.gnomeOverlay} />
+        
+        {/* Круглый элемент с гномом (НЕ НА КРАЮ) */}
+        <div 
+          style={horoscopeStyles.gnomeCircle}
+          onMouseEnter={(e) => {
+            // Убрали transform эффекты по запросу
+          }}
+          onMouseLeave={(e) => {
+            // Убрали transform эффекты по запросу
+          }}
+        >
+          <img
+            src={`${process.env.PUBLIC_URL || ''}/assets/gnomes/${selectedSign.gnome?.image}`}
+            alt={selectedSign.gnome?.name}
+            style={horoscopeStyles.gnomeCircleImage}
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.parentElement.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2.5rem;">${selectedSign.emoji}</div>`;
+            }}
+          />
+        </div>
+        
+        {/* Текстовая информация поверх изображения */}
+        <div style={horoscopeStyles.gnomeInfo}>
+          <h1 style={{
+            fontSize: theme.typography.sizes.title,
+            color: '#ffffff',
+            margin: '0 0 8px 0',
+            textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+            fontWeight: theme.typography.weights.bold
           }}>
-            <h3 style={{ 
-              margin: '0 0 8px 0',
-              color: theme.colors.primary,
-              fontSize: '18px'
-            }}>
-              {gnomeProfile.name}
-            </h3>
-            <p style={{ 
-              fontSize: '14px',
-              margin: '0 0 8px 0',
-              fontWeight: '600',
-              color: theme.colors.secondary
-            }}>
-              {gnomeProfile.title}
-            </p>
-            <p style={{ 
-              fontSize: '14px',
-              margin: 0,
-              color: theme.colors.textSecondary,
-              fontStyle: 'italic'
-            }}>
-              {gnomeProfile.desc}
-            </p>
-          </div>
-        )}
-
-        {horoscopeData && (
-          <div>
-            {/* Основной текст гороскопа */}
-            <div style={{
-              fontSize: '16px',
-              lineHeight: '1.6',
-              marginBottom: '20px',
-              color: theme.colors.text,
-              padding: '16px',
-              backgroundColor: theme.colors.surface + '50',
-              borderRadius: '8px',
-              borderLeft: `4px solid ${theme.colors.primary}`
-            }}>
-              {horoscopeData.horoscope?.general || 
-               horoscopeData.prediction || 
-               horoscopeData.text || 
-               horoscopeData.horoscope ||
-               'Звезды благоволят вам сегодня! Прислушивайтесь к интуиции и доверяйте своим чувствам.'}
-            </div>
-
-            {/* Детали гороскопа в сетке */}
-            {(horoscopeData.horoscope?.love || horoscopeData.horoscope?.work || horoscopeData.horoscope?.health) && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '12px',
-                marginBottom: '20px'
-              }}>
-                {horoscopeData.horoscope?.love && (
-                  <div style={{
-                    padding: '12px',
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: '8px',
-                    border: `1px solid ${theme.colors.border}`
-                  }}>
-                    <h4 style={{ margin: '0 0 8px 0', color: theme.colors.danger }}>💕 Любовь</h4>
-                    <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.4' }}>
-                      {horoscopeData.horoscope.love}
-                    </p>
-                  </div>
-                )}
-
-                {horoscopeData.horoscope?.work && (
-                  <div style={{
-                    padding: '12px',
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: '8px',
-                    border: `1px solid ${theme.colors.border}`
-                  }}>
-                    <h4 style={{ margin: '0 0 8px 0', color: theme.colors.warning }}>💼 Работа</h4>
-                    <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.4' }}>
-                      {horoscopeData.horoscope.work}
-                    </p>
-                  </div>
-                )}
-
-                {horoscopeData.horoscope?.health && (
-                  <div style={{
-                    padding: '12px',
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: '8px',
-                    border: `1px solid ${theme.colors.border}`
-                  }}>
-                    <h4 style={{ margin: '0 0 8px 0', color: theme.colors.success }}>🌱 Здоровье</h4>
-                    <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.4' }}>
-                      {horoscopeData.horoscope.health}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Дополнительная информация */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginBottom: '20px'
-            }}>
-              {horoscopeData.luckyNumber && (
-                <div style={{
-                  padding: '8px 12px',
-                  backgroundColor: theme.colors.success + '20',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}>
-                  🍀 Счастливое число: <strong>{horoscopeData.luckyNumber}</strong>
-                </div>
-              )}
-
-              {horoscopeData.luckyColor && (
-                <div style={{
-                  padding: '8px 12px',
-                  backgroundColor: theme.colors.info + '20',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}>
-                  🎨 Цвет дня: <strong>{horoscopeData.luckyColor}</strong>
-                </div>
-              )}
-
-              {horoscopeData.element && (
-                <div style={{
-                  padding: '8px 12px',
-                  backgroundColor: theme.colors.secondary + '20',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}>
-                  ✨ Стихия: <strong>{horoscopeData.element}</strong>
-                </div>
-              )}
-            </div>
-
-            {/* Только кнопка добавления в избранное (БЕЗ кнопки обновления) */}
-            <div style={{ textAlign: 'center' }}>
-              <Button
-                onClick={handleAddToFavorites}
-                style={{
-                  ...theme.button.secondary,
-                  minWidth: '200px',
-                  fontSize: '16px',
-                  padding: '12px 24px'
-                }}
-              >
-                ⭐ Сохранить в избранное
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Совет на основе лунной фазы */}
-      {astrologyData?.moon && (
-        <Card title="✨ Совет дня от лунных гномов">
-          <p style={{ 
-            fontSize: '14px', 
-            color: theme.colors.textSecondary,
-            lineHeight: '1.6',
+            {selectedSign.emoji} {selectedSign.sign}
+          </h1>
+          <h2 style={{
+            fontSize: theme.typography.sizes.lg,
+            color: '#F4C542',
+            margin: '0 0 4px 0',
+            textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+            fontWeight: theme.typography.weights.semibold
+          }}>
+            {selectedSign.gnome?.name}
+          </h2>
+          <p style={{
+            fontSize: theme.typography.sizes.md,
+            color: 'rgba(255,255,255,0.95)',
+            margin: '0 0 8px 0',
+            textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+          }}>
+            {selectedSign.gnome?.title}
+          </p>
+          <p style={{
+            fontSize: theme.typography.sizes.sm,
+            color: 'rgba(255,255,255,0.8)',
             margin: 0,
+            textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
             fontStyle: 'italic'
           }}>
-            Сегодня {astrologyData.moon.phase.toLowerCase()} создает особую энергию для {selectedSign}. 
-            {astrologyData.moon.isWaxing ? 
-              ' Растущая луна поддерживает ваши амбиции и новые планы.' :
-              ' Убывающая луна помогает завершить важные дела и отпустить лишнее.'
-            }
+            {selectedSign.dates}
           </p>
-        </Card>
+          {horoscopeData?.date && (
+            <p style={{
+              fontSize: theme.typography.sizes.sm,
+              color: '#F4C542',
+              margin: '8px 0 0 0',
+              textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+              fontWeight: theme.typography.weights.semibold
+            }}>
+              📅 {horoscopeData.date}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {horoscopeData && (
+        <>
+          {/* ✅ ОБЩИЙ ГОРОСКОП */}
+          <Card padding="lg" style={horoscopeStyles.sectionCard}>
+            <h3 style={horoscopeStyles.sectionTitle}>
+              <span>🌟</span>
+              <span>Общий прогноз</span>
+            </h3>
+            <p style={horoscopeStyles.sectionText}>
+              {horoscopeData.horoscope?.general || horoscopeData.general || 'Данные загружаются...'}
+            </p>
+          </Card>
+
+          {/* ✅ ЛЮБОВЬ */}
+          {(horoscopeData.horoscope?.love || horoscopeData.love) && (
+            <Card padding="lg" style={horoscopeStyles.sectionCard}>
+              <h3 style={horoscopeStyles.sectionTitle}>
+                <span>💕</span>
+                <span>Любовь и отношения</span>
+              </h3>
+              <p style={horoscopeStyles.sectionText}>
+                {horoscopeData.horoscope?.love || horoscopeData.love}
+              </p>
+            </Card>
+          )}
+
+          {/* ✅ КАРЬЕРА */}
+          {(horoscopeData.horoscope?.work || horoscopeData.work || horoscopeData.horoscope?.career) && (
+            <Card padding="lg" style={horoscopeStyles.sectionCard}>
+              <h3 style={horoscopeStyles.sectionTitle}>
+                <span>💼</span>
+                <span>Карьера и работа</span>
+              </h3>
+              <p style={horoscopeStyles.sectionText}>
+                {horoscopeData.horoscope?.work || horoscopeData.work || horoscopeData.horoscope?.career}
+              </p>
+            </Card>
+          )}
+
+          {/* ✅ ЗДОРОВЬЕ */}
+          {(horoscopeData.horoscope?.health || horoscopeData.health) && (
+            <Card padding="lg" style={horoscopeStyles.sectionCard}>
+              <h3 style={horoscopeStyles.sectionTitle}>
+                <span>💪</span>
+                <span>Здоровье</span>
+              </h3>
+              <p style={horoscopeStyles.sectionText}>
+                {horoscopeData.horoscope?.health || horoscopeData.health}
+              </p>
+            </Card>
+          )}
+
+          {/* ✅ УДАЧА И ЧИСЛА */}
+          {(horoscopeData.luckyNumber || horoscopeData.luckyColor) && (
+            <Card padding="lg" style={horoscopeStyles.sectionCard}>
+              <h3 style={horoscopeStyles.sectionTitle}>
+                <span>🍀</span>
+                <span>Ваша удача сегодня</span>
+              </h3>
+              <div style={horoscopeStyles.luckyContainer}>
+                {horoscopeData.luckyNumber && (
+                  <div style={horoscopeStyles.luckyItem}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🔢</div>
+                    <div style={{ fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary }}>Число</div>
+                    <div style={{ fontWeight: 'bold', color: theme.colors.primary }}>
+                      {horoscopeData.luckyNumber}
+                    </div>
+                  </div>
+                )}
+                
+                {horoscopeData.luckyColor && (
+                  <div style={horoscopeStyles.luckyItem}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🎨</div>
+                    <div style={{ fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary }}>Цвет</div>
+                    <div style={{ fontWeight: 'bold', color: theme.colors.primary }}>
+                      {horoscopeData.luckyColor}
+                    </div>
+                  </div>
+                )}
+
+                {horoscopeData.element && (
+                  <div style={horoscopeStyles.luckyItem}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🌟</div>
+                    <div style={{ fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary }}>Элемент</div>
+                    <div style={{ fontWeight: 'bold', color: theme.colors.primary }}>
+                      {horoscopeData.element}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* ✅ ГНОМ ГОВОРИТ */}
+          {horoscopeData.gnome && (
+            <Card padding="lg" style={horoscopeStyles.sectionCard}>
+              <h3 style={horoscopeStyles.sectionTitle}>
+                <span>🧙‍♂️</span>
+                <span>{horoscopeData.gnome} говорит:</span>
+              </h3>
+              <p style={{
+                ...horoscopeStyles.sectionText,
+                fontStyle: 'italic',
+                backgroundColor: `${theme.colors.secondary}10`,
+                padding: theme.spacing.md,
+                borderRadius: theme.borderRadius.md,
+                border: `1px solid ${theme.colors.secondary}30`
+              }}>
+                "Магия звезд указывает путь к успеху и гармонии!"
+              </p>
+            </Card>
+          )}
+
+          {/* ✅ ДЕЙСТВИЯ */}
+          <div style={horoscopeStyles.buttonContainer}>
+            <Button 
+              variant="primary" 
+              onClick={() => onAddToFavorites && onAddToFavorites({
+                type: 'horoscope',
+                id: `horoscope-${selectedSign.sign}-${Date.now()}`,
+                title: `🔮 ${selectedSign.sign}`,
+                content: horoscopeData.horoscope?.general || horoscopeData.general || 'Гороскоп',
+                date: new Date().toLocaleDateString('ru-RU'),
+                sign: selectedSign.sign,
+                gnome: selectedSign.gnome?.name
+              })}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            >
+              ⭐ В избранное
+            </Button>
+            
+            {/* 📲 КНОПКА ОТПРАВКИ В TELEGRAM */}
+            <Button 
+              variant="outline" 
+              onClick={handleShareToTelegram}
+              disabled={isSharing}
+              style={{ 
+                width: isMobile ? '100%' : 'auto',
+                background: isSharing ? 'rgba(0, 136, 204, 0.1)' : 'transparent',
+                borderColor: '#0088cc',
+                color: '#0088cc'
+              }}
+            >
+              {isSharing ? '🔄 Отправляем...' : '📲 Отправить в Telegram'}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={refetch}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            >
+              🔄 Обновить
+            </Button>
+
+            {onSignChange && (
+              <Button 
+                variant="outline" 
+                onClick={onSignChange}
+                style={{ width: isMobile ? '100%' : 'auto' }}
+              >
+                🔄 Сменить знак
+              </Button>
+            )}
+          </div>
+
+          {/* ✅ ОТЛАДОЧНАЯ ИНФОРМАЦИЯ (только в development) */}
+          {process.env.NODE_ENV === 'development' && (
+            <Card padding="lg" style={{ marginTop: theme.spacing.lg }}>
+              <h4>🧪 Отладка API (только в development)</h4>
+              <details>
+                <summary style={{ cursor: 'pointer', marginBottom: theme.spacing.sm }}>
+                  Посмотреть сырые данные JSON
+                </summary>
+                <pre style={{
+                  fontSize: '12px',
+                  backgroundColor: '#f0f0f0',
+                  padding: theme.spacing.sm,
+                  borderRadius: theme.borderRadius.sm,
+                  overflow: 'auto',
+                  maxHeight: '200px',
+                  color: '#000'
+                }}>
+                  {JSON.stringify(horoscopeData, null, 2)}
+                </pre>
+              </details>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

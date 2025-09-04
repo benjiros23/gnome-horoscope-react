@@ -1,235 +1,297 @@
-import React, { useEffect, useState } from 'react';
+// src/components/LoadingScreen.js
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import StarryBackground from './StarryBackground'; // ✅ ИМПОРТИРУЕМ НОВЫЙ ФОН
+import { supportsWebM, canAutoplay } from '../utils/videoUtils'; // 🎥 УТИЛИТЫ ДЛЯ ВИДЕО
 
-const LoadingScreen = ({
-  onLoadingComplete,
-  minLoadingTime = 3000,
-  showProgress = true,
-  // Кастомные изображения:
-  backgroundImage = '/assets/my-space-bg.jpg',  // Фон всей сцены (ВЫ МОЖЕТЕ ЗАМЕНИТЬ)
-  circleImage = '/assets/circle-background.png',// Круглая картинка под гномом
-  gnomeImage = '/assets/gnome-astrologer.png',  // Гном
-  headerImage = '/assets/header.png',           // Табличка «Gnome Horoscope»
+const LoadingScreen = ({ 
+  message = "🔮 Гномы готовят ваш персональный гороскоп...", 
+  onComplete = null 
 }) => {
-  const { theme } = useTheme();
-  const [progress, setProgress] = useState(0);
-  const [dots, setDots] = useState('');
+  const { theme, styles } = useTheme();
+  const [progress, setProgress] = useState(1);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+  const [videoSupported, setVideoSupported] = useState(true);
 
-  // Прогресс
+  // Проверяем поддержку видео при загрузке
   useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const p = Math.min(100, (elapsed / minLoadingTime) * 100);
-      setProgress(p);
-      if (p >= 100) {
-        clearInterval(id);
-        setTimeout(() => onLoadingComplete?.(), 400);
-      }
-    }, 50);
-    return () => clearInterval(id);
-  }, [minLoadingTime, onLoadingComplete]);
-
-  // Точки
-  useEffect(() => {
-    const id = setInterval(() => setDots((d) => (d.length >= 3 ? '' : d + '.')), 500);
-    return () => clearInterval(id);
+    const checkVideoSupport = async () => {
+      const webmSupported = supportsWebM();
+      const autoplaySupported = await canAutoplay();
+      
+      console.log('🎥 Поддержка видео:', {
+        webm: webmSupported,
+        autoplay: autoplaySupported
+      });
+      
+      setVideoSupported(webmSupported && autoplaySupported);
+    };
+    
+    checkVideoSupport();
   }, []);
 
-  // Фон: если указан backgroundImage — используем его, иначе градиент+звезды
-  const backgroundLayer =
-    backgroundImage
-      ? `url("${backgroundImage}") center/cover no-repeat, `
-      : '';
+  // Слушаем изменения размера экрана
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 480);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const starfield = `
-    url("data:image/svg+xml,${encodeURIComponent(`
-      <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'>
-        <circle cx='20' cy='20' r='1' fill='white' opacity='0.8'/>
-        <circle cx='80' cy='25' r='0.5' fill='white' opacity='0.6'/>
-        <circle cx='40' cy='60' r='0.8' fill='white' opacity='0.7'/>
-        <circle cx='90' cy='70' r='0.6' fill='white' opacity='0.5'/>
-        <circle cx='10' cy='80' r='1.2' fill='white' opacity='0.9'/>
-        <circle cx='70' cy='15' r='0.4' fill='white' opacity='0.4'/>
-        <circle cx='25' cy='85' r='0.7' fill='white' opacity='0.6'/>
-        <circle cx='60' cy='30' r='0.9' fill='white' opacity='0.8'/>
-      </svg>
-    `)}") repeat
-  `;
+  // Упрощенная анимация загрузки - только проценты
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        const increment = Math.floor(Math.random() * 4) + 1;
+        const newProgress = prev + increment;
+        
+        if (newProgress >= 100) {
+          if (onComplete) {
+            setTimeout(onComplete, 500);
+          }
+          return 100;
+        }
+        
+        return newProgress;
+      });
+    }, Math.random() * 150 + 100);
 
-  const screenStyle = {
-    position: 'fixed',
-    inset: 0,
-    background: `
-      ${backgroundLayer}
-      radial-gradient(ellipse at center top, #2D1B69 0%, #1A1A2E 50%, #0F0F1A 100%),
-      ${starfield}
-    `,
-    backgroundBlendMode: backgroundImage ? 'normal, multiply, screen' : 'normal, normal, screen',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    color: '#fff',
-    zIndex: 9999,
-    overflow: 'hidden',
+    return () => clearInterval(interval);
+  }, [onComplete]);
+
+  // Стили компонента
+  const loadingStyles = {
+    container: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      // ✅ УБИРАЕМ CSS ФОН - ТЕПЕРЬ БУДЕТ CANVAS
+      background: 'transparent',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: theme.zIndex.modal || 1000,
+      padding: theme.spacing.lg,
+      overflow: 'hidden'
+    },
+    
+    content: {
+      textAlign: 'center',
+      maxWidth: isMobile ? '300px' : '500px',
+      width: '100%',
+      position: 'relative',
+      zIndex: 10 // ✅ ПОВЕРХ CANVAS
+    },
+
+    loadingTitle: {
+      fontSize: isMobile ? theme.typography.sizes.lg : theme.typography.sizes.xl,
+      color: theme.colors.primary,
+      marginBottom: theme.spacing.xxl,
+      fontWeight: theme.typography.weights.bold,
+      textShadow: `
+        0 2px 10px ${theme.colors.primary}40,
+        0 0 20px ${theme.colors.primary}60,
+        0 0 40px ${theme.colors.primary}40
+      `,
+      position: 'relative',
+      zIndex: 10
+    },
+
+    // КОНТЕЙНЕР ДЛЯ ЛУНЫ
+    moonContainer: {
+      position: 'relative',
+      width: '100%',
+      height: isMobile ? '300px' : '450px', // Увеличили высоту контейнера
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.xl,
+      overflow: 'hidden',
+      zIndex: 10
+    },
+
+    // ВАШЕ ВИДЕО ЛУНЫ - МАКСИМАЛЬНО БОЛЬШОЙ РАЗМЕР БЕЗ ОБРЕЗКИ И БЕЗ СВЕЧЕНИЯ
+    moonVideo: {
+      position: 'relative',
+      width: isMobile ? '320px' : '500px', // Увеличили размер еще больше
+      height: isMobile ? '240px' : '375px', // Увеличили размер еще больше
+      zIndex: 2,
+      objectFit: 'contain', // Показываем полное видео без обрезки
+      borderRadius: '0', // Убираем любые закругления
+      boxShadow: 'none', // Убираем любые тени/свечения
+      filter: 'none' // Убираем любые фильтры
+    },
+
+    message: {
+      fontSize: isMobile ? theme.typography.sizes.sm : theme.typography.sizes.md,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.xl,
+      lineHeight: 1.6,
+      textShadow: `
+        2px 2px 4px rgba(0,0,0,0.9),
+        0 0 10px rgba(0,0,0,0.8)
+      `,
+      position: 'relative',
+      zIndex: 10
+    },
+
+    // БОЛЬШИЕ ЦИФРЫ ПРОЦЕНТОВ - УСИЛИМ ЭФФЕКТ
+    percentageText: {
+      fontSize: isMobile ? '4rem' : '6rem',
+      color: theme.colors.primary,
+      textAlign: 'center',
+      textShadow: `
+        0 0 20px ${theme.colors.primary}90,
+        0 0 40px ${theme.colors.primary}70,
+        0 0 60px ${theme.colors.primary}50,
+        0 0 80px ${theme.colors.primary}30
+      `,
+      fontWeight: theme.typography.weights.bold,
+      marginTop: theme.spacing.lg,
+      fontFamily: theme.typography.fontFamily,
+      animation: 'percentPulse 1s ease-in-out infinite alternate',
+      position: 'relative',
+      zIndex: 10
+    }
   };
 
-  const headerWrap = {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    paddingTop: 12,
-    marginBottom: 12,
-  };
+  // CSS АНИМАЦИИ
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const existingStyle = document.getElementById('moon-loading-animations');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'moon-loading-animations';
+        style.textContent = `
+          /* Класс для видео - полный размер */
+          .moon-video {
+            object-fit: contain;
+          }
 
-  const headerImg = {
-    width: 'min(92vw, 820px)',
-    height: 'auto',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.5))',
-    pointerEvents: 'none',
-    userSelect: 'none',
-  };
+          /* Анимация для fallback изображения */
+          @keyframes moonRoll {
+            0% {
+              transform: translateX(-100px) rotate(0deg);
+            }
+            50% {
+              transform: translateX(100px) rotate(180deg);
+            }
+            100% {
+              transform: translateX(-100px) rotate(360deg);
+            }
+          }
 
-  const stage = {
-    flex: '1 1 auto',
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '12px 16px 24px',
-    gap: 16,
-  };
+          /* УСИЛЕННАЯ АНИМАЦИЯ ДЛЯ ПРОЦЕНТОВ */
+          @keyframes percentPulse {
+            0% {
+              transform: scale(1);
+              text-shadow: 
+                0 0 20px rgba(244, 197, 66, 0.9),
+                0 0 40px rgba(244, 197, 66, 0.7),
+                0 0 60px rgba(244, 197, 66, 0.5),
+                0 0 80px rgba(244, 197, 66, 0.3);
+            }
+            100% {
+              transform: scale(1.05);
+              text-shadow: 
+                0 0 30px rgba(244, 197, 66, 1),
+                0 0 60px rgba(244, 197, 66, 0.9),
+                0 0 90px rgba(244, 197, 66, 0.7),
+                0 0 120px rgba(244, 197, 66, 0.5);
+            }
+          }
 
-  const arena = {
-    position: 'relative',
-    width: 'clamp(240px, 40vw, 360px)',
-    height: 'clamp(240px, 40vw, 360px)',
-    marginBottom: 12,
-  };
-
-  const circleImg = {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '3px solid #F4C542',
-    boxShadow: '0 0 30px rgba(244,197,66,0.5), inset 0 0 20px rgba(0,0,0,0.3)',
-    animation: 'rotate 20s linear infinite',
-    filter: 'brightness(0.9) contrast(1.08)',
-  };
-
-  const gnome = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '60%',
-    height: '60%',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
-    zIndex: 3,
-    pointerEvents: 'none',
-  };
-
-  const moon = {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    fontSize: 40,
-    animation: 'glow 2s ease-in-out infinite alternate',
-  };
-
-  const barWrap = {
-    width: 'clamp(220px, 58vw, 360px)',
-    height: 10,
-    backgroundColor: 'rgba(244,197,66,0.2)',
-    borderRadius: 6,
-    overflow: 'hidden',
-    border: '1px solid rgba(244,197,66,0.45)',
-    position: 'relative',
-  };
-
-  const barFill = {
-    height: '100%',
-    width: `${progress}%`,
-    background: 'linear-gradient(90deg, #F4C542, #FFD700, #F4C542)',
-    borderRadius: 6,
-    transition: 'width 0.1s ease-out',
-    boxShadow: '0 0 10px rgba(244,197,66,0.6)',
-    position: 'relative',
-    overflow: 'hidden',
-  };
-
-  const barShimmer = {
-    position: 'absolute',
-    top: 0,
-    left: '-100%',
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
-    animation: progress > 0 ? 'shimmer 1.5s ease-in-out infinite' : 'none',
-  };
-
-  const title = { fontSize: 18, fontWeight: 800, color: '#F4C542', textShadow: '1px 1px 2px rgba(0,0,0,0.8)', letterSpacing: 1 };
-  const sub = { fontSize: 16, color: 'rgba(255,255,255,0.85)', textShadow: '1px 1px 2px rgba(0,0,0,0.6)', fontStyle: 'italic', textAlign: 'center', maxWidth: '80%' };
+          /* Мобильные стили - максимально большой размер */
+          @media (max-width: 480px) {
+            .moon-video {
+              width: 320px !important;
+              height: 240px !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+              filter: none !important;
+            }
+          }
+          
+          /* Десктопные стили - максимально большой размер */
+          @media (min-width: 481px) {
+            .moon-video {
+              width: 500px !important;
+              height: 375px !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+              filter: none !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
 
   return (
-    <div style={screenStyle}>
-      <style>{`
-        @keyframes rotate { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes glow {
-          from { text-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700; transform: scale(1) }
-          to   { text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 25px #FFD700; transform: scale(1.08) }
-        }
-        @keyframes shimmer { 0% { left: -100% } 100% { left: 100% } }
-      `}</style>
+    <div style={loadingStyles.container}>
+      {/* ✅ КРАСИВЫЙ ФОН С СОЗВЕЗДИЯМИ И КОМЕТАМИ */}
+      <StarryBackground />
+      
+      <div style={loadingStyles.content}>
+        {/* ЗАГОЛОВОК */}
+        <h2 style={loadingStyles.loadingTitle}>
+          🌙 Идет загрузка...
+        </h2>
 
-      {/* Табличка-хедер */}
-      <div style={headerWrap}>
-        <img src={headerImage} alt="Gnome Horoscope" style={headerImg} draggable={false} />
-      </div>
-
-  
-      <div style={stage}>
-        <div style={arena}>
-          {/* Кастомный круг */}
-          <img src={circleImage} alt="Magic Circle" style={circleImg} draggable={false} />
-
-          {/* Гном */}
-          <img
-            src={gnomeImage}
-            alt="Cosmic Gnome"
-            style={gnome}
-            draggable={false}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.insertAdjacentHTML(
-                'afterend',
-                `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:72px;">🧙‍♂️</div>`
-              );
-            }}
-          />
+        {/* КОНТЕЙНЕР С ЛУНОЙ */}
+        <div style={loadingStyles.moonContainer}>
+          {/* УМНОЕ ОТОБРАЖЕНИЕ ВИДЕО ИЛИ ИЗОБРАЖЕНИЯ */}
+          {videoSupported ? (
+            <video
+              src={`${process.env.PUBLIC_URL || ''}/assets/ezgif-23f5ca2e00951b.webm`}
+              className="moon-video"
+              style={loadingStyles.moonVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onError={(e) => {
+                console.log('⚠️ Ошибка воспроизведения видео, переключаемся на изображение');
+                setVideoSupported(false);
+              }}
+            />
+          ) : (
+            <img
+              src={`${process.env.PUBLIC_URL || ''}/assets/moonload.png`}
+              alt="Loading Moon"
+              style={{
+                ...loadingStyles.moonVideo,
+                animation: 'moonRoll 3s linear infinite' // Добавляем анимацию для fallback
+              }}
+              onError={(e) => {
+                console.log('⚠️ Ошибка загрузки изображения');
+                e.target.style.display = 'none';
+                const fallbackDiv = document.createElement('div');
+                fallbackDiv.innerHTML = '🌙';
+                fallbackDiv.style.cssText = `
+                  font-size: ${isMobile ? '6rem' : '8rem'};
+                  animation: moonRoll 3s linear infinite;
+                `;
+                e.target.parentElement.appendChild(fallbackDiv);
+              }}
+            />
+          )}
         </div>
 
-        <div style={title}>LOADING{dots}</div>
+        {/* СООБЩЕНИЕ */}
+        <p style={loadingStyles.message}>
+          {message}
+        </p>
 
-        {showProgress && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-            <div style={barWrap}>
-              <div style={barFill}>
-                <div style={barShimmer} />
-              </div>
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>{Math.round(progress)}%</div>
-          </div>
-        )}
-
-        <p style={sub}>Consulting the Cosmic Gnomes{dots}</p>
+        {/* БОЛЬШИЕ ЦИФРЫ ПРОЦЕНТОВ */}
+        <div style={loadingStyles.percentageText}>
+          {progress}%
+        </div>
       </div>
     </div>
   );

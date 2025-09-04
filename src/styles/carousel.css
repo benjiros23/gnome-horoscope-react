@@ -1,0 +1,345 @@
+/* src/styles/carousel.css - Рабочая карусель */
+
+/* Основной контейнер */
+.modern-carousel-container {
+  position: relative;
+  width: 100%;
+  padding: 30px 0 50px 0; /* Уменьшили отступы для маленьких теней */
+  overflow: visible;
+}
+
+/* Скроллящийся трек */
+.carousel-track {
+  display: flex;
+  gap: 20px;
+  padding: 25px 60px 35px 60px; /* Уменьшили отступы */
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  
+  /* Скрываем скроллбар */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Карточка */
+.modern-carousel-card {
+  flex: 0 0 280px;
+  height: 380px;
+  scroll-snap-align: center;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  transition: all 0.4s ease;
+  transform-origin: center center;
+  
+  /* Уменьшенная базовая мягкая тень */
+  box-shadow: 
+    0 6px 15px rgba(0, 0, 0, 0.12),
+    0 3px 8px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  
+  /* По умолчанию размыто */
+  filter: blur(2px) brightness(0.6);
+  opacity: 0.7;
+  transform: scale(0.85);
+}
+
+/* Уменьшенная дополнительная мягкая тень через псевдоэлемент */
+.modern-carousel-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 15%;
+  right: 15%;
+  height: 20px; /* Уменьшили с 30px */
+  background: radial-gradient(ellipse at center, 
+    rgba(0, 0, 0, 0.2) 0%, 
+    rgba(0, 0, 0, 0.12) 30%, 
+    rgba(0, 0, 0, 0.06) 60%, 
+    transparent 100%);
+  border-radius: 50%;
+  z-index: -1;
+  transition: all 0.4s ease;
+  opacity: 0.4; /* Уменьшили прозрачность */
+}
+
+/* Активная карточка */
+.modern-carousel-card.active {
+  filter: none;
+  opacity: 1;
+  transform: scale(1.05) translateY(-8px);
+  z-index: 10;
+  /* Уменьшенная многослойная мягкая тень */
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.2),
+    0 8px 20px rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Уменьшенная мягкая тень для активной карточки */
+.modern-carousel-card.active::after {
+  height: 30px; /* Уменьшили с 50px */
+  left: 10%;
+  right: 10%;
+  background: radial-gradient(ellipse at center, 
+    rgba(0, 0, 0, 0.25) 0%, 
+    rgba(0, 0, 0, 0.18) 25%, 
+    rgba(0, 0, 0, 0.12) 45%, 
+    rgba(0, 0, 0, 0.06) 70%, 
+    transparent 100%);
+  opacity: 0.6; /* Уменьшили прозрачность */
+}
+
+/* Соседние карточки */
+.modern-carousel-card.nearby {
+  filter: blur(1px) brightness(0.8);
+  opacity: 0.85;
+  transform: scale(0.95);
+  /* Уменьшенная средняя многослойная тень */
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.15),
+    0 5px 12px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Уменьшенная тень для соседних карточек */
+.modern-carousel-card.nearby::after {
+  height: 25px; /* Уменьшили с 40px */
+  left: 12%;
+  right: 12%;
+  background: radial-gradient(ellipse at center, 
+    rgba(0, 0, 0, 0.22) 0%, 
+    rgba(0, 0, 0, 0.15) 30%, 
+    rgba(0, 0, 0, 0.08) 60%, 
+    transparent 100%);
+  opacity: 0.5; /* Уменьшили прозрачность */
+}
+
+/* Изображение */
+.modern-carousel-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+/* Градиент */
+.card-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70%;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0) 100%);
+  border-radius: 0 0 16px 16px;
+}
+
+/* Бейдж элемента */
+.element-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.8);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+/* Текстовая область */
+.card-text-area {
+  position: absolute;
+  bottom: 25px;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  color: white;
+  text-align: center;
+}
+
+.card-sign-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.card-dates {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 8px 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.card-gnome-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #F4C542;
+  margin: 0 0 4px 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.card-gnome-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-style: italic;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Прозрачные стрелки */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: white;
+  transition: all 0.3s ease;
+  z-index: 15;
+  backdrop-filter: blur(10px);
+}
+
+.carousel-arrow:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow.left {
+  left: 15px;
+}
+
+.carousel-arrow.right {
+  right: 15px;
+}
+
+/* Кнопка выбора */
+.modern-select-button {
+  position: fixed;
+  bottom: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #F4C642 0%, #FCD444 100%);
+  border: none;
+  border-radius: 28px;
+  color: #000;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(244, 197, 66, 0.6);
+  transition: all 0.3s ease;
+  z-index: 999;
+  min-width: 200px;
+}
+
+.modern-select-button:hover {
+  transform: translateX(-50%) scale(1.05) translateY(-2px);
+  box-shadow: 0 12px 40px rgba(244, 197, 66, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modern-carousel-container {
+    padding: 25px 0 40px 0; /* Уменьшили отступы для мобильных */
+  }
+  
+  .modern-carousel-card {
+    flex: 0 0 260px;
+    height: 360px;
+  }
+  
+  .carousel-track {
+    padding: 20px 50px 30px 50px; /* Уменьшили отступы */
+    gap: 16px;
+  }
+  
+  .carousel-arrow {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+  
+  .carousel-arrow.left {
+    left: 10px;
+  }
+  
+  .carousel-arrow.right {
+    right: 10px;
+  }
+  
+  /* Адаптированные мягкие тени для мобильных */
+  .modern-carousel-card.active {
+    box-shadow: 
+      0 12px 30px rgba(0, 0, 0, 0.18),
+      0 6px 15px rgba(0, 0, 0, 0.12),
+      0 3px 8px rgba(0, 0, 0, 0.08),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+  
+  .modern-carousel-card.nearby {
+    box-shadow: 
+      0 8px 20px rgba(0, 0, 0, 0.15),
+      0 4px 10px rgba(0, 0, 0, 0.10),
+      0 2px 5px rgba(0, 0, 0, 0.06);
+  }
+  
+  .modern-carousel-card {
+    box-shadow: 
+      0 5px 15px rgba(0, 0, 0, 0.10),
+      0 3px 8px rgba(0, 0, 0, 0.06),
+      0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+}
+/* Индикаторы карусели */
+.carousel-indicators {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.carousel-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.carousel-indicator.active {
+  background: #F4C542;
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(244, 197, 66, 0.6);
+}
+
+.carousel-indicator:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(1.1);
+}

@@ -1,383 +1,398 @@
+// src/components/MoonView.js
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import useRealMoonData from '../hooks/useRealMoonData';
 import Card from './UI/Card';
 import Button from './UI/Button';
-import { EnhancedMoonPhase } from '../enhanced_moonPhase';
-import { useMoonData } from '../hooks/useAstrologyData';
-import useAPI from '../hooks/useAPI';
 
-const MoonView = ({ onAddToFavorites, telegramApp, realTimeMoonData, onRefreshMoonData }) => {
-  const { theme } = useTheme();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [localLoading, setLocalLoading] = useState(false);
-  
-  // Используем актуальные данные из App.js или загружаем собственные
-  const { moon: hookMoonData, loading: hookLoading, refresh: hookRefresh } = useMoonData({
-    autoUpdate: !realTimeMoonData, // Отключаем если данные уже приходят из App
-    updateInterval: 6 * 60 * 60 * 1000
-  });
-  
-  const { getEnhancedMoonData } = useAPI();
-  
-  // Выбираем источник данных: переданные из App или собственные
-  const moonData = realTimeMoonData || hookMoonData;
-  const loading = hookLoading || localLoading;
-  const refreshData = onRefreshMoonData || hookRefresh;
+import MoonClassicMenu from './MoonClassicMenu'; // ✅ ЛУННОЕ КЛАССИЧЕСКОЕ МЕНЮ
 
-  const [currentMoonData, setCurrentMoonData] = useState(moonData);
-  const [gnomeAdvice, setGnomeAdvice] = useState(null);
+const MoonView = ({ 
+  onBack, 
+  onAddToFavorites, 
+  selectedSign = null,
+  onNavigate // ✅ ДОБАВЛЯЕМ НАВИГАЦИЮ ДЛЯ ЛУННОГО МЕНЮ
+}) => {
+  const { theme, styles, createGradientStyle } = useTheme();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isClassicMenuOpen, setIsClassicMenuOpen] = useState(false); // ✅ СОСТОЯНИЕ ЛУННОГО МЕНЮ
 
+  // ✅ ИСПОЛЬЗУЕМ НОВЫЙ ХУК С РЕАЛЬНЫМИ ДАННЫМИ
+  const { data: moonData, loading, error, refetch } = useRealMoonData();
+
+  // Отслеживание размера экрана
   useEffect(() => {
-    if (moonData) {
-      setCurrentMoonData(moonData);
-      
-      // Получаем советы гномов для текущей фазы
-      const advice = EnhancedMoonPhase.getGnomeAdvice(moonData.phase);
-      setGnomeAdvice(advice);
-    }
-  }, [moonData]);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
 
-  const handleDateChange = async (newDate) => {
-    if (newDate.toDateString() === new Date().toDateString()) {
-      // Если выбрана сегодняшняя дата, используем актуальные данные
-      setSelectedDate(newDate);
-      setCurrentMoonData(moonData);
-      return;
-    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-    setLocalLoading(true);
-    setSelectedDate(newDate);
+  // Обновляем дату каждую минуту
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 60000);
 
-    try {
-      // Для других дат используем EnhancedMoonPhase
-      const data = EnhancedMoonPhase.calculatePhase(newDate);
-      setCurrentMoonData(data);
-      
-      const advice = EnhancedMoonPhase.getGnomeAdvice(data.phase);
-      setGnomeAdvice(advice);
-    } catch (error) {
-      console.error('Ошибка загрузки данных для даты:', error);
-    } finally {
-      setLocalLoading(false);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Стили компонента
+  const moonStyles = {
+    container: {
+      padding: isMobile ? theme.spacing.md : theme.spacing.lg,
+      maxWidth: isMobile ? '100%' : '800px',
+      margin: '0 auto',
+      minHeight: '100vh',
+      overflowY: 'auto',
+      paddingBottom: isMobile ? '120px' : '100px',
+      width: '100%',
+      boxSizing: 'border-box'
+    },
+
+    header: {
+      textAlign: 'center',
+      marginBottom: isMobile ? theme.spacing.lg : theme.spacing.xl,
+      padding: isMobile ? `0 ${theme.spacing.sm}` : 0
+    },
+
+    title: {
+      fontSize: isMobile ? theme.typography.sizes.xl : theme.typography.sizes.title,
+      fontWeight: theme.typography.weights.bold,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm,
+      textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
+    },
+
+    subtitle: {
+      fontSize: isMobile ? theme.typography.sizes.sm : theme.typography.sizes.md,
+      color: theme.colors.textSecondary,
+      margin: 0,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.6)'
+    },
+
+    moonCard: {
+      marginBottom: theme.spacing.xl,
+      background: createGradientStyle(['#1e3c72', '#2a5298'], '135deg').background,
+      position: 'relative',
+      overflow: 'hidden',
+      minHeight: isMobile ? '280px' : '300px',
+      borderRadius: theme.borderRadius.lg
+    },
+
+    moonOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%)',
+      zIndex: 1
+    },
+
+    moonContent: {
+      position: 'relative',
+      zIndex: 2,
+      color: '#ffffff',
+      padding: isMobile ? theme.spacing.lg : theme.spacing.xl,
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: 'center',
+      justifyContent: isMobile ? 'center' : 'flex-start',
+      gap: isMobile ? theme.spacing.md : theme.spacing.xl,
+      minHeight: isMobile ? '280px' : '300px',
+      textAlign: isMobile ? 'center' : 'left'
+    },
+
+    moonIcon: {
+      fontSize: isMobile ? '6rem' : '8rem',
+      textAlign: 'center',
+      filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.5))',
+      animation: 'moonGlow 3s ease-in-out infinite',
+      marginBottom: isMobile ? theme.spacing.md : 0
+    },
+
+    moonInfo: {
+      flex: 1,
+      width: '100%'
+    },
+
+    moonPhase: {
+      fontSize: isMobile ? theme.typography.sizes.lg : theme.typography.sizes.xl,
+      fontWeight: theme.typography.weights.bold,
+      marginBottom: theme.spacing.sm,
+      textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+      textAlign: isMobile ? 'center' : 'left'
+    },
+
+    moonDate: {
+      fontSize: isMobile ? theme.typography.sizes.sm : theme.typography.sizes.md,
+      marginBottom: theme.spacing.sm,
+      opacity: 0.9,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+      textAlign: isMobile ? 'center' : 'left'
+    },
+
+    illumination: {
+      fontSize: isMobile ? theme.typography.sizes.md : theme.typography.sizes.lg,
+      fontWeight: theme.typography.weights.semibold,
+      color: '#F4C542',
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+      textAlign: isMobile ? 'center' : 'left'
+    },
+
+    loadingContainer: {
+      textAlign: 'center',
+      padding: theme.spacing.xxl
+    },
+
+    loadingIcon: {
+      fontSize: '4rem',
+      marginBottom: theme.spacing.lg,
+      animation: 'pulse 2s infinite'
+    },
+
+    errorContainer: {
+      textAlign: 'center',
+      padding: theme.spacing.lg,
+      backgroundColor: `${theme.colors.danger}20`,
+      borderRadius: theme.borderRadius.md,
+      border: `1px solid ${theme.colors.danger}40`
+    },
+
+    errorMessage: {
+      color: theme.colors.danger,
+      marginBottom: theme.spacing.md
     }
   };
 
-  const handleAddToFavorites = () => {
-    if (currentMoonData && onAddToFavorites) {
-      onAddToFavorites({
-        type: 'moon',
-        title: `${currentMoonData.emoji} ${currentMoonData.phase}`,
-        content: `${currentMoonData.illumination}% освещенности, ${currentMoonData.lunarDay} лунный день`,
-        date: selectedDate.toLocaleDateString('ru-RU'),
-        moonData: currentMoonData
-      });
+  // Получение иконки фазы луны
+  const getMoonPhaseIcon = (phase) => {
+    const phases = {
+      'Новолуние': '🌑',
+      'Растущая луна': '🌒',
+      'Первая четверть': '🌓',
+      'Растущая': '🌔',
+      'Полнолуние': '🌕',
+      'Убывающая': '🌖',
+      'Последняя четверть': '🌗',
+      'Убывающая луна': '🌘'
+    };
+    return phases[phase] || '🌙';
+  };
 
-      if (telegramApp) {
-        telegramApp.showAlert('Лунные данные добавлены в избранное! ⭐');
+  // Обработчик добавления в избранное
+  const handleAddToFavorites = () => {
+    if (moonData && onAddToFavorites) {
+      const favoriteItem = {
+        type: 'moon',
+        id: `moon-${Date.now()}`,
+        title: `🌙 ${moonData.current?.phase || 'Лунная фаза'}`,
+        content: `Освещенность: ${moonData.current?.illumination || '—'}%`,
+        date: new Date().toLocaleDateString('ru-RU'),
+        phase: moonData.current?.phase,
+        illumination: moonData.current?.illumination,
+        sign: moonData.current?.zodiacSign
+      };
+
+      onAddToFavorites(favoriteItem);
+
+      // Haptic feedback
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
     }
   };
 
+  // CSS анимации
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes moonGlow {
+        0%, 100% { 
+          filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+          transform: scale(1);
+        }
+        50% { 
+          filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.8));
+          transform: scale(1.05);
+        }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+  }, []);
+
+  // Состояние загрузки
   if (loading) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🌙</div>
-          <p>Загружаем актуальные лунные данные...</p>
+      <div style={moonStyles.container}>
+        
+        
+        <div style={moonStyles.loadingContainer}>
+          <div style={moonStyles.loadingIcon}>🌙</div>
+          <h3 style={{ color: theme.colors.primary }}>
+            Получаем актуальные данные о фазах Луны...
+          </h3>
+          <p style={{ color: theme.colors.textSecondary, marginTop: theme.spacing.md }}>
+            Запрашиваем данные с сервера
+          </p>
         </div>
-      </Card>
+      </div>
     );
   }
 
-  if (!currentMoonData) {
+  // Состояние ошибки
+  if (error) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-          <p>Не удалось загрузить данные о луне</p>
-          <Button onClick={refreshData}>🔄 Попробовать снова</Button>
+      <div style={moonStyles.container}>
+        
+        
+        <div style={moonStyles.errorContainer}>
+          <h3 style={moonStyles.errorMessage}>
+            ⚠️ Ошибка загрузки лунных данных
+          </h3>
+          <p style={moonStyles.errorMessage}>{error}</p>
+          <div style={{ marginTop: theme.spacing.md }}>
+            <Button variant="primary" onClick={refetch}>
+              🔄 Попробовать снова
+            </Button>
+          </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
-  const isToday = selectedDate.toDateString() === new Date().toDateString();
-
+  // Основной контент с данными
   return (
-    <div>
-      {/* Селектор даты */}
-      <Card>
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ 
-            display: 'block', 
-            marginBottom: '8px',
-            fontWeight: '600',
-            color: theme.colors.text
-          }}>
-            Выберите дату:
-          </label>
-          <input
-            type="date"
-            value={selectedDate.toISOString().split('T')[0]}
-            onChange={(e) => handleDateChange(new Date(e.target.value))}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: `1px solid ${theme.colors.border}`,
-              borderRadius: '6px',
-              backgroundColor: theme.card.background,
-              color: theme.card.color
-            }}
-          />
-        </div>
+    <div style={moonStyles.container}>
+      
+      
+      {/* Заголовок */}
+      <div style={moonStyles.header}>
+        <h1 style={moonStyles.title}>🌙 Лунный календарь</h1>
+        <p style={moonStyles.subtitle}>
+          Актуальные данные о фазах Луны
+        </p>
+      </div>
 
-        {isToday && currentMoonData.source && (
-          <div style={{
-            padding: '8px 12px',
-            backgroundColor: theme.colors.success + '20',
-            border: `1px solid ${theme.colors.success}`,
-            borderRadius: '6px',
-            fontSize: '14px',
-            marginBottom: '16px'
-          }}>
-            ✅ Актуальные данные (источник: {currentMoonData.source})
-          </div>
-        )}
-      </Card>
-
-      {/* Основная информация о луне */}
-      <Card>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ 
-            fontSize: '64px', 
-            lineHeight: '1',
-            marginBottom: '8px' 
-          }}>
-            {currentMoonData.emoji}
-          </div>
-          <h2 style={{ 
-            fontSize: '24px', 
-            margin: '0 0 8px 0',
-            color: theme.colors.text
-          }}>
-            {currentMoonData.phase}
-          </h2>
-          <p style={{ 
-            fontSize: '16px', 
-            margin: 0,
-            color: theme.colors.textSecondary
-          }}>
-            {selectedDate.toLocaleDateString('ru-RU', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
-        </div>
-
-        {/* Основные данные */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: '12px',
-          marginBottom: '20px'
-        }}>
-          <div style={{
-            textAlign: 'center',
-            padding: '16px',
-            backgroundColor: theme.colors.surface,
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.border}`
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.primary }}>
-              {currentMoonData.illumination}%
-            </div>
-            <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
-              Освещенность
-            </div>
-          </div>
-
-          <div style={{
-            textAlign: 'center',
-            padding: '16px',
-            backgroundColor: theme.colors.surface,
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.border}`
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.primary }}>
-              {currentMoonData.lunarDay}
-            </div>
-            <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
-              Лунный день
-            </div>
-          </div>
-
-          <div style={{
-            textAlign: 'center',
-            padding: '16px',
-            backgroundColor: theme.colors.surface,
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.border}`
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.colors.primary }}>
-              {Math.floor(currentMoonData.age)}
-            </div>
-            <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
-              Дней от новолуния
-            </div>
-          </div>
-        </div>
-
-        {/* Времена восхода и захода */}
-        {(currentMoonData.moonrise || currentMoonData.moonset) && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-around',
-            padding: '16px',
-            backgroundColor: theme.colors.surface,
-            borderRadius: '8px',
-            marginBottom: '20px',
-            border: `1px solid ${theme.colors.border}`
-          }}>
-            {currentMoonData.moonrise && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>🌅 {currentMoonData.moonrise}</div>
-                <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>Восход</div>
+      {moonData && (
+        <>
+          {/* Основная карточка с фазой луны */}
+          <Card padding="none" style={moonStyles.moonCard}>
+            <div style={moonStyles.moonOverlay} />
+            <div style={moonStyles.moonContent}>
+              
+              {/* Луна */}
+              <div style={moonStyles.moonIcon}>
+                {getMoonPhaseIcon(moonData.current?.phase)}
               </div>
-            )}
-            
-            {currentMoonData.moonset && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>🌇 {currentMoonData.moonset}</div>
-                <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>Заход</div>
+
+              {/* Информация о луне */}
+              <div style={moonStyles.moonInfo}>
+                <div style={moonStyles.moonPhase}>
+                  {moonData.current?.phase || 'Неизвестная фаза'}
+                </div>
+                <div style={moonStyles.moonDate}>
+                  {currentDate.toLocaleDateString('ru-RU', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </div>
+                <div style={moonStyles.illumination}>
+                  Освещенность: {moonData.current?.illumination || '—'}%
+                </div>
+                {moonData.current?.zodiacSign && (
+                  <div style={{
+                    ...moonStyles.moonDate,
+                    marginTop: theme.spacing.sm
+                  }}>
+                    Луна в знаке: {moonData.current.zodiacSign}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          </Card>
 
-        {/* Направление (растет/убывает) */}
-        <div style={{
-          textAlign: 'center',
-          padding: '16px',
-          backgroundColor: currentMoonData.isWaxing ? 
-            theme.colors.success + '20' : 
-            theme.colors.warning + '20',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          border: `1px solid ${currentMoonData.isWaxing ? theme.colors.success : theme.colors.warning}`
-        }}>
-          <div style={{ fontSize: '20px', marginBottom: '4px' }}>
-            {currentMoonData.isWaxing ? '🌱 Растущая луна' : '🍂 Убывающая луна'}
-          </div>
-          <div style={{ fontSize: '14px', color: theme.colors.textSecondary }}>
-            {currentMoonData.isWaxing ? 
-              'Время для начинаний и роста' : 
-              'Время для завершения и освобождения'
-            }
-          </div>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          flexWrap: 'wrap'
-        }}>
-          <Button 
-            onClick={handleAddToFavorites}
-            variant="secondary"
-            style={{ flex: '1', minWidth: '120px' }}
-          >
-            ⭐ В избранное
-          </Button>
-          
-          {isToday && (
-            <Button 
-              onClick={refreshData}
-              variant="ghost"
-              style={{ flex: '1', minWidth: '120px' }}
-            >
-              🔄 Обновить
-            </Button>
+          {/* Дополнительная информация */}
+          {moonData.current?.advice && (
+            <Card padding="lg" style={{ marginBottom: theme.spacing.lg }}>
+              <h3 style={{
+                fontSize: theme.typography.sizes.lg,
+                fontWeight: theme.typography.weights.bold,
+                color: theme.colors.text,
+                marginBottom: theme.spacing.md
+              }}>
+                💫 {moonData.current.advice.title}
+              </h3>
+              <p style={{
+                fontSize: theme.typography.sizes.md,
+                lineHeight: 1.6,
+                color: theme.colors.text,
+                margin: 0
+              }}>
+                {moonData.current.advice.text}
+              </p>
+            </Card>
           )}
-        </div>
-      </Card>
 
-      {/* Советы гномов */}
-      {gnomeAdvice && (
-        <Card title={`🧙‍♂️ ${gnomeAdvice.title}`}>
-          <p style={{ 
-            fontSize: '16px', 
-            lineHeight: '1.6',
-            marginBottom: '16px',
-            color: theme.colors.text
+          {/* Действия */}
+          <div style={{ 
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: theme.spacing.md,
+            justifyContent: 'center',
+            marginTop: theme.spacing.xl
           }}>
-            {gnomeAdvice.text}
-          </p>
-
-          <div style={{ marginBottom: '16px' }}>
-            <h4 style={{ 
-              fontSize: '16px', 
-              margin: '0 0 8px 0',
-              color: theme.colors.success 
-            }}>
-              ✅ Рекомендуется:
-            </h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {gnomeAdvice.activities?.map((activity, index) => (
-                <span 
-                  key={index}
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: theme.colors.success + '20',
-                    color: theme.colors.success,
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                >
-                  {activity}
-                </span>
-              ))}
-            </div>
+            <Button 
+              variant="primary" 
+              onClick={handleAddToFavorites}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            >
+              ⭐ В избранное
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => refetch()}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            >
+              🔄 Обновить данные
+            </Button>
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <h4 style={{ 
-              fontSize: '16px', 
-              margin: '0 0 8px 0',
-              color: theme.colors.danger 
-            }}>
-              ❌ Избегайте:
-            </h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {gnomeAdvice.avoid?.map((item, index) => (
-                <span 
-                  key={index}
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: theme.colors.danger + '20',
-                    color: theme.colors.danger,
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div style={{
-            padding: '12px',
-            backgroundColor: theme.colors.info + '20',
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.info}`
-          }}>
-            <strong style={{ color: theme.colors.info }}>
-              💫 Энергия дня: {gnomeAdvice.energy}
-            </strong>
-          </div>
-        </Card>
+          {/* Отладочная информация (временно) */}
+          {process.env.NODE_ENV === 'development' && (
+            <Card padding="lg" style={{ marginTop: theme.spacing.lg }}>
+              <h4>🧪 Отладка (только в development)</h4>
+              <pre style={{
+                fontSize: '12px',
+                backgroundColor: '#f0f0f0',
+                padding: theme.spacing.sm,
+                borderRadius: theme.borderRadius.sm,
+                overflow: 'auto',
+                maxHeight: '200px'
+              }}>
+                {JSON.stringify(moonData, null, 2)}
+              </pre>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,364 +1,380 @@
+// src/components/FavoritesView.js
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import Card from './UI/Card';
 import Button from './UI/Button';
-import { 
-  loadFavorites, 
-  saveFavorites, 
-  removeFavoriteItem, 
-  clearAllFavorites 
-} from '../enhanced_cache';
 
-// ===== КОНФИГУРАЦИЯ И КОНСТАНТЫ =====
-const FAVORITE_TYPES = {
-  MOON: 'moon',
-  HOROSCOPE: 'horoscope', 
-  COMPATIBILITY: 'compatibility',
-  DAY_CARD: 'day_card',
-  NUMEROLOGY: 'numerology',
-  ASTRO_EVENT: 'astro-event'
-};
 
-const TYPE_CONFIG = {
-  [FAVORITE_TYPES.MOON]: {
-    icon: '🌙',
-    title: 'Лунные данные',
-    color: '#4ECDC4'
-  },
-  [FAVORITE_TYPES.HOROSCOPE]: {
-    icon: '⭐',
-    title: 'Гороскоп',
-    color: '#FFD93D'
-  },
-  [FAVORITE_TYPES.COMPATIBILITY]: {
-    icon: '💕',
-    title: 'Совместимость',
-    color: '#FF6B6B'
-  },
-  [FAVORITE_TYPES.DAY_CARD]: {
-    icon: '🃏',
-    title: 'Карта дня',
-    color: '#A29BFE'
-  },
-  [FAVORITE_TYPES.NUMEROLOGY]: {
-    icon: '🔢',
-    title: 'Нумерология',
-    color: '#FD79A8'
-  },
-  [FAVORITE_TYPES.ASTRO_EVENT]: {
-    icon: '🌌',
-    title: 'Астрособытие',
-    color: '#00B894'
-  }
-};
+const FavoritesView = ({ onBack, onNavigate }) => {
+  const { theme, styles, createGradientStyle } = useTheme();
+  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-// ===== УТИЛИТЫ ДЛЯ РАБОТЫ С ИЗБРАННЫМ =====
-class FavoritesManager {
-  static groupByType(favorites) {
-    return favorites.reduce((groups, item) => {
-      const type = item.type || 'other';
-      if (!groups[type]) {
-        groups[type] = [];
+  // Конфигурация типов избранного
+  const FAVORITE_TYPES = {
+    MOON: 'moon',
+    HOROSCOPE: 'horoscope', 
+    COMPATIBILITY: 'compatibility',
+    DAY_CARD: 'day-card',
+    NUMEROLOGY: 'numerology',
+    ASTRO_EVENT: 'astro-event'
+  };
+
+  const TYPE_CONFIG = {
+    [FAVORITE_TYPES.MOON]: {
+      icon: '🌙',
+      title: 'Лунные данные',
+      color: '#4ECDC4'
+    },
+    [FAVORITE_TYPES.HOROSCOPE]: {
+      icon: '🔮',
+      title: 'Гороскоп',
+      color: theme.colors.primary
+    },
+    [FAVORITE_TYPES.COMPATIBILITY]: {
+      icon: '💕',
+      title: 'Совместимость',
+      color: '#FF6B6B'
+    },
+    [FAVORITE_TYPES.DAY_CARD]: {
+      icon: '🃏',
+      title: 'Карта дня',
+      color: '#A29BFE'
+    },
+    [FAVORITE_TYPES.NUMEROLOGY]: {
+      icon: '🔢',
+      title: 'Нумерология',
+      color: '#FD79A8'
+    },
+    [FAVORITE_TYPES.ASTRO_EVENT]: {
+      icon: '🌌',
+      title: 'Астрособытие',
+      color: '#00B894'
+    }
+  };
+
+  // Утилиты для работы с избранным
+  const FavoritesManager = {
+    load: () => {
+      try {
+        const saved = localStorage.getItem('gnome-favorites');
+        return saved ? JSON.parse(saved) : [];
+      } catch (error) {
+        console.error('Ошибка загрузки избранного:', error);
+        return [];
       }
-      groups[type].push(item);
-      return groups;
-    }, {});
-  }
+    },
 
-  static sortByDate(favorites) {
-    return [...favorites].sort((a, b) => {
-      const dateA = new Date(a.addedAt || a.date);
-      const dateB = new Date(b.addedAt || b.date);
-      return dateB - dateA; // Новые сверху
-    });
-  }
+    save: (favorites) => {
+      try {
+        localStorage.setItem('gnome-favorites', JSON.stringify(favorites));
+      } catch (error) {
+        console.error('Ошибка сохранения избранного:', error);
+      }
+    },
 
-  static filterBySearchTerm(favorites, searchTerm) {
-    if (!searchTerm.trim()) return favorites;
-    
-    const term = searchTerm.toLowerCase();
-    return favorites.filter(item => 
-      item.title?.toLowerCase().includes(term) ||
-      item.content?.toLowerCase().includes(term) ||
-      TYPE_CONFIG[item.type]?.title.toLowerCase().includes(term)
-    );
-  }
+    groupByType: (favorites) => {
+      return favorites.reduce((groups, item) => {
+        const type = item.type || 'other';
+        if (!groups[type]) {
+          groups[type] = [];
+        }
+        groups[type].push(item);
+        return groups;
+      }, {});
+    },
 
-  static exportToText(favorites) {
-    const header = '📋 Мои астрологические избранные\n\n';
-    const content = favorites.map(item => {
-      const config = TYPE_CONFIG[item.type];
-      return `${config?.icon || '⭐'} ${item.title}\n${item.content}\n📅 ${item.date}\n`;
-    }).join('\n');
-    
-    return header + content;
-  }
-}
+    sortByDate: (favorites) => {
+      return [...favorites].sort((a, b) => {
+        const dateA = new Date(a.addedAt || a.date || Date.now());
+        const dateB = new Date(b.addedAt || b.date || Date.now());
+        return dateB - dateA;
+      });
+    },
 
-// ===== КОМПОНЕНТ ЭЛЕМЕНТА ИЗБРАННОГО =====
-const FavoriteItem = React.memo(({ 
-  item, 
-  onRemove, 
-  onShare, 
-  onView,
-  compact = false 
-}) => {
-  const { theme } = useTheme();
-  const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.horoscope;
+    filterBySearchTerm: (favorites, searchTerm) => {
+      if (!searchTerm.trim()) return favorites;
+      
+      const term = searchTerm.toLowerCase();
+      return favorites.filter(item => 
+        item.title?.toLowerCase().includes(term) ||
+        item.content?.toLowerCase().includes(term) ||
+        TYPE_CONFIG[item.type]?.title.toLowerCase().includes(term)
+      );
+    },
 
-  const styles = useMemo(() => ({
+    exportToText: (favorites) => {
+      const header = '⭐ Мои астрологические избранные\n\n';
+      const content = favorites.map(item => {
+        const config = TYPE_CONFIG[item.type];
+        return `${config?.icon || '⭐'} ${item.title}\n${item.content}\n📅 ${item.date}\n`;
+      }).join('\n');
+      
+      return header + content;
+    }
+  };
+
+  // Стили компонента
+  const favoritesStyles = {
     container: {
-      background: compact 
-        ? 'rgba(255,255,255,0.05)' 
-        : `linear-gradient(135deg, ${config.color}15, ${config.color}08)`,
-      border: `1px solid ${config.color}30`,
-      borderLeft: `4px solid ${config.color}`,
-      borderRadius: '12px',
-      padding: compact ? '12px' : '16px',
-      marginBottom: '12px',
+      padding: theme.spacing.lg,
+      maxWidth: '900px',
+      margin: '0 auto',
+      minHeight: 'calc(100vh - 120px)',
+      position: 'relative'
+    },
+
+    headerCard: {
+      background: createGradientStyle(['#667eea', '#764ba2'], '135deg').background,
+      color: '#ffffff',
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl,
       position: 'relative',
       overflow: 'hidden',
-      transition: 'all 0.3s ease'
+      padding: theme.spacing.xl
     },
 
-    header: {
-      display: 'flex',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      marginBottom: '8px'
+    headerOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.1)',
+      zIndex: 1
     },
 
-    typeIcon: {
-      fontSize: compact ? '20px' : '24px',
-      marginRight: '8px'
+    headerDecoration: {
+      position: 'absolute',
+      top: '-30px',
+      right: '-30px',
+      fontSize: '100px',
+      opacity: 0.1,
+      pointerEvents: 'none',
+      zIndex: 1
+    },
+
+    headerContent: {
+      position: 'relative',
+      zIndex: 2
     },
 
     title: {
-      fontSize: compact ? '14px' : '16px',
-      fontWeight: '600',
-      margin: '0 0 4px 0',
+      ...styles.heading,
+      fontSize: theme.typography.sizes.title,
+      margin: '0 0 8px 0',
+      fontWeight: theme.typography.weights.bold,
+      textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+    },
+
+    subtitle: {
+      fontSize: theme.typography.sizes.md,
+      opacity: 0.9,
+      margin: 0,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+    },
+
+    statsContainer: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.xl
+    },
+
+    statCard: {
+      padding: theme.spacing.md,
+      textAlign: 'center',
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface,
+      border: `1px solid ${theme.colors.border}`
+    },
+
+    searchContainer: {
+      marginBottom: theme.spacing.lg
+    },
+
+    searchInput: {
+      width: '100%',
+      padding: theme.spacing.md,
+      fontSize: theme.typography.sizes.md,
+      border: `2px solid ${theme.colors.border}`,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface,
       color: theme.colors.text,
+      outline: 'none',
+      transition: `border-color ${theme.animations.duration.fast} ease`
+    },
+
+    filtersContainer: {
+      display: 'flex',
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+      flexWrap: 'wrap',
+      alignItems: 'center'
+    },
+
+    filterButton: {
+      padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+      borderRadius: theme.borderRadius.xl,
+      border: '2px solid',
+      backgroundColor: 'transparent',
+      cursor: 'pointer',
+      fontSize: theme.typography.sizes.sm,
+      fontWeight: theme.typography.weights.medium,
+      transition: `all ${theme.animations.duration.fast} ease`,
+      outline: 'none'
+    },
+
+    actionsBar: {
+      display: 'flex',
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+
+    favoriteItem: {
+      marginBottom: theme.spacing.md,
+      position: 'relative',
+      overflow: 'hidden',
+      transition: `all ${theme.animations.duration.normal} ease`
+    },
+
+    itemHeader: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.sm
+    },
+
+    itemIcon: {
+      fontSize: '1.5rem',
+      marginRight: theme.spacing.sm,
+      flexShrink: 0
+    },
+
+    itemInfo: {
       flex: 1
     },
 
-    content: {
-      fontSize: '14px',
-      lineHeight: '1.5',
+    itemTitle: {
+      ...styles.heading,
+      fontSize: theme.typography.sizes.md,
+      margin: '0 0 4px 0',
+      color: theme.colors.text
+    },
+
+    itemType: {
+      fontSize: theme.typography.sizes.xs,
+      fontWeight: theme.typography.weights.semibold,
+      marginBottom: theme.spacing.xs
+    },
+
+    itemContent: {
+      fontSize: theme.typography.sizes.sm,
+      lineHeight: 1.5,
       color: theme.colors.textSecondary,
-      marginBottom: '12px',
+      marginBottom: theme.spacing.sm,
       display: '-webkit-box',
-      WebkitLineClamp: compact ? 2 : 3,
+      WebkitLineClamp: 3,
       WebkitBoxOrient: 'vertical',
       overflow: 'hidden'
     },
 
-    footer: {
+    itemFooter: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      fontSize: '12px',
+      fontSize: theme.typography.sizes.xs,
       color: theme.colors.textSecondary
     },
 
-    actions: {
+    itemActions: {
       display: 'flex',
-      gap: '8px'
+      gap: theme.spacing.xs
     },
 
     actionButton: {
       background: 'transparent',
       border: 'none',
       cursor: 'pointer',
-      padding: '4px',
-      borderRadius: '4px',
-      fontSize: '16px',
-      transition: 'all 0.2s ease'
-    }
-  }), [theme, config, compact]);
-
-  const handleMouseEnter = useCallback((e) => {
-    e.currentTarget.style.transform = 'translateY(-2px)';
-    e.currentTarget.style.boxShadow = `0 8px 16px ${config.color}40`;
-  }, [config.color]);
-
-  const handleMouseLeave = useCallback((e) => {
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = 'none';
-  }, []);
-
-  return (
-    <div 
-      style={styles.container}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
-          <span style={styles.typeIcon}>{config.icon}</span>
-          <div style={{ flex: 1 }}>
-            <h4 style={styles.title}>{item.title}</h4>
-            <div style={{ fontSize: '12px', color: config.color, fontWeight: '600' }}>
-              {config.title}
-            </div>
-          </div>
-        </div>
-
-        <div style={styles.actions}>
-          {onView && (
-            <button
-              style={styles.actionButton}
-              onClick={() => onView(item)}
-              aria-label="Просмотреть"
-              title="Просмотреть детали"
-            >
-              👁️
-            </button>
-          )}
-          
-          {onShare && (
-            <button
-              style={styles.actionButton}
-              onClick={() => onShare(item)}
-              aria-label="Поделиться"
-              title="Поделиться"
-            >
-              📤
-            </button>
-          )}
-          
-          <button
-            style={{
-              ...styles.actionButton,
-              color: theme.colors.error
-            }}
-            onClick={() => onRemove(item.id)}
-            aria-label="Удалить"
-            title="Удалить из избранного"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-
-      <p style={styles.content}>{item.content}</p>
-
-      <div style={styles.footer}>
-        <span>📅 {item.date}</span>
-        {item.addedAt && (
-          <span>➕ {new Date(item.addedAt).toLocaleDateString('ru-RU')}</span>
-        )}
-      </div>
-    </div>
-  );
-});
-
-FavoriteItem.displayName = 'FavoriteItem';
-
-// ===== ОСНОВНОЙ КОМПОНЕНТ =====
-const FavoritesView = React.memo(({ 
-  telegramApp,
-  onNavigate
-}) => {
-  const { theme } = useTheme();
-  
-  const [favorites, setFavorites] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [viewMode, setViewMode] = useState('list'); // list, grid, compact
-  const [showConfirmClear, setShowConfirmClear] = useState(false);
-
-  // Мемоизированные стили
-  const styles = useMemo(() => ({
-    container: {
-      padding: '20px',
-      maxWidth: '800px',
-      margin: '0 auto'
-    },
-
-    headerCard: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: '#ffffff',
-      textAlign: 'center',
-      marginBottom: '24px',
-      borderRadius: '16px',
-      padding: '24px',
-      position: 'relative',
-      overflow: 'hidden'
-    },
-
-    searchContainer: {
-      marginBottom: '20px'
-    },
-
-    searchInput: {
-      width: '100%',
-      padding: '12px 16px',
-      fontSize: '16px',
-      border: `2px solid ${theme.colors.border}`,
-      borderRadius: '12px',
-      background: theme.colors.surface || '#ffffff',
-      color: theme.colors.text,
-      transition: 'border-color 0.3s ease'
-    },
-
-    filtersContainer: {
+      padding: theme.spacing.xs,
+      borderRadius: theme.borderRadius.sm,
+      fontSize: '1rem',
+      transition: `all ${theme.animations.duration.fast} ease`,
       display: 'flex',
-      gap: '12px',
-      marginBottom: '20px',
-      flexWrap: 'wrap',
-      alignItems: 'center'
+      alignItems: 'center',
+      justifyContent: 'center'
     },
-
-    filterButton: (isActive) => ({
-      padding: '8px 16px',
-      border: `2px solid ${isActive ? theme.colors.primary : theme.colors.border}`,
-      borderRadius: '20px',
-      background: isActive ? `${theme.colors.primary}20` : 'transparent',
-      color: isActive ? theme.colors.primary : theme.colors.text,
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      transition: 'all 0.3s ease'
-    }),
 
     emptyState: {
       textAlign: 'center',
-      padding: '60px 20px',
+      padding: theme.spacing.xxl,
       color: theme.colors.textSecondary
     },
 
-    statsContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-      gap: '12px',
-      marginBottom: '20px'
+    emptyIcon: {
+      fontSize: '4rem',
+      marginBottom: theme.spacing.lg
     },
 
-    statCard: {
-      background: theme.colors.surface || 'rgba(255,255,255,0.05)',
-      border: `1px solid ${theme.colors.border}`,
-      borderRadius: '12px',
-      padding: '16px',
-      textAlign: 'center'
-    },
-
-    actionsBar: {
+    modalOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.7)',
       display: 'flex',
-      gap: '12px',
-      marginBottom: '20px',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: theme.zIndex.modal,
+      padding: theme.spacing.lg
+    },
+
+    modalContent: {
+      maxWidth: '400px',
+      width: '100%',
+      textAlign: 'center'
     }
-  }), [theme]);
+  };
+
+  // Добавляем CSS анимации
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const existingStyle = document.getElementById('favorites-animations');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'favorites-animations';
+        style.textContent = `
+          @keyframes slideInUp {
+            0% { 
+              opacity: 0; 
+              transform: translateY(20px); 
+            }
+            100% { 
+              opacity: 1; 
+              transform: translateY(0); 
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
 
   // Загрузка избранного
   useEffect(() => {
     const loadFavoritesList = async () => {
       setLoading(true);
       try {
-        const savedFavorites = loadFavorites() || [];
+        await new Promise(resolve => setTimeout(resolve, 500)); // Имитация загрузки
+        
+        const savedFavorites = FavoritesManager.load();
         
         // Добавляем ID если отсутствует
         const favoritesWithIds = savedFavorites.map(item => ({
@@ -368,9 +384,14 @@ const FavoritesView = React.memo(({
         }));
         
         setFavorites(favoritesWithIds);
-        console.log('✅ Избранное загружено:', favoritesWithIds.length, 'элементов');
+        
+        // Сохраняем с ID
+        if (favoritesWithIds.length !== savedFavorites.length) {
+          FavoritesManager.save(favoritesWithIds);
+        }
+        
       } catch (error) {
-        console.error('❌ Ошибка загрузки избранного:', error);
+        console.error('Ошибка загрузки избранного:', error);
         setFavorites([]);
       } finally {
         setLoading(false);
@@ -380,7 +401,7 @@ const FavoritesView = React.memo(({
     loadFavoritesList();
   }, []);
 
-  // Мемоизированная фильтрация и группировка
+  // Мемоизированная обработка данных
   const processedFavorites = useMemo(() => {
     let filtered = FavoritesManager.filterBySearchTerm(favorites, searchTerm);
     
@@ -399,28 +420,35 @@ const FavoritesView = React.memo(({
   // Обработчики событий
   const handleRemove = useCallback((itemId) => {
     try {
-      removeFavoriteItem(itemId);
-      setFavorites(prev => prev.filter(item => item.id !== itemId));
+      const newFavorites = favorites.filter(item => item.id !== itemId);
+      setFavorites(newFavorites);
+      FavoritesManager.save(newFavorites);
       
-      telegramApp?.HapticFeedback?.notificationOccurred('success');
-      console.log('✅ Элемент удален из избранного');
+      // Haptic feedback
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      
     } catch (error) {
-      console.error('❌ Ошибка удаления:', error);
+      console.error('Ошибка удаления:', error);
     }
-  }, [telegramApp]);
+  }, [favorites]);
 
   const handleClearAll = useCallback(() => {
     try {
-      clearAllFavorites();
       setFavorites([]);
+      FavoritesManager.save([]);
       setShowConfirmClear(false);
       
-      telegramApp?.HapticFeedback?.notificationOccurred('success');
-      console.log('✅ Все избранное очищено');
+      // Haptic feedback
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      
     } catch (error) {
-      console.error('❌ Ошибка очистки:', error);
+      console.error('Ошибка очистки:', error);
     }
-  }, [telegramApp]);
+  }, []);
 
   const handleShare = useCallback((item) => {
     const config = TYPE_CONFIG[item.type];
@@ -433,10 +461,12 @@ const FavoritesView = React.memo(({
       }).catch(console.error);
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        telegramApp?.showAlert('Скопировано в буфер обмена');
+        if (window.Telegram?.WebApp?.showAlert) {
+          window.Telegram.WebApp.showAlert('Скопировано в буфер обмена! 📋');
+        }
       });
     }
-  }, [telegramApp]);
+  }, []);
 
   const handleExport = useCallback(() => {
     const exportText = FavoritesManager.exportToText(favorites);
@@ -448,10 +478,12 @@ const FavoritesView = React.memo(({
       }).catch(console.error);
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(exportText).then(() => {
-        telegramApp?.showAlert('Экспорт скопирован в буфер обмена');
+        if (window.Telegram?.WebApp?.showAlert) {
+          window.Telegram.WebApp.showAlert('Экспорт скопирован в буфер обмена! 📤');
+        }
       });
     }
-  }, [favorites, telegramApp]);
+  }, [favorites]);
 
   const handleView = useCallback((item) => {
     // Навигация к соответствующему экрану
@@ -470,74 +502,187 @@ const FavoritesView = React.memo(({
     }
   }, [onNavigate]);
 
+  // Компонент элемента избранного
+  const FavoriteItem = useCallback(({ item }) => {
+    const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.horoscope;
+
+    return (
+      <Card 
+        hoverable
+        style={{
+          ...favoritesStyles.favoriteItem,
+          background: `linear-gradient(135deg, ${config.color}15, ${config.color}08)`,
+          borderLeft: `4px solid ${config.color}`
+        }}
+      >
+        <div style={favoritesStyles.itemHeader}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+            <span style={{
+              ...favoritesStyles.itemIcon,
+              color: config.color
+            }}>
+              {config.icon}
+            </span>
+            <div style={favoritesStyles.itemInfo}>
+              <h4 style={favoritesStyles.itemTitle}>{item.title}</h4>
+              <div style={{
+                ...favoritesStyles.itemType,
+                color: config.color
+              }}>
+                {config.title}
+              </div>
+            </div>
+          </div>
+          
+          <div style={favoritesStyles.itemActions}>
+            <button
+              style={{
+                ...favoritesStyles.actionButton,
+                color: theme.colors.textSecondary
+              }}
+              onClick={() => handleView(item)}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = `${theme.colors.primary}20`;
+                e.target.style.color = theme.colors.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = theme.colors.textSecondary;
+              }}
+              title="Просмотреть"
+            >
+              👁️
+            </button>
+            
+            <button
+              style={{
+                ...favoritesStyles.actionButton,
+                color: theme.colors.textSecondary
+              }}
+              onClick={() => handleShare(item)}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = `${theme.colors.secondary}20`;
+                e.target.style.color = theme.colors.secondary;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = theme.colors.textSecondary;
+              }}
+              title="Поделиться"
+            >
+              📤
+            </button>
+            
+            <button
+              style={{
+                ...favoritesStyles.actionButton,
+                color: theme.colors.danger
+              }}
+              onClick={() => handleRemove(item.id)}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = `${theme.colors.danger}20`;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
+              title="Удалить"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+
+        <p style={favoritesStyles.itemContent}>
+          {item.content}
+        </p>
+
+        <div style={favoritesStyles.itemFooter}>
+          <span>📅 {item.date}</span>
+          {item.addedAt && (
+            <span>➕ {new Date(item.addedAt).toLocaleDateString('ru-RU')}</span>
+          )}
+        </div>
+      </Card>
+    );
+  }, [theme, favoritesStyles, TYPE_CONFIG, handleView, handleShare, handleRemove]);
+
   if (loading) {
     return (
-      <div style={styles.container}>
-        <Card>
-          <div style={styles.emptyState}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⭐</div>
-            <h3>Загружаем избранное...</h3>
-          </div>
-        </Card>
+      <div style={favoritesStyles.container}>
+        
+        
+        <div style={favoritesStyles.emptyState}>
+          <div style={favoritesStyles.emptyIcon}>⭐</div>
+          <h3 style={{ color: theme.colors.primary }}>Загружаем избранное...</h3>
+          <p>Собираем ваши астрологические сокровища</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div style={favoritesStyles.container}>
+      
+      
       {/* Заголовок */}
-      <div style={styles.headerCard}>
-        <div style={{
-          position: 'absolute',
-          top: '-30px',
-          right: '-30px',
-          fontSize: '100px',
-          opacity: 0.1,
-          pointerEvents: 'none'
-        }}>
-          ⭐
+      <Card variant="gradient" padding="none" style={{ marginBottom: theme.spacing.xl }}>
+        <div style={favoritesStyles.headerCard}>
+          <div style={favoritesStyles.headerOverlay} />
+          <div style={favoritesStyles.headerDecoration}>⭐</div>
+          
+          <div style={favoritesStyles.headerContent}>
+            <h1 style={favoritesStyles.title}>
+              ⭐ Избранное
+            </h1>
+            <p style={favoritesStyles.subtitle}>
+              Ваши сохраненные астрологические моменты
+            </p>
+          </div>
         </div>
-        
-        <h1 style={{ 
-          fontSize: '28px', 
-          fontWeight: '700',
-          margin: '0 0 8px 0'
-        }}>
-          ⭐ Избранное
-        </h1>
-        <p style={{ 
-          fontSize: '16px', 
-          opacity: 0.9,
-          margin: 0
-        }}>
-          Ваши сохраненные астрологические моменты
-        </p>
-      </div>
+      </Card>
 
       {/* Статистика */}
       {favorites.length > 0 && (
-        <div style={styles.statsContainer}>
-          <div style={styles.statCard}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: theme.colors.primary }}>
+        <div 
+          style={{
+            ...favoritesStyles.statsContainer,
+            animation: 'slideInUp 0.6s ease-out'
+          }}
+        >
+          <Card padding="md" style={favoritesStyles.statCard}>
+            <div style={{ 
+              fontSize: theme.typography.sizes.xl, 
+              fontWeight: theme.typography.weights.bold, 
+              color: theme.colors.primary,
+              marginBottom: theme.spacing.xs
+            }}>
               {favorites.length}
             </div>
-            <div style={{ fontSize: '12px', color: theme.colors.textSecondary }}>
+            <div style={{ fontSize: theme.typography.sizes.xs, color: theme.colors.textSecondary }}>
               Всего
             </div>
-          </div>
+          </Card>
           
-          {Object.entries(favoritesByType).map(([type, items]) => (
-            <div key={type} style={styles.statCard}>
-              <div style={{ fontSize: '18px', marginBottom: '4px' }}>
+          {Object.entries(favoritesByType).slice(0, 4).map(([type, items]) => (
+            <Card key={type} padding="md" style={favoritesStyles.statCard}>
+              <div style={{ 
+                fontSize: theme.typography.sizes.lg, 
+                marginBottom: theme.spacing.xs,
+                color: TYPE_CONFIG[type]?.color
+              }}>
                 {TYPE_CONFIG[type]?.icon || '⭐'}
               </div>
-              <div style={{ fontSize: '16px', fontWeight: '600' }}>
+              <div style={{ 
+                fontSize: theme.typography.sizes.md, 
+                fontWeight: theme.typography.weights.semibold,
+                marginBottom: theme.spacing.xs
+              }}>
                 {items.length}
               </div>
-              <div style={{ fontSize: '11px', color: theme.colors.textSecondary }}>
+              <div style={{ fontSize: theme.typography.sizes.xs, color: theme.colors.textSecondary }}>
                 {TYPE_CONFIG[type]?.title || 'Другое'}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -545,21 +690,32 @@ const FavoritesView = React.memo(({
       {favorites.length > 0 && (
         <>
           {/* Поиск */}
-          <Card style={styles.searchContainer}>
+          <Card padding="md" style={favoritesStyles.searchContainer}>
             <input
               type="text"
               placeholder="🔍 Поиск в избранном..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={styles.searchInput}
+              style={favoritesStyles.searchInput}
+              onFocus={(e) => {
+                e.target.style.borderColor = theme.colors.primary;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = theme.colors.border;
+              }}
             />
           </Card>
 
           {/* Фильтры и действия */}
-          <div style={styles.actionsBar}>
-            <div style={styles.filtersContainer}>
+          <div style={favoritesStyles.actionsBar}>
+            <div style={favoritesStyles.filtersContainer}>
               <button
-                style={styles.filterButton(selectedType === 'all')}
+                style={{
+                  ...favoritesStyles.filterButton,
+                  borderColor: selectedType === 'all' ? theme.colors.primary : theme.colors.border,
+                  color: selectedType === 'all' ? theme.colors.primary : theme.colors.textSecondary,
+                  backgroundColor: selectedType === 'all' ? `${theme.colors.primary}20` : 'transparent'
+                }}
                 onClick={() => setSelectedType('all')}
               >
                 Все
@@ -568,29 +724,40 @@ const FavoritesView = React.memo(({
               {Object.entries(favoritesByType).map(([type, items]) => (
                 <button
                   key={type}
-                  style={styles.filterButton(selectedType === type)}
+                  style={{
+                    ...favoritesStyles.filterButton,
+                    borderColor: selectedType === type ? TYPE_CONFIG[type]?.color : theme.colors.border,
+                    color: selectedType === type ? TYPE_CONFIG[type]?.color : theme.colors.textSecondary,
+                    backgroundColor: selectedType === type ? `${TYPE_CONFIG[type]?.color}20` : 'transparent'
+                  }}
                   onClick={() => setSelectedType(type)}
                 >
                   {TYPE_CONFIG[type]?.icon || '⭐'} {items.length}
                 </button>
               ))}
             </div>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
+            
+            <div style={{ display: 'flex', gap: theme.spacing.sm }}>
               <Button
-                variant="ghost"
+                variant="outline"
+                size="sm"
                 onClick={handleExport}
-                style={{ fontSize: '14px', padding: '8px 12px' }}
+                icon="📤"
               >
-                📤 Экспорт
+                Экспорт
               </Button>
               
               <Button
-                variant="ghost"
+                variant="outline"
+                size="sm"
                 onClick={() => setShowConfirmClear(true)}
-                style={{ fontSize: '14px', padding: '8px 12px', color: theme.colors.error }}
+                icon="🗑️"
+                style={{ 
+                  borderColor: theme.colors.danger,
+                  color: theme.colors.danger 
+                }}
               >
-                🗑️ Очистить
+                Очистить
               </Button>
             </div>
           </div>
@@ -599,37 +766,53 @@ const FavoritesView = React.memo(({
 
       {/* Список избранного */}
       {processedFavorites.length > 0 ? (
-        <Card title={`📋 Найдено: ${processedFavorites.length}`}>
-          {processedFavorites.map(item => (
-            <FavoriteItem
+        <div style={{ 
+          animation: 'slideInUp 0.6s ease-out 0.3s',
+          animationFillMode: 'both'
+        }}>
+          <h3 style={{
+            color: theme.colors.text,
+            marginBottom: theme.spacing.lg,
+            fontSize: theme.typography.sizes.lg
+          }}>
+            📋 Найдено: {processedFavorites.length}
+          </h3>
+          
+          {processedFavorites.map((item, index) => (
+            <div
               key={item.id}
-              item={item}
-              onRemove={handleRemove}
-              onShare={handleShare}
-              onView={handleView}
-              compact={viewMode === 'compact'}
-            />
+              style={{
+                animation: `slideInUp 0.6s ease-out ${0.1 * index}s`,
+                animationFillMode: 'both'
+              }}
+            >
+              <FavoriteItem item={item} />
+            </div>
           ))}
-        </Card>
+        </div>
       ) : favorites.length > 0 ? (
-        <Card>
-          <div style={styles.emptyState}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-            <h3>Ничего не найдено</h3>
+        <Card padding="xl">
+          <div style={favoritesStyles.emptyState}>
+            <div style={favoritesStyles.emptyIcon}>🔍</div>
+            <h3 style={{ color: theme.colors.text }}>Ничего не найдено</h3>
             <p>Попробуйте изменить фильтры или поисковый запрос</p>
           </div>
         </Card>
       ) : (
-        <Card>
-          <div style={styles.emptyState}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⭐</div>
-            <h3>Избранное пусто</h3>
-            <p style={{ marginBottom: '20px' }}>
+        <Card padding="xl">
+          <div style={favoritesStyles.emptyState}>
+            <div style={favoritesStyles.emptyIcon}>⭐</div>
+            <h3 style={{ color: theme.colors.text }}>Избранное пусто</h3>
+            <p style={{ marginBottom: theme.spacing.lg }}>
               Добавляйте интересные предсказания, карты и расчеты в избранное
             </p>
             {onNavigate && (
-              <Button onClick={() => onNavigate('/')}>
-                🏠 На главную
+              <Button 
+                variant="primary" 
+                onClick={() => onNavigate('zodiac-selector')}
+                icon="🏠"
+              >
+                На главную
               </Button>
             )}
           </div>
@@ -638,36 +821,29 @@ const FavoritesView = React.memo(({
 
       {/* Модальное подтверждение очистки */}
       {showConfirmClear && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <Card style={{ maxWidth: '400px', margin: '20px' }}>
-            <h3 style={{ textAlign: 'center', marginBottom: '16px' }}>
+        <div style={favoritesStyles.modalOverlay}>
+          <Card padding="xl" style={favoritesStyles.modalContent}>
+            <h3 style={{ 
+              textAlign: 'center', 
+              marginBottom: theme.spacing.md,
+              color: theme.colors.text
+            }}>
               🗑️ Очистить избранное?
             </h3>
             <p style={{ 
               textAlign: 'center', 
-              marginBottom: '24px',
+              marginBottom: theme.spacing.xl,
               color: theme.colors.textSecondary 
             }}>
               Это действие нельзя отменить. Все {favorites.length} элементов будут удалены.
             </p>
             <div style={{ 
               display: 'flex', 
-              gap: '12px', 
+              gap: theme.spacing.md, 
               justifyContent: 'center' 
             }}>
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={() => setShowConfirmClear(false)}
               >
                 Отмена
@@ -675,9 +851,13 @@ const FavoritesView = React.memo(({
               <Button
                 variant="primary"
                 onClick={handleClearAll}
-                style={{ background: theme.colors.error }}
+                style={{ 
+                  backgroundColor: theme.colors.danger,
+                  borderColor: theme.colors.danger
+                }}
+                icon="🗑️"
               >
-                🗑️ Удалить все
+                Удалить все
               </Button>
             </div>
           </Card>
@@ -685,8 +865,6 @@ const FavoritesView = React.memo(({
       )}
     </div>
   );
-});
-
-FavoritesView.displayName = 'FavoritesView';
+};
 
 export default FavoritesView;

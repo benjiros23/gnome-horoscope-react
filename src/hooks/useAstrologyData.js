@@ -1,239 +1,168 @@
-// React Hook для работы с актуальными астрологическими данными
-// Поддерживает автоматическое обновление и кеширование
+// src/hooks/useAstrologyData.js
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { EnhancedMoonPhase } from '../enhanced_moonPhase';
-import { saveMoonData, loadMoonData, saveHoroscope, loadHoroscope } from '../enhanced_cache';
-
-// ===== ОСНОВНОЙ ХOOK ДЛЯ АСТРОЛОГИЧЕСКИХ ДАННЫХ =====
-
-export const useAstrologyData = (options = {}) => {
-  const {
-    autoUpdate = true,
-    updateInterval = 6 * 60 * 60 * 1000, // 6 часов по умолчанию
-    coordinates = { lat: 55.7558, lng: 37.6173 }, // Москва по умолчанию
-    zodiacSign = null,
-    enableHoroscope = false
-  } = options;
-  
-  // Состояние
-  const [data, setData] = useState({
-    moon: null,
-    horoscope: null,
-    loading: true,
-    error: null,
-    lastUpdated: null,
-    source: null
-  });
-  
-  // Рефы для управления интервалами
-  const updateIntervalRef = useRef(null);
+export const useAstrologyData = (type, options = {}) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const mountedRef = useRef(true);
-  
-  // Функция обновления лунных данных
-  const updateMoonData = useCallback(async (date = new Date()) => {
-    try {
-      console.log('🌙 Обновляем лунные данные...');
-      
-      // Сначала проверяем кеш
-      let moonData = loadMoonData(date);
-      
-      if (!moonData) {
-        // Если в кеше нет, получаем свежие данные
-        moonData = EnhancedMoonPhase.calculatePhase(date);
-        
-        // Сохраняем в кеш только если данные успешно получены
-        if (moonData) {
-          saveMoonData(date, moonData);
-        }
+
+  // Мемоизированная функция получения mock данных
+  const getMockData = useCallback((dataType) => {
+    const mockData = {
+      moon: { 
+        phase: 'Полнолуние', 
+        illumination: 98,
+        sign: 'Телец',
+        energy: 'Высокая',
+        recommendations: [
+          'Время для завершения проектов',
+          'Избегайте новых начинаний',
+          'Медитируйте и расслабляйтесь'
+        ]
+      },
+      horoscope: { 
+        content: 'Сегодня звезды благоприятствуют новым начинаниям. Ваша энергия на пике!', 
+        energy: 85,
+        love: 'Романтические встречи возможны во второй половине дня',
+        career: 'Отличное время для важных переговоров',
+        health: 'Обратите внимание на физическую активность'
+      },
+      compatibility: { 
+        score: 87, 
+        description: 'Отличная совместимость! Вы дополняете друг друга.',
+        strengths: ['Взаимопонимание', 'Общие интересы', 'Поддержка'],
+        challenges: ['Разные темпераменты', 'Нужно больше компромиссов']
+      },
+      numerology: { 
+        number: 7, 
+        meaning: 'Число духовности и мудрости',
+        characteristics: ['Интуитивность', 'Аналитический ум', 'Стремление к знаниям'],
+        recommendations: 'Доверяйте своей интуиции'
+      },
+      dayCard: { 
+        card: 'Маг', 
+        meaning: 'Время действовать и использовать свои навыки',
+        advice: 'Сосредоточьтесь на целях и действуйте решительно'
+      },
+      events: {
+        upcoming: ['Полнолуние 15 числа', 'Ретроград Меркурия', 'Соединение Венеры и Марса'],
+        current: 'Влияние Юпитера усиливается'
+      },
+      mercury: {
+        status: 'Ретроград',
+        influence: 'Повышенное влияние на коммуникации',
+        period: { start: '1 января', end: '25 января' }
       }
-      
-      return moonData;
-    } catch (error) {
-      console.error('Ошибка обновления лунных данных:', error);
-      throw error;
-    }
+    };
+    
+    return mockData[dataType] || { 
+      message: `Данные типа "${dataType}" загружены`, 
+      timestamp: new Date().toISOString()
+    };
   }, []);
-  
-  // Функция обновления гороскопа
-  const updateHoroscope = useCallback(async (sign) => {
-    if (!sign || !enableHoroscope) return null;
-    
-    try {
-      console.log(`🔮 Обновляем гороскоп для ${sign}...`);
-      
-      // Проверяем кеш
-      let horoscopeData = loadHoroscope(sign);
-      
-      if (!horoscopeData) {
-        // Здесь будет интеграция с API гороскопов
-        // Пока возвращаем заглушку
-        horoscopeData = {
-          zodiac: sign,
-          date: new Date().toISOString().split('T')[0],
-          horoscope: `Сегодня для ${sign} день полон возможностей! Звезды благоволят новым начинаниям.`,
-          source: 'placeholder'
-        };
-        
-        saveHoroscope(sign, horoscopeData);
-      }
-      
-      return horoscopeData;
-    } catch (error) {
-      console.error('Ошибка обновления гороскопа:', error);
-      throw error;
-    }
-  }, [enableHoroscope]);
-  
-  // Основная функция обновления всех данных
-  const updateAllData = useCallback(async () => {
+
+  // Мемоизированная функция загрузки данных
+  const fetchData = useCallback(async () => {
+    // Проверяем, что компонент еще смонтирован
     if (!mountedRef.current) return;
-    
-    setData(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
-      const [moonResult, horoscopeResult] = await Promise.allSettled([
-        updateMoonData(),
-        updateHoroscope(zodiacSign)
-      ]);
+      setLoading(true);
+      setError(null);
+
+      // Имитируем асинхронную загрузку
+      await new Promise(resolve => setTimeout(resolve, 800));
       
+      // Еще раз проверяем перед установкой состояния
       if (!mountedRef.current) return;
+
+      const result = getMockData(type);
+      setData(result);
       
-      const newData = {
-        moon: moonResult.status === 'fulfilled' ? moonResult.value : null,
-        horoscope: horoscopeResult.status === 'fulfilled' ? horoscopeResult.value : null,
-        loading: false,
-        error: moonResult.status === 'rejected' ? moonResult.reason : null,
-        lastUpdated: new Date(),
-        source: moonResult.value?.source || 'unknown'
-      };
-      
-      setData(newData);
-      
-      console.log('✅ Данные успешно обновлены:', {
-        moon: !!newData.moon,
-        horoscope: !!newData.horoscope,
-        source: newData.source
-      });
-      
-    } catch (error) {
+    } catch (fetchError) {
       if (mountedRef.current) {
-        setData(prev => ({
-          ...prev,
-          loading: false,
-          error
-        }));
+        console.error('Ошибка загрузки астрологических данных:', fetchError);
+        setError(fetchError.message || 'Произошла ошибка при загрузке данных');
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
       }
     }
-  }, [updateMoonData, updateHoroscope, zodiacSign]);
-  
-  // Принудительное обновление
-  const forceUpdate = useCallback(() => {
-    console.log('🔄 Принудительное обновление данных');
-    updateAllData();
-  }, [updateAllData]);
-  
-  // Эффект для первоначальной загрузки и настройки автообновления
+  }, [type, getMockData]); // ВАЖНО: только стабильные зависимости!
+
+  // Единственный useEffect с правильными зависимостями
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]); // fetchData мемоизирован, поэтому безопасен
+
+  // Cleanup при размонтировании компонента
   useEffect(() => {
     mountedRef.current = true;
     
-    // Первоначальная загрузка данных
-    updateAllData();
-    
-    // Настройка автообновления
-    if (autoUpdate && updateInterval > 0) {
-      updateIntervalRef.current = setInterval(() => {
-        if (mountedRef.current) {
-          console.log('⏰ Автоматическое обновление данных');
-          updateAllData();
-        }
-      }, updateInterval);
-    }
-    
-    // Очистка при размонтировании
     return () => {
       mountedRef.current = false;
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-      }
     };
-  }, [updateAllData, autoUpdate, updateInterval]);
-  
-  return {
-    ...data,
-    refresh: forceUpdate,
-    updateMoon: () => updateMoonData(),
-    updateHoroscope: (sign) => updateHoroscope(sign),
-    isAutoUpdating: autoUpdate && !!updateIntervalRef.current
+  }, []); // Выполняется только при монтировании/размонтировании
+
+  // Функция для принудительного обновления данных
+  const refetch = useCallback(() => {
+    if (mountedRef.current) {
+      fetchData();
+    }
+  }, [fetchData]);
+
+  return { 
+    data, 
+    loading, 
+    error, 
+    refetch 
   };
 };
 
-// ===== ХOOK ДЛЯ ТОЛЬКО ЛУННЫХ ДАННЫХ =====
+// Специализированные хуки для разных типов данных
+// В конце src/hooks/useAstrologyData.js добавьте правильные экспорты алиасов:
 
+// В конце src/hooks/useAstrologyData.js замените секцию экспортов на:
+
+// СПЕЦИАЛИЗИРОВАННЫЕ ХУКИ
 export const useMoonData = (options = {}) => {
-  const { coordinates, autoUpdate, updateInterval } = options;
-  
-  return useAstrologyData({
-    coordinates,
-    autoUpdate,
-    updateInterval,
-    enableHoroscope: false
-  });
+  return useAstrologyData('moon', options);
 };
 
-// ===== ХOOK ДЛЯ ГОРОСКОПА =====
-
-export const useHoroscope = (zodiacSign, options = {}) => {
-  const { autoUpdate = true, updateInterval = 24 * 60 * 60 * 1000 } = options;
-  
-  return useAstrologyData({
-    zodiacSign,
-    autoUpdate,
-    updateInterval,
-    enableHoroscope: true
-  });
+export const useHoroscopeData = (sign, options = {}) => {
+  return useAstrologyData('horoscope', { ...options, sign });
 };
 
-// Хелпер для форматирования времени обновления
-export const useLastUpdateText = (lastUpdated) => {
-  const [updateText, setUpdateText] = useState('');
-  
-  useEffect(() => {
-    if (!lastUpdated) {
-      setUpdateText('Никогда');
-      return;
-    }
-    
-    const updateTextFunc = () => {
-      const now = new Date();
-      const diff = now - lastUpdated;
-      const minutes = Math.floor(diff / (1000 * 60));
-      const hours = Math.floor(minutes / 60);
-      
-      if (minutes < 1) {
-        setUpdateText('Только что');
-      } else if (minutes < 60) {
-        setUpdateText(`${minutes} мин назад`);
-      } else if (hours < 24) {
-        setUpdateText(`${hours} ч назад`);
-      } else {
-        setUpdateText(lastUpdated.toLocaleDateString('ru-RU'));
-      }
-    };
-    
-    updateTextFunc();
-    const interval = setInterval(updateTextFunc, 60000); // обновляем каждую минуту
-    
-    return () => clearInterval(interval);
-  }, [lastUpdated]);
-  
-  return updateText;
+export const useCompatibilityData = (sign1, sign2, options = {}) => {
+  return useAstrologyData('compatibility', { ...options, sign1, sign2 });
 };
 
-// Экспорт по умолчанию
-export default {
-  useAstrologyData,
-  useMoonData,
-  useHoroscope,
-  useLastUpdateText
+export const useNumerologyData = (birthDate, options = {}) => {
+  return useAstrologyData('numerology', { ...options, birthDate });
 };
+
+export const useDayCardData = (options = {}) => {
+  return useAstrologyData('dayCard', options);
+};
+
+export const useEventsData = (options = {}) => {
+  return useAstrologyData('events', options);
+};
+
+export const useMercuryData = (options = {}) => {
+  return useAstrologyData('mercury', options);
+};
+
+// АЛИАСЫ для обратной совместимости
+export const useMoonPhase = useMoonData;
+export const useCompatibility = useCompatibilityData;
+export const useNumerology = useNumerologyData;
+export const useHoroscope = useHoroscopeData;
+export const useDayCard = useDayCardData;
+export const useEvents = useEventsData;
+export const useMercury = useMercuryData;
+
+export default useAstrologyData;
+

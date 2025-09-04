@@ -1,15 +1,18 @@
+// src/components/AstroEventsView.js
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAstroEvents } from '../hooks/useAstrologyData';
 import Card from './UI/Card';
 import Button from './UI/Button';
 
-const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
-  const { theme } = useTheme();
-  const [events, setEvents] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Актуальные астрологические события на сегодня
+const AstroEventsView = ({ onBack, onAddToFavorites, selectedSign = null }) => {
+  const { theme, styles, createGradientStyle } = useTheme();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  // Получение актуальных астрологических событий
   const getCurrentAstroEvents = () => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -19,34 +22,19 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
       {
         id: 1,
         planet: 'Меркурий',
-        planetIcon: '☿',
-        status: currentMonth === 0 ? 'ретроград' : 'активный', // Январь - ретроград
+        planetIcon: '☿️',
+        status: currentMonth === 0 ? 'ретроград' : 'активный',
         title: 'Ретроградный Меркурий влияет на коммуникации',
         period: currentMonth === 0 ? '1 - 25 января 2025' : 'Следующий: февраль 2025',
-        description: `
-          <div style="line-height: 1.6;">
-            <p><strong>🌟 Сейчас происходит:</strong> ${currentMonth === 0 ? 'Меркурий находится в ретроградной фазе' : 'Меркурий движется прямо, связи стабильны'}</p>
-            
-            <div style="background: rgba(255,107,107,0.1); padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #FF6B6B;">
-              <h4 style="margin: 0 0 8px 0; color: #FF6B6B;">⚠️ Влияние на вас:</h4>
-              <ul style="margin: 8px 0; padding-left: 20px;">
-                ${currentMonth === 0 ? `
-                  <li>Задержки в переговорах и документообороте</li>
-                  <li>Сбои в технике и мессенджерах</li>
-                  <li>Время для пересмотра планов</li>
-                  <li>Возможны встречи с людьми из прошлого</li>
-                ` : `
-                  <li>Улучшение коммуникаций</li>
-                  <li>Успешные переговоры</li>
-                  <li>Хорошее время для новых договоров</li>
-                  <li>Технические проблемы маловероятны</li>
-                `}
-              </ul>
-            </div>
-            
-            <p><strong>💡 Совет дня:</strong> ${currentMonth === 0 ? 'Проверяйте важную информацию дважды' : 'Используйте время для активного общения'}</p>
-          </div>
-        `,
+        description: `Сейчас происходит: ${currentMonth === 0 ? 'Меркурий находится в ретроградной фазе' : 'Меркурий движется прямо, связи стабильны'}. 
+        
+        Влияние на вас:
+        ${currentMonth === 0 ? 
+          '• Задержки в переговорах и документообороте\n• Сбои в технике и мессенджерах\n• Время для пересмотра планов\n• Возможны встречи с людьми из прошлого' : 
+          '• Улучшение коммуникаций\n• Успешные переговоры\n• Хорошее время для новых договоров\n• Технические проблемы маловероятны'
+        }
+        
+        💡 Совет дня: ${currentMonth === 0 ? 'Проверяйте важную информацию дважды' : 'Используйте время для активного общения'}`,
         influence: currentMonth === 0 ? 'Высокое' : 'Среднее',
         affectedSigns: 'Близнецы, Дева (сильнее всего), остальные знаки - умеренно',
         realTime: true
@@ -58,29 +46,18 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
         status: 'активный',
         title: `Лунная фаза сегодня влияет на эмоции`,
         period: `${today.getDate()} ${today.toLocaleDateString('ru-RU', {month: 'long'})} 2025`,
-        description: `
-          <div style="line-height: 1.6;">
-            <p><strong>🌙 Сегодняшняя лунная энергия:</strong></p>
-            
-            <div style="background: rgba(78,205,196,0.1); padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #4ECDC4;">
-              <h4 style="margin: 0 0 8px 0; color: #4ECDC4;">🔮 Влияние на день:</h4>
-              <ul style="margin: 8px 0; padding-left: 20px;">
-                <li>Интуиция работает особенно хорошо</li>
-                <li>${currentDay % 2 === 0 ? 'Благоприятный день для новых начинаний' : 'День для завершения дел'}</li>
-                <li>${currentDay % 3 === 0 ? 'Эмоции могут быть переменчивыми' : 'Эмоциональная стабильность'}</li>
-                <li>Хорошее время для медитации и самопознания</li>
-              </ul>
-            </div>
-            
-            <div style="background: rgba(255,193,7,0.1); padding: 12px; border-radius: 8px; margin: 12px 0;">
-              <strong>⭐ Рекомендации на сегодня:</strong><br/>
-              ${currentDay % 2 === 0 ? 
-                'Начинайте новые проекты, энергия растущей луны поддержит вас' : 
-                'Завершайте начатые дела, время убывающей луны помогает закрывать гештальты'
-              }
-            </div>
-          </div>
-        `,
+        description: `🌙 Сегодняшняя лунная энергия:
+        
+        Влияние на день:
+        • Интуиция работает особенно хорошо
+        • ${currentDay % 2 === 0 ? 'Благоприятный день для новых начинаний' : 'День для завершения дел'}
+        • ${currentDay % 3 === 0 ? 'Эмоции могут быть переменчивыми' : 'Эмоциональная стабильность'}
+        • Хорошее время для медитации и самопознания
+        
+        ⭐ Рекомендации на сегодня: ${currentDay % 2 === 0 ? 
+          'Начинайте новые проекты, энергия растущей луны поддержит вас' : 
+          'Завершайте начатые дела, время убывающей луны помогает закрывать гештальты'
+        }`,
         influence: 'Среднее',
         affectedSigns: 'Рак (максимальное влияние), Скорпион, Рыбы',
         realTime: true
@@ -92,34 +69,26 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
         status: 'активный',
         title: `Солнце в знаке ${getCurrentSunSign()}`,
         period: `${getCurrentSunPeriod()}`,
-        description: `
-          <div style="line-height: 1.6;">
-            <p><strong>☀️ Солнечная энергия сегодня:</strong></p>
-            
-            <div style="background: rgba(255,193,7,0.1); padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #FFC107;">
-              <h4 style="margin: 0 0 8px 0; color: #FFC107;">🌟 Энергия дня:</h4>
-              <ul style="margin: 8px 0; padding-left: 20px;">
-                <li>Повышенная активность и энергичность</li>
-                <li>Хорошее время для лидерства</li>
-                <li>Творческий потенциал на высоте</li>
-                <li>Уверенность в себе растет</li>
-              </ul>
-            </div>
-            
-            <p><strong>🎯 Используйте энергию для:</strong> Важных встреч, презентаций, творческих проектов</p>
-          </div>
-        `,
+        description: `☀️ Солнечная энергия сегодня:
+        
+        Энергия дня:
+        • Повышенная активность и энергичность
+        • Хорошее время для лидерства
+        • Творческий потенциал на высоте
+        • Уверенность в себе растет
+        
+        🎯 Используйте энергию для: Важных встреч, презентаций, творческих проектов`,
         influence: 'Среднее',
         affectedSigns: getCurrentSunSign() + ' (максимальное влияние), Лев (всегда связан с Солнцем)',
         realTime: true
       }
     ];
-
+    
     return realEvents;
   };
 
   // Определяем текущий знак Солнца
-  function getCurrentSunSign() {
+  const getCurrentSunSign = () => {
     const today = new Date();
     const month = today.getMonth() + 1;
     const day = today.getDate();
@@ -138,9 +107,9 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
     if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return 'Стрелец';
     
     return 'Водолей';
-  }
+  };
 
-  function getCurrentSunPeriod() {
+  const getCurrentSunPeriod = () => {
     const sunSign = getCurrentSunSign();
     const periods = {
       'Козерог': '22 декабря - 19 января',
@@ -158,8 +127,205 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
     };
     
     return periods[sunSign] || 'Период уточняется';
-  }
+  };
 
+  // Стили компонента
+  const eventsStyles = {
+    container: {
+      padding: theme.spacing.lg,
+      maxWidth: '900px',
+      margin: '0 auto',
+      minHeight: 'calc(100vh - 120px)',
+      position: 'relative'
+    },
+
+    header: {
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl,
+      position: 'relative'
+    },
+
+    headerCard: {
+      background: createGradientStyle(['#667eea', '#764ba2'], '135deg').background,
+      color: '#ffffff',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      padding: theme.spacing.xl
+    },
+
+    headerOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.1)',
+      zIndex: 1
+    },
+
+    headerContent: {
+      position: 'relative',
+      zIndex: 2
+    },
+
+    headerDecoration: {
+      position: 'absolute',
+      top: '-50px',
+      right: '-50px',
+      fontSize: '150px',
+      opacity: 0.1,
+      zIndex: 1
+    },
+
+    title: {
+      ...styles.heading,
+      fontSize: theme.typography.sizes.title,
+      margin: '0 0 8px 0',
+      fontWeight: theme.typography.weights.bold,
+      textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+    },
+
+    date: {
+      fontSize: theme.typography.sizes.md,
+      margin: 0,
+      opacity: 0.9,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+    },
+
+    updateBadge: {
+      marginTop: theme.spacing.sm,
+      padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+      background: 'rgba(255,255,255,0.2)',
+      borderRadius: theme.borderRadius.xl,
+      display: 'inline-block',
+      fontSize: theme.typography.sizes.xs,
+      fontWeight: theme.typography.weights.semibold,
+      textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+    },
+
+    eventCard: {
+      marginBottom: theme.spacing.lg,
+      transition: `all ${theme.animations.duration.normal} ease`,
+      position: 'relative'
+    },
+
+    eventHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: theme.spacing.md
+    },
+
+    planetIcon: {
+      fontSize: '2.5rem',
+      marginRight: theme.spacing.md,
+      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+    },
+
+    eventInfo: {
+      flex: 1
+    },
+
+    eventTitle: {
+      ...styles.heading,
+      fontSize: theme.typography.sizes.lg,
+      margin: '0 0 8px 0',
+      color: theme.colors.text
+    },
+
+    statusBadge: {
+      display: 'inline-block',
+      padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+      borderRadius: theme.borderRadius.lg,
+      fontSize: theme.typography.sizes.xs,
+      fontWeight: theme.typography.weights.semibold,
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px'
+    },
+
+    eventPeriod: {
+      fontSize: theme.typography.sizes.sm,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.md,
+      fontStyle: 'italic'
+    },
+
+    eventDescription: {
+      fontSize: theme.typography.sizes.sm,
+      lineHeight: 1.6,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.lg,
+      whiteSpace: 'pre-line'
+    },
+
+    eventFooter: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+
+    influenceBadge: {
+      padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+      borderRadius: theme.borderRadius.xl,
+      fontSize: theme.typography.sizes.xs,
+      fontWeight: theme.typography.weights.bold,
+      border: '2px solid'
+    },
+
+    loadingContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: theme.spacing.xxl,
+      textAlign: 'center'
+    },
+
+    loadingIcon: {
+      fontSize: '4rem',
+      marginBottom: theme.spacing.lg,
+      animation: 'pulse 2s infinite'
+    }
+  };
+
+  // Добавляем CSS анимации
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const existingStyle = document.getElementById('astro-events-animations');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'astro-events-animations';
+        style.textContent = `
+          @keyframes pulse {
+            0%, 100% { 
+              opacity: 0.6; 
+              transform: scale(1); 
+            }
+            50% { 
+              opacity: 1; 
+              transform: scale(1.1); 
+            }
+          }
+          
+          @keyframes slideInUp {
+            0% { 
+              opacity: 0; 
+              transform: translateY(20px); 
+            }
+            100% { 
+              opacity: 1; 
+              transform: translateY(0); 
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
+
+  // Загрузка событий
   useEffect(() => {
     const loadEvents = async () => {
       setLoading(true);
@@ -177,6 +343,7 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
     loadEvents();
   }, []);
 
+  // Цветовые функции
   const getEventStatusColor = (status) => {
     switch (status) {
       case 'ретроград': return '#FF6B6B';
@@ -195,152 +362,189 @@ const AstroEventsView = ({ onAddToFavorites, telegramApp }) => {
     }
   };
 
+  // Обработчик добавления в избранное
+  const handleAddToFavorites = (event) => {
+    if (onAddToFavorites) {
+      onAddToFavorites({
+        type: 'astro-event',
+        id: event.id,
+        title: event.title,
+        content: event.description,
+        date: new Date().toLocaleDateString(),
+        planet: event.planet,
+        planetIcon: event.planetIcon
+      });
+    }
+
+    // Haptic feedback для Telegram
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+
+    // Показываем уведомление
+    if (window.Telegram?.WebApp?.showAlert) {
+      window.Telegram.WebApp.showAlert(`${event.planet} добавлен в избранное! ⭐`);
+    }
+  };
+
   if (loading) {
     return (
-      <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ 
-          fontSize: '48px', 
-          marginBottom: '16px',
-          animation: 'pulse 2s infinite' 
-        }}>🌌</div>
-        <h3>Подключаемся к космосу...</h3>
-        <p style={{ color: theme.colors.textSecondary }}>Загружаем актуальные астрологические данные</p>
+      <div style={eventsStyles.container}>
+
         
-        <style>{`
-          @keyframes pulse {
-            0% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 0.6; transform: scale(1); }
-          }
-        `}</style>
+        <div style={eventsStyles.loadingContainer}>
+          <div style={eventsStyles.loadingIcon}>🌌</div>
+          <h3 style={{ color: theme.colors.primary, marginBottom: theme.spacing.sm }}>
+            Подключаемся к космосу...
+          </h3>
+          <p style={{ color: theme.colors.textSecondary }}>
+            Загружаем актуальные астрологические данные
+          </p>
+        </div>
       </div>
     );
   }
 
-  // Остальной код компонента остается таким же...
-  // [Тот же render код что был раньше, но с обновленными данными]
-
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={eventsStyles.container}>
+
+      
       {/* Красивый заголовок с актуальной датой */}
-      <div style={{
-        ...theme.card,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: '#ffffff',
-        textAlign: 'center',
-        marginBottom: '20px',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '-50px',
-          right: '-50px',
-          fontSize: '150px',
-          opacity: 0.1
-        }}>🌌</div>
-        
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700' }}>
-          Астрологические События
-        </h1>
-        <p style={{ margin: '0', opacity: 0.9 }}>
-          📅 {new Date().toLocaleDateString('ru-RU', { 
-            weekday: 'long',
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </p>
-        <div style={{
-          marginTop: '12px',
-          padding: '6px 16px',
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '20px',
-          display: 'inline-block',
-          fontSize: '14px',
-          fontWeight: '600'
-        }}>
-          🔄 Обновлено сейчас
+      <Card 
+        variant="gradient" 
+        padding="none" 
+        style={{ 
+          marginBottom: theme.spacing.xl,
+          animation: 'slideInUp 0.6s ease-out'
+        }}
+      >
+        <div style={eventsStyles.headerCard}>
+          <div style={eventsStyles.headerOverlay} />
+          <div style={eventsStyles.headerDecoration}>🌌</div>
+          
+          <div style={eventsStyles.headerContent}>
+            <h1 style={eventsStyles.title}>
+              Астрологические События
+            </h1>
+            <p style={eventsStyles.date}>
+              📅 {new Date().toLocaleDateString('ru-RU', { 
+                weekday: 'long',
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </p>
+            <div style={eventsStyles.updateBadge}>
+              🔄 Обновлено сейчас
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Список событий с актуальными данными */}
       {events.map((event, index) => (
-        <Card key={event.id} style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '32px', marginRight: '16px' }}>
+        <Card 
+          key={event.id} 
+          padding="lg"
+          hoverable
+          style={{
+            ...eventsStyles.eventCard,
+            animation: `slideInUp 0.6s ease-out ${index * 0.2}s`,
+            animationFillMode: 'both'
+          }}
+        >
+          {/* Заголовок события */}
+          <div style={eventsStyles.eventHeader}>
+            <span style={eventsStyles.planetIcon}>
               {event.planetIcon}
             </span>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>
+            <div style={eventsStyles.eventInfo}>
+              <h3 style={eventsStyles.eventTitle}>
                 {event.title}
               </h3>
-              <div style={{
-                display: 'inline-block',
-                background: `${getEventStatusColor(event.status)}20`,
-                color: getEventStatusColor(event.status),
-                padding: '4px 12px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '600',
-                textTransform: 'uppercase'
-              }}>
+              <div
+                style={{
+                  ...eventsStyles.statusBadge,
+                  background: `${getEventStatusColor(event.status)}20`,
+                  color: getEventStatusColor(event.status),
+                  border: `1px solid ${getEventStatusColor(event.status)}40`
+                }}
+              >
                 {event.status} • {event.realTime ? 'АКТУАЛЬНО' : 'АРХИВ'}
               </div>
             </div>
           </div>
 
-          <div style={{ 
-            fontSize: '14px',
-            marginBottom: '12px',
-            color: theme.colors.textSecondary,
-            fontStyle: 'italic'
-          }}>
+          {/* Период */}
+          <div style={eventsStyles.eventPeriod}>
             📅 {event.period}
           </div>
 
-          <div 
-            style={{ 
-              fontSize: '14px', 
-              lineHeight: '1.6',
-              marginBottom: '16px'
-            }}
-            dangerouslySetInnerHTML={{ __html: event.description }}
-          />
+          {/* Описание */}
+          <div style={eventsStyles.eventDescription}>
+            {event.description}
+          </div>
 
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '12px',
-            alignItems: 'center',
-            marginTop: '16px'
-          }}>
-            <div style={{
-              background: `${getInfluenceColor(event.influence)}20`,
-              color: getInfluenceColor(event.influence),
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: '700',
-              border: `2px solid ${getInfluenceColor(event.influence)}40`
-            }}>
+          {/* Подвал с действиями */}
+          <div style={eventsStyles.eventFooter}>
+            <div
+              style={{
+                ...eventsStyles.influenceBadge,
+                background: `${getInfluenceColor(event.influence)}20`,
+                color: getInfluenceColor(event.influence),
+                borderColor: `${getInfluenceColor(event.influence)}40`
+              }}
+            >
               Влияние: {event.influence}
             </div>
             
             <Button
               variant="primary"
-              onClick={() => onAddToFavorites && onAddToFavorites({
-                type: 'astro-event',
-                title: event.title,
-                content: event.title + ' - ' + event.period,
-                date: new Date().toLocaleDateString()
-              })}
+              size="sm"
+              icon="⭐"
+              onClick={() => handleAddToFavorites(event)}
             >
-              ⭐ В избранное
+              В избранное
             </Button>
           </div>
+
+          {/* Дополнительная информация */}
+          {event.affectedSigns && (
+            <div style={{
+              marginTop: theme.spacing.md,
+              padding: theme.spacing.sm,
+              backgroundColor: `${theme.colors.primary}10`,
+              borderRadius: theme.borderRadius.sm,
+              borderLeft: `3px solid ${theme.colors.primary}`
+            }}>
+              <div style={{
+                fontSize: theme.typography.sizes.xs,
+                color: theme.colors.textSecondary,
+                marginBottom: theme.spacing.xs
+              }}>
+                Особое влияние на знаки:
+              </div>
+              <div style={{
+                fontSize: theme.typography.sizes.sm,
+                color: theme.colors.text
+              }}>
+                {event.affectedSigns}
+              </div>
+            </div>
+          )}
         </Card>
       ))}
+
+      {/* Кнопка обновления */}
+      <div style={{ textAlign: 'center', marginTop: theme.spacing.xl }}>
+        <Button 
+          variant="outline" 
+          onClick={() => window.location.reload()}
+          icon="🔄"
+        >
+          Обновить события
+        </Button>
+      </div>
     </div>
   );
 };
